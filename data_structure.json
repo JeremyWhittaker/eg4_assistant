@@ -1,0 +1,57 @@
+{
+  "metrics": [
+    {
+      "text": "239.3 V",
+      "classes": [
+        "value"
+      ],
+      "id": ""
+    },
+    {
+      "text": "66 %",
+      "classes": [
+        "value"
+      ],
+      "id": ""
+    },
+    {
+      "text": "20 %/hr",
+      "classes": [
+        "value",
+        "battery-change"
+      ],
+      "id": ""
+    },
+    {
+      "text": "5406 W",
+      "classes": [
+        "value"
+      ],
+      "id": ""
+    },
+    {
+      "text": "0 W",
+      "classes": [
+        "value"
+      ],
+      "id": ""
+    },
+    {
+      "text": "11.6 kW",
+      "classes": [
+        "value"
+      ],
+      "id": ""
+    },
+    {
+      "text": "6070 W",
+      "classes": [
+        "value"
+      ],
+      "id": ""
+    }
+  ],
+  "charts": [],
+  "controls": [],
+  "status_indicators": []
+}

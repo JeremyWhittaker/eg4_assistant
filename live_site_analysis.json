@@ -1,0 +1,186 @@
+{
+  "pages": {
+    "/": {
+      "name": "Dashboard",
+      "status": 200,
+      "exists": true
+    },
+    "/totals": {
+      "name": "Energy Totals",
+      "status": 200,
+      "exists": true
+    },
+    "/power": {
+      "name": "Power Flow",
+      "status": 200,
+      "exists": true
+    },
+    "/configuration": {
+      "name": "Configuration",
+      "status": 200,
+      "exists": true
+    },
+    "/#charts": {
+      "name": "Charts (Grafana)",
+      "status": 200,
+      "exists": true
+    },
+    "/battery": {
+      "name": "Battery Details",
+      "status": 404,
+      "exists": false
+    },
+    "/inverter": {
+      "name": "Inverter Details",
+      "status": 404,
+      "exists": false
+    },
+    "/settings": {
+      "name": "Settings",
+      "status": 404,
+      "exists": false
+    },
+    "/network": {
+      "name": "Network Config",
+      "status": 404,
+      "exists": false
+    },
+    "/mqtt": {
+      "name": "MQTT Config",
+      "status": 404,
+      "exists": false
+    },
+    "/api": {
+      "name": "API Access",
+      "status": 404,
+      "exists": false
+    },
+    "/export": {
+      "name": "Data Export",
+      "status": 404,
+      "exists": false
+    },
+    "/logs": {
+      "name": "System Logs",
+      "status": 404,
+      "exists": false
+    },
+    "/update": {
+      "name": "Software Update",
+      "status": 404,
+      "exists": false
+    },
+    "/backup": {
+      "name": "Backup/Restore",
+      "status": 404,
+      "exists": false
+    }
+  },
+  "api_endpoints": {
+    "/api/v1/status": {
+      "status": 404,
+      "content_type": "text/html; charset=utf-8",
+      "exists": false
+    },
+    "/api/v1/data": {
+      "status": 404,
+      "content_type": "text/html; charset=utf-8",
+      "exists": false
+    },
+    "/api/v1/inverter": {
+      "status": 404,
+      "content_type": "text/html; charset=utf-8",
+      "exists": false
+    },
+    "/api/v1/battery": {
+      "status": 404,
+      "content_type": "text/html; charset=utf-8",
+      "exists": false
+    },
+    "/api/v1/totals": {
+      "status": 404,
+      "content_type": "text/html; charset=utf-8",
+      "exists": false
+    },
+    "/api/v1/history": {
+      "status": 404,
+      "content_type": "text/html; charset=utf-8",
+      "exists": false
+    },
+    "/api/v1/config": {
+      "status": 404,
+      "content_type": "text/html; charset=utf-8",
+      "exists": false
+    },
+    "/api/v1/network": {
+      "status": 404,
+      "content_type": "text/html; charset=utf-8",
+      "exists": false
+    },
+    "/api/v1/mqtt/status": {
+      "status": 404,
+      "content_type": "text/html; charset=utf-8",
+      "exists": false
+    },
+    "/api/v1/export/csv": {
+      "status": 404,
+      "content_type": "text/html; charset=utf-8",
+      "exists": false
+    },
+    "/api/v1/export/json": {
+      "status": 404,
+      "content_type": "text/html; charset=utf-8",
+      "exists": false
+    },
+    "/websocket": {
+      "status": 404,
+      "content_type": "text/html; charset=utf-8",
+      "exists": false
+    },
+    "/live/websocket": {
+      "status": 400,
+      "content_type": "",
+      "exists": false
+    },
+    "/api/stats": {
+      "status": 404,
+      "content_type": "text/html; charset=utf-8",
+      "exists": false
+    },
+    "/api/inverters": {
+      "status": 404,
+      "content_type": "text/html; charset=utf-8",
+      "exists": false
+    },
+    "/api/batteries": {
+      "status": 404,
+      "content_type": "text/html; charset=utf-8",
+      "exists": false
+    }
+  },
+  "features": [
+    "Phoenix LiveView",
+    "Grafana Integration",
+    "Phoenix LiveView",
+    "Data Export",
+    "Grafana Integration",
+    "Phoenix LiveView",
+    "Grafana Integration",
+    "Phoenix LiveView",
+    "MQTT Integration",
+    "Modbus Support",
+    "Grafana Integration",
+    "Phoenix LiveView",
+    "Grafana Integration"
+  ],
+  "websocket_endpoints": [],
+  "forms": {
+    "/power": 2,
+    "/configuration": 3
+  },
+  "javascript_files": [
+    "/js/app-2e582bc3a264a32a8c0d8e3affea6b5a.js?vsn=d",
+    "/js/vendor/echarts.min-c5ef426b883db4257694b21b88257a57.js?vsn=d"
+  ],
+  "data_points": []
+}

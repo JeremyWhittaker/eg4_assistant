@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1"/>
+<meta content="KS0XK0cWfDADEyMUIjMfNzYmAAxaBj4KzGnD6s7tfZtUUReYtjV_lENf" name="csrf-token">
+<title>SolarAssistant</title>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Exo:wght@400;500;600&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'"/>
+    <noscript>
+        <link href="https://fonts.googleapis.com/css2?family=Exo:wght@400;500;600&display=swap" rel="stylesheet" type="text/css"/>
+    </noscript>
+    <link phx-track-static rel="stylesheet" href="/css/app-17b668327ffae86535bf237829bb8536.css?vsn=d"/>
+    <link rel="manifest" href="/manifest.json">
+
+    <script defer phx-track-static type="text/javascript" src="/js/app-2e582bc3a264a32a8c0d8e3affea6b5a.js?vsn=d"></script>
+    <script defer phx-track-static type="text/javascript" src="/js/vendor/echarts.min-c5ef426b883db4257694b21b88257a57.js?vsn=d"></script>
+</head>
+<body class="with-header">
+<div class="header">
+    <div class="container">
+        <div class="logo"></div>
+        <div class="menu">
+<a href="/" class="menu-item" data-phx-link="redirect" data-phx-link-state="push">
+            <div class="item-img" style="background-image: url(/images/tabs/dashboard-5b9c34163b40b727c3b5dcd31076d3ff.svg?vsn=d);"></div>
+            <span class="item-caption">Dashboard</span>
+</a>
+            <a href="#charts" data-iframe="/grafana/d/sa-charts?kiosk=tv" class="menu-item">
+                <div class="item-img" style="background-image: url(/images/tabs/chart-dd06fb016ea913612257201243918626.svg?vsn=d);"></div>
+                <span class="item-caption">Charts</span>
+            </a>
+<a href="/totals" class="menu-item" data-phx-link="redirect" data-phx-link-state="push">
+            <div class="item-img" style="background-image: url(/images/tabs/totals-686818307521c3750d0cc7888abd3e32.svg?vsn=d);"></div>
+            <span class="item-caption">Totals</span>
+</a>
+<a href="/power" class="menu-item" data-phx-link="redirect" data-phx-link-state="push">
+            <div class="item-img" style="background-image: url(/images/tabs/power-5546d2b53839f64e84fe6970bfe31771.svg?vsn=d);"></div>
+            <span class="item-caption">Power</span>
+</a>
+<a href="/configuration" class="menu-item" data-phx-link="redirect" data-phx-link-state="push">
+            <div class="item-img" style="background-image: url(/images/tabs/config-f7911c4bceb5f8f535f156a57634bfe3.svg?vsn=d);"></div>
+            <span class="item-caption">Configuration</span>
+</a>
+        </div>
+    </div>
+</div>
+<main role="main" id="main" class="main">
+<div data-phx-main data-phx-session="SFMyNTY.g2gDaAJhBXQAAAAIZAACaWRtAAAAFHBoeC1HRVZ4OHRwQmZFY3J5cVdpZAAMbGl2ZV9zZXNzaW9uaAJkAAR1c2VybggAQM-UELb6IhhkAApwYXJlbnRfcGlkZAADbmlsZAAIcm9vdF9waWRkAANuaWxkAAlyb290X3ZpZXdkADBFbGl4aXIuU29sYXJBc3Npc3RhbnRXZWIuTGl2ZS5Db25maWd1cmF0aW9uLlNob3dkAAZyb3V0ZXJkAB9FbGl4aXIuU29sYXJBc3Npc3RhbnRXZWIuUm91dGVyZAAHc2Vzc2lvbnQAAAAAZAAEdmlld2QAMEVsaXhpci5Tb2xhckFzc2lzdGFudFdlYi5MaXZlLkNvbmZpZ3VyYXRpb24uU2hvd24GABKNTzSXAWIAAVGA.DhjM-3iWzFfSX3DyhhYrXweU7zT7QExaLdFLLrPaWhI" data-phx-static="SFMyNTY.g2gDaAJhBXQAAAADZAAKYXNzaWduX25ld2pkAAVmbGFzaHQAAAAAZAACaWRtAAAAFHBoeC1HRVZ4OHRwQmZFY3J5cVdpbgYAE41PNJcBYgABUYA.Qpzv_1hB4tt1jdeoqfSk4QTIpNED2ZHmga2493XwV4k" id="phx-GEVx8tpBfEcryqWi"><p class="flash info" role="alert" phx-click="lv:clear-flash" phx-value-key="info"></p>
+<p class="flash error" role="alert" phx-click="lv:clear-flash" phx-value-key="error"></p>
+<div class="content configuration">
+    <div class="card" style="max-width: 800px">
+<div class="card-section" id="general">
+    <h3>General</h3>
+
+    <div class="form-field">
+        <label>Site owner:</label>
+        <div>
+
+me@jeremywhittaker.com
+
+        </div>
+    </div>
+    <div class="form-field">
+        <label>
+Site ID:
+        </label>
+        <div>
+
+<a href="https://whittakers.us.solar-assistant.io" target="_blank">whittakers.us.solar-assistant.io</a>
+
+        </div>
+    </div>
+
+
+
+    <div class="buttons-right padded-top">
+<a class="button" href="/configuration/system#access">Configure local access</a>
+
+<a class="button" href="https://solar-assistant.io/sites/24691/edit" target="_blank">View site on solar-assistant.io</a>
+
+    </div>
+
+    <div>
+<div id="package-modal" class="modal closed">
+</div>
+    </div>
+</div>
+<div class="card-section wifi" id="network">
+    <h3>WiFi network</h3>
+<form action="#" method="get" phx-change="change" phx-submit="save" phx-target="2">
+
+    <div class="form-field">
+        <label>SSID:</label>
+        <div>
+Whittakers
+
+            <span class="wifi-signal">
+               &#129001;&#129001;&#129001;&#129001;&#129001;&#129001;
+            </span>
+
+
+            <span> - <a href="#" phx-click="edit" phx-target="2">edit</a></span>
+
+            <br>
+        </div>
+    </div>
+    <div class="form-field">
+        <label>Status:</label>
+        <div>
+
+            <span class="positive">Connected</span>
+
+        </div>
+    </div>
+
+</form>
+    <div class="interfaces">
+        <div>
+            <strong>Network status</strong>
+        </div>
+        <table class="config-table">
+
+            <tr>
+                <td>Internet</td>
+                <td>
+
+70.166.112.82
+
+                </td>
+
+                <td class="positive">Up</td>
+
+            </tr>
+
+            <tr>
+                <td>eth0</td>
+                <td>
+
+
+
+                </td>
+
+                <td class="negative">Down</td>
+
+            </tr>
+
+            <tr>
+                <td>wlan0</td>
+                <td>
+
+172.16.106.13
+
+                </td>
+
+                <td class="positive">Up</td>
+
+            </tr>
+
+        </table>
+
+        <div class="buttons-right padded-top">
+<a class="button" href="#" phx-click="open-modal" phx-value-id="network-log-modal">View log</a>
+        </div>
+
+<div id="network-log-modal" class="modal closed">
+</div>
+    </div>
+    <div>
+<div id="wifi-connect-modal" class="modal closed">
+</div>
+    </div>
+</div>
+<div class="card-section" id="devices">
+<form action="#" method="post" phx-change="changed" phx-submit="save" phx-target="3"><input name="_csrf_token" type="hidden" hidden value="KS0XK0cWfDADEyMUIjMfNzYmAAxaBj4KzGnD6s7tfZtUUReYtjV_lENf">
+    <h3>Inverter</h3>
+    <div class="form-field">
+        <label for="inverter_driver_id">Model</label>
+        <div class="value">
+<select disabled id="inverter_driver_id" name="inverter_driver_id">
+<option value=""></option><option value="sunsynk">Deye, SunSynk, Sol-Ark</option><option value="felicity">Felicity Solar</option><option value="goodwe">GoodWe</option><option value="growatt">Growatt</option><option value="huawei">Huawei</option><option selected value="luxpower">Luxpower</option><option value="megarevo">Megarevo</option><option value="midnite">MidNite Solar</option><option value="must">Must</option><option value="senergy">Senergy</option><option value="solis">Solis</option><option value="srne">SRNE</option><option value="sumry">Sumry</option><option value="sungrow">Sungrow</option><option value="voltronic">Voltronic, Axpert, MPP, Infini, etc.</option>
+</select>
+        </div>
+    </div>
+
+
+    <div class="form-field">
+        <label>Interface</label>
+        <div class="value">
+<select disabled id="inverter_interface_id" name="inverter_interface_id">
+<option selected value="network">Local network</option>
+</select>
+        </div>
+    </div>
+
+
+    <div class="form-field">
+        <label>Network devices</label>
+        <div class="value">
+            <div>
+<select disabled id="inverter_connection_ids" multiple name="inverter_connection_ids[]">
+<option selected value="BA32401949_3352670252">BA32401949 (172.16.107.53)</option>
+</select>
+
+            </div>
+        </div>
+    </div>
+
+
+    <div class="form-field">
+        <label>Status</label>
+        <div class="value">
+
+            <span class="positive">Connected</span>
+
+            - <a href="/inverter/settings" data-phx-link="redirect" data-phx-link-state="push">Settings</a>
+        </div>
+    </div>
+
+    <h3 class="padded-top">Battery</h3>
+    <div class="form-field padded-top">
+        <label for="bms_driver_id">Battery</label>
+        <div class="value">
+<select disabled id="bms_driver_id" name="bms_driver_id">
+<option selected value="inverter">Use inverter values</option><option value="emulated">Emulated BMS</option><option value="daly">USB Daly UART/RS485</option><option value="jbd">USB JBD RS485</option><option value="jk">USB JK RS485</option><option value="modbus">USB Modbus RS232/485</option><option value="narada">USB Narada RS485</option><option value="pylontech">USB PylonTech/Pytes console</option><option value="serial">USB Serial RS232/485</option><option value="voltronic_lib">USB Voltronic LIB RS485</option><option value="ve_direct">USB Victron VE.Direct</option><option value="can">USB CAN bus</option>
+</select>
+        </div>
+    </div>
+
+
+
+
+
+    <div class="buttons-right padded-top">
+
+<a href="/configuration/advanced" class="button" data-phx-link="redirect" data-phx-link-state="push">Advanced</a>
+<a class="button negative" href="#" phx-click="disconnect" phx-target="3">Disconnect</a>
+
+    </div>
+
+</form>
+</div>
+<div class="card-section">
+    <h3>System</h3>
+
+<form action="#" method="post" phx-change="changed" phx-submit="save" phx-target="4"><input name="_csrf_token" type="hidden" hidden value="KS0XK0cWfDADEyMUIjMfNzYmAAxaBj4KzGnD6s7tfZtUUReYtjV_lENf">
+    <div class="form-field">
+        <label>Localization:</label>
+        <div class="value">English, America/Phoenix</div>
+    </div>
+    <div class="form-field">
+        <label for="time">Time:</label>
+        <div class="value">02 Jun, 22:41</div>
+    </div>
+    <div class="form-field">
+        <label for="time">Services:</label>
+        <div class="value">Web, Bluetooth</div>
+    </div>
+    <div class="form-field">
+        <label>CPU Temperature:</label>
+        <div class="value">
+
+138.2 °F
+
+        </div>
+    </div>
+    <div class="form-field">
+        <label>USB devices:</label>
+        <div class="value">
+
+4 -
+
+<a href="/system/kernel" data-phx-link="redirect" data-phx-link-state="push">view detail</a>
+        </div>
+    </div>
+    <div class="form-field">
+        <label>Storage:</label>
+        <div class="value">
+
+15% of 31G -
+
+<a href="/configuration/storage">view detail</a>
+        </div>
+    </div>
+    <div class="form-field">
+        <label>Device board:</label>
+        <div class="value">Raspberry Pi 3 Model B Plus Rev 1.3</div>
+    </div>
+    <div class="form-field">
+        <label>Software version:</label>
+        <div>
+2025-02-10
+(bookworm)
+
+            <!-- No update available -->
+
+        </div>
+    </div>
+
+    <div class="buttons-right padded-top">
+<a class="button" href="/configuration/system">Configure</a>
+    </div>
+
+</form>
+</div>
+<div class="card-section">
+    <h3>MQTT Broker</h3>
+    <div class="form-field">
+        <label>Port:</label>
+        <div>1883</div>
+    </div>
+    <div class="form-field">
+        <label>Status:</label>
+        <div>
+
+            <span class="positive">Enabled</span>
+
+        </div>
+    </div>
+    <div class="buttons-right padded-top">
+<a href="/configuration/mqtt" class="button" data-phx-link="redirect" data-phx-link-state="push">Configure</a>
+
+
+<a class="button negative" data-confirm="Are you sure you want to stop MQTT?" href="#" phx-click="disable_publish" phx-target="5">Stop</a>
+
+
+    </div>
+</div>
+    </div>
+</div></div>
+</main>
+</body>
+</html>
