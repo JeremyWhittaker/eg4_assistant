@@ -1,16 +1,14 @@
 # EG4 18kPV Integration Summary
 
 ## Overview
-This document summarizes the findings from analyzing the Solar Assistant image and EG4 18kPV inverter communication protocols.
+This document summarizes the findings from analyzing EG4 18kPV inverter communication protocols.
 
 ## Key Findings
 
-### 1. Solar Assistant System
-- **OS**: Debian-based Linux system
-- **Hostname**: solar-assistant
-- **User**: solar-assistant (password protected)
-- **SSH**: Root access available (no password set by default)
-- **Services**: Uses systemd with solar-assistant.service
+### 1. System Requirements
+- **OS**: Linux system with Python 3.8+
+- **Network**: Access to EG4 inverter on local network
+- **Ports**: 8000 (IoTOS), 5000 (Web interface)
 
 ### 2. EG4 18kPV Communication
 - **Dongle**: Micro/IoTOS TCP dongle
@@ -79,7 +77,7 @@ The monitoring system can send alerts for:
 ## Next Steps
 1. **Protocol Documentation**: The IoTOS protocol needs proper documentation to decode all values
 2. **Data Parsing**: Current parsing is based on common patterns; actual offsets may vary
-3. **Integration**: Could integrate with Solar Assistant's monitoring approach
+3. **Integration**: Could integrate with other monitoring systems
 4. **Testing**: Long-term testing needed to verify stability
 
 ## Running the Monitor

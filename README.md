@@ -1,6 +1,6 @@
-# EG4 Assistant - Solar Assistant Clone for EG4 18kPV
+# EG4 Assistant - Web Monitoring for EG4 18kPV
 
-A web-based monitoring system for EG4 18kPV inverters that clones the functionality of Solar Assistant.
+A web-based monitoring system for EG4 18kPV inverters with real-time data visualization.
 
 ## Features
 

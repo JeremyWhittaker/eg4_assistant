@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-EG4 Assistant - Solar Assistant Clone for EG4 18kPV
+EG4 Assistant - Web Monitoring for EG4 18kPV
 Main Flask application with real-time WebSocket support
 """
 

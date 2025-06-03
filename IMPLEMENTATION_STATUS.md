@@ -4,10 +4,10 @@
 
 ### ✅ Completed Tasks
 
-1. **Analyzed Solar Assistant Architecture**
-   - Discovered it uses Phoenix/Elixir with WebSocket LiveView
-   - Found it communicates via Modbus and uses MQTT for data distribution
-   - Identified Grafana integration for charts
+1. **Analyzed Inverter Communication**
+   - Discovered IoTOS protocol for data access
+   - Found communication methods via port 8000
+   - Identified data streaming capabilities
 
 2. **Reverse Engineered EG4 Communication**
    - Found IoTOS protocol on port 8000
@@ -16,14 +16,14 @@
    - Identified working commands (0xA1 header)
 
 3. **Created EG4 Assistant Web Server**
-   - Complete Flask-based clone with real-time WebSocket updates
+   - Complete Flask-based monitoring system with real-time WebSocket updates
    - Implemented all main pages:
      - Dashboard with live metrics
      - Power flow visualization with SVG animation
      - Charts with ECharts library
      - Energy totals with statistics
-     - Configuration page matching Solar Assistant
-   - Created responsive design matching Solar Assistant UI
+     - System configuration page
+   - Created responsive modern UI design
 
 4. **Published to GitHub**
    - Repository: https://github.com/JeremyWhittaker/eg4_assistant
@@ -35,7 +35,7 @@
 The EG4 Assistant server is ready to run and will:
 - Connect to your EG4 inverter at 172.16.107.53:8000
 - Display real-time data via WebSocket updates
-- Show the same interface as Solar Assistant
+- Show a comprehensive monitoring interface
 - Update every 5 seconds with new data
 
 ### To Run:
@@ -54,7 +54,7 @@ The IoTOS protocol returns binary data that needs proper decoding:
 - Need to map all data fields to their proper locations
 
 ### 2. **Modbus Implementation**
-Solar Assistant also supports Modbus communication:
+Alternative communication via Modbus:
 - Port 502 is closed on your inverter
 - May need to enable Modbus in inverter settings
 - Would provide more reliable data access
@@ -66,16 +66,16 @@ Currently using in-memory storage:
 - Implement data export features
 
 ### 4. **MQTT Integration**
-Solar Assistant uses MQTT for data distribution:
+For data distribution to other systems:
 - Need to implement MQTT broker
 - Allow other systems to subscribe to data
 - Enable Home Assistant integration
 
 ### 5. **Grafana Integration**
-For advanced charting like Solar Assistant:
+For advanced data visualization:
 - Set up Grafana with solar dashboards
 - Create InfluxDB datasource
-- Import Solar Assistant dashboard templates
+- Create custom dashboard templates
 
 ## Next Steps
 
@@ -131,6 +131,6 @@ Web Browser (Real-time Updates)
 ## Support
 
 - GitHub Issues: https://github.com/JeremyWhittaker/eg4_assistant/issues
-- Original Solar Assistant: https://solar-assistant.io
+- EG4 Systems: https://eg4electronics.com
 
 The foundation is complete - now it needs fine-tuning with your actual inverter data!
