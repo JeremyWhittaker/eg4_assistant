@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - EG4 Assistant{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <h1>System Settings</h1>
+    
+    <form id="settings-form" class="settings-form">
+        <!-- MQTT Settings -->
+        <div class="settings-section">
+            <h2>MQTT Integration</h2>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="mqtt_enabled" name="mqtt_enabled" 
+                           {% if settings.mqtt_enabled %}checked{% endif %}>
+                    Enable MQTT Broker
+                </label>
+            </div>
+            
+            <div id="mqtt-config" class="mqtt-config {% if not settings.mqtt_enabled %}hidden{% endif %}">
+                <div class="form-group">
+                    <label for="mqtt_broker">MQTT Broker Address</label>
+                    <input type="text" id="mqtt_broker" name="mqtt_broker" 
+                           value="{{ settings.mqtt_config.broker or 'localhost' }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="mqtt_port">MQTT Port</label>
+                    <input type="number" id="mqtt_port" name="mqtt_port" 
+                           value="{{ settings.mqtt_config.port or 1883 }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="mqtt_username">Username (Optional)</label>
+                    <input type="text" id="mqtt_username" name="mqtt_username" 
+                           value="{{ settings.mqtt_config.username or '' }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="mqtt_password">Password (Optional)</label>
+                    <input type="password" id="mqtt_password" name="mqtt_password" 
+                           value="{{ settings.mqtt_config.password or '' }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="mqtt_topic_prefix">Topic Prefix</label>
+                    <input type="text" id="mqtt_topic_prefix" name="mqtt_topic_prefix" 
+                           value="{{ settings.mqtt_config.topic_prefix or 'eg4assistant' }}">
+                    <small>Topics will be: prefix/inverter_name/data</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Email Alerts -->
+        <div class="settings-section">
+            <h2>Email Alerts</h2>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="email_alerts" name="email_alerts" 
+                           {% if settings.email_alerts %}checked{% endif %}>
+                    Enable Email Alerts
+                </label>
+            </div>
+            
+            <div id="email-config" class="email-config {% if not settings.email_alerts %}hidden{% endif %}">
+                <div class="form-group">
+                    <label for="smtp_server">SMTP Server</label>
+                    <input type="text" id="smtp_server" name="smtp_server" 
+                           value="{{ settings.email_config.smtp_server or 'smtp.gmail.com' }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="smtp_port">SMTP Port</label>
+                    <input type="number" id="smtp_port" name="smtp_port" 
+                           value="{{ settings.email_config.smtp_port or 587 }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="smtp_username">Email Address</label>
+                    <input type="email" id="smtp_username" name="smtp_username" 
+                           value="{{ settings.email_config.smtp_username or '' }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="smtp_password">Email Password</label>
+                    <input type="password" id="smtp_password" name="smtp_password" 
+                           value="{{ settings.email_config.smtp_password or '' }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="alert_email">Send Alerts To</label>
+                    <input type="email" id="alert_email" name="alert_email" 
+                           value="{{ settings.email_config.alert_email or '' }}">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data Retention -->
+        <div class="settings-section">
+            <h2>Data Management</h2>
+            <div class="form-group">
+                <label for="data_retention_days">Data Retention (Days)</label>
+                <input type="number" id="data_retention_days" name="data_retention_days" 
+                       value="{{ settings.data_retention_days or 365 }}" min="30" max="3650">
+                <small>How long to keep historical data (30-3650 days)</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="aggregation_interval">Data Aggregation Interval</label>
+                <select id="aggregation_interval" name="aggregation_interval">
+                    <option value="1min">1 Minute</option>
+                    <option value="5min" selected>5 Minutes</option>
+                    <option value="15min">15 Minutes</option>
+                    <option value="1hour">1 Hour</option>
+                </select>
+                <small>How often to aggregate data for long-term storage</small>
+            </div>
+        </div>
+        
+        <!-- Alert Thresholds -->
+        <div class="settings-section">
+            <h2>Alert Thresholds</h2>
+            <div class="form-group">
+                <label for="battery_low_threshold">Battery Low Alert (%)</label>
+                <input type="number" id="battery_low_threshold" name="battery_low_threshold" 
+                       value="{{ settings.battery_low_threshold or 20 }}" min="5" max="50">
+            </div>
+            
+            <div class="form-group">
+                <label for="temp_high_threshold">Temperature High Alert (°C)</label>
+                <input type="number" id="temp_high_threshold" name="temp_high_threshold" 
+                       value="{{ settings.temp_high_threshold or 50 }}" min="30" max="80">
+            </div>
+            
+            <div class="form-group">
+                <label for="grid_voltage_low">Grid Voltage Low (V)</label>
+                <input type="number" id="grid_voltage_low" name="grid_voltage_low" 
+                       value="{{ settings.grid_voltage_low or 180 }}" min="100" max="250">
+            </div>
+            
+            <div class="form-group">
+                <label for="grid_voltage_high">Grid Voltage High (V)</label>
+                <input type="number" id="grid_voltage_high" name="grid_voltage_high" 
+                       value="{{ settings.grid_voltage_high or 260 }}" min="200" max="300">
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+            <button type="button" class="btn btn-secondary" onclick="testSettings()">Test Connection</button>
+        </div>
+    </form>
+</div>
+
+<style>
+.settings-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.settings-section {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.settings-section h2 {
+    margin-bottom: 20px;
+    color: #1976D2;
+}
+
+.hidden {
+    display: none;
+}
+
+.mqtt-config,
+.email-config {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+</style>
+
+<script>
+// Toggle config sections
+document.getElementById('mqtt_enabled').addEventListener('change', function() {
+    document.getElementById('mqtt-config').classList.toggle('hidden', !this.checked);
+});
+
+document.getElementById('email_alerts').addEventListener('change', function() {
+    document.getElementById('email-config').classList.toggle('hidden', !this.checked);
+});
+
+// Save settings
+document.getElementById('settings-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const settings = {
+        mqtt_enabled: formData.get('mqtt_enabled') === 'on',
+        mqtt_config: {
+            broker: formData.get('mqtt_broker'),
+            port: parseInt(formData.get('mqtt_port')),
+            username: formData.get('mqtt_username'),
+            password: formData.get('mqtt_password'),
+            topic_prefix: formData.get('mqtt_topic_prefix')
+        },
+        email_alerts: formData.get('email_alerts') === 'on',
+        email_config: {
+            smtp_server: formData.get('smtp_server'),
+            smtp_port: parseInt(formData.get('smtp_port')),
+            smtp_username: formData.get('smtp_username'),
+            smtp_password: formData.get('smtp_password'),
+            alert_email: formData.get('alert_email')
+        },
+        data_retention_days: parseInt(formData.get('data_retention_days')),
+        aggregation_interval: formData.get('aggregation_interval'),
+        battery_low_threshold: parseInt(formData.get('battery_low_threshold')),
+        temp_high_threshold: parseInt(formData.get('temp_high_threshold')),
+        grid_voltage_low: parseInt(formData.get('grid_voltage_low')),
+        grid_voltage_high: parseInt(formData.get('grid_voltage_high'))
+    };
+    
+    fetch('/settings/save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(settings)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('Settings saved successfully!');
+        } else {
+            alert('Error saving settings');
+        }
+    });
+});
+
+function testSettings() {
+    // Test MQTT or email settings
+    alert('Test functionality coming soon!');
+}
+</script>
+{% endblock %}
