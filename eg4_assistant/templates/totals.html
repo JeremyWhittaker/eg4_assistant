@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Energy Totals - EG4 Assistant{% endblock %}
+
+{% block content %}
+<div class="totals-container">
+    <h2>Energy Totals</h2>
+    
+    <div class="totals-grid">
+        <!-- Today -->
+        <div class="total-card">
+            <h3>Today</h3>
+            <div class="total-values">
+                <div class="total-item">
+                    <span class="label">Produced:</span>
+                    <span class="value">{{ "%.2f"|format(data.totals.today.energy_produced) }} kWh</span>
+                </div>
+                <div class="total-item">
+                    <span class="label">Consumed:</span>
+                    <span class="value">{{ "%.2f"|format(data.totals.today.energy_consumed) }} kWh</span>
+                </div>
+                <div class="total-item">
+                    <span class="label">Self-Used:</span>
+                    <span class="value">{{ "%.2f"|format(data.totals.today.energy_produced * 0.7) }} kWh</span>
+                </div>
+                <div class="total-item">
+                    <span class="label">Grid Export:</span>
+                    <span class="value">{{ "%.2f"|format(data.totals.today.energy_produced * 0.3) }} kWh</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Yesterday -->
+        <div class="total-card">
+            <h3>Yesterday</h3>
+            <div class="total-values">
+                <div class="total-item">
+                    <span class="label">Produced:</span>
+                    <span class="value">{{ "%.2f"|format(data.totals.yesterday.energy_produced) }} kWh</span>
+                </div>
+                <div class="total-item">
+                    <span class="label">Consumed:</span>
+                    <span class="value">{{ "%.2f"|format(data.totals.yesterday.energy_consumed) }} kWh</span>
+                </div>
+                <div class="total-item">
+                    <span class="label">Self-Used:</span>
+                    <span class="value">{{ "%.2f"|format(data.totals.yesterday.energy_produced * 0.7) }} kWh</span>
+                </div>
+                <div class="total-item">
+                    <span class="label">Grid Export:</span>
+                    <span class="value">{{ "%.2f"|format(data.totals.yesterday.energy_produced * 0.3) }} kWh</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- This Month -->
+        <div class="total-card">
+            <h3>This Month</h3>
+            <div class="total-values">
+                <div class="total-item">
+                    <span class="label">Produced:</span>
+                    <span class="value">{{ "%.2f"|format(data.totals.month.energy_produced) }} kWh</span>
+                </div>
+                <div class="total-item">
+                    <span class="label">Consumed:</span>
+                    <span class="value">{{ "%.2f"|format(data.totals.month.energy_consumed) }} kWh</span>
+                </div>
+                <div class="total-item">
+                    <span class="label">Self-Sufficiency:</span>
+                    <span class="value">72%</span>
+                </div>
+                <div class="total-item">
+                    <span class="label">Savings:</span>
+                    <span class="value">${{ "%.2f"|format(data.totals.month.energy_produced * 0.12) }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- This Year -->
+        <div class="total-card">
+            <h3>This Year</h3>
+            <div class="total-values">
+                <div class="total-item">
+                    <span class="label">Produced:</span>
+                    <span class="value">{{ "%.2f"|format(data.totals.year.energy_produced) }} kWh</span>
+                </div>
+                <div class="total-item">
+                    <span class="label">Consumed:</span>
+                    <span class="value">{{ "%.2f"|format(data.totals.year.energy_consumed) }} kWh</span>
+                </div>
+                <div class="total-item">
+                    <span class="label">CO2 Saved:</span>
+                    <span class="value">{{ "%.1f"|format(data.totals.year.energy_produced * 0.0004) }} tons</span>
+                </div>
+                <div class="total-item">
+                    <span class="label">Savings:</span>
+                    <span class="value">${{ "%.2f"|format(data.totals.year.energy_produced * 0.12) }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Lifetime -->
+        <div class="total-card full-width">
+            <h3>Lifetime</h3>
+            <div class="total-values horizontal">
+                <div class="total-item">
+                    <span class="label">Total Produced:</span>
+                    <span class="value large">{{ "%.1f"|format(data.totals.lifetime.energy_produced) }} kWh</span>
+                </div>
+                <div class="total-item">
+                    <span class="label">Total Consumed:</span>
+                    <span class="value large">{{ "%.1f"|format(data.totals.lifetime.energy_consumed) }} kWh</span>
+                </div>
+                <div class="total-item">
+                    <span class="label">Total CO2 Saved:</span>
+                    <span class="value large">{{ "%.1f"|format(data.totals.lifetime.energy_produced * 0.0004) }} tons</span>
+                </div>
+                <div class="total-item">
+                    <span class="label">Total Savings:</span>
+                    <span class="value large">${{ "%.2f"|format(data.totals.lifetime.energy_produced * 0.12) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts Section -->
+    <div class="charts-section">
+        <h3>Production History</h3>
+        <div id="production-chart" style="width: 100%; height: 400px;"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Initialize chart
+const productionChart = echarts.init(document.getElementById('production-chart'));
+
+const chartOption = {
+    title: {
+        text: 'Daily Energy Production',
+        left: 'center'
+    },
+    tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+            type: 'cross'
+        }
+    },
+    legend: {
+        data: ['Production', 'Consumption'],
+        bottom: 0
+    },
+    xAxis: {
+        type: 'category',
+        data: []  // Will be populated with dates
+    },
+    yAxis: {
+        type: 'value',
+        name: 'Energy (kWh)',
+        axisLabel: {
+            formatter: '{value} kWh'
+        }
+    },
+    series: [
+        {
+            name: 'Production',
+            type: 'bar',
+            data: [],
+            itemStyle: {
+                color: '#FFC107'
+            }
+        },
+        {
+            name: 'Consumption',
+            type: 'line',
+            data: [],
+            itemStyle: {
+                color: '#FF5722'
+            }
+        }
+    ]
+};
+
+productionChart.setOption(chartOption);
+
+// Resize chart on window resize
+window.addEventListener('resize', function() {
+    productionChart.resize();
+});
+
+function updatePageData(data) {
+    // Update totals would be handled here
+    // For now, the template renders server-side data
+}
+</script>
+{% endblock %}

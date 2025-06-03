@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Configuration - EG4 Assistant{% endblock %}
+
+{% block content %}
+<div class="configuration-container">
+    <h2>System Configuration</h2>
+    
+    <div class="config-sections">
+        <!-- Site Information -->
+        <div class="config-card">
+            <h3>Site Information</h3>
+            <table class="config-table">
+                <tr>
+                    <td>Site owner:</td>
+                    <td>{{ data.configuration.site_owner }}</td>
+                </tr>
+                <tr>
+                    <td>Site ID:</td>
+                    <td>{{ data.configuration.site_id }}</td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <button class="btn btn-primary">Configure local access</button>
+                        <button class="btn btn-secondary">View site on eg4-assistant.io</button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Network Status -->
+        <div class="config-card">
+            <h3>Network Status</h3>
+            <table class="config-table">
+                <tr>
+                    <td>WiFi network:</td>
+                    <td>{{ data.configuration.wifi_ssid }} <a href="#" class="edit-link">edit</a></td>
+                </tr>
+                <tr>
+                    <td>Status:</td>
+                    <td class="status-connected">{{ data.configuration.wifi_status }}</td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="section-header">Network interfaces:</td>
+                </tr>
+                <tr>
+                    <td>Internet:</td>
+                    <td>{{ data.configuration.internet_ip }} <span class="status-up">Up</span></td>
+                </tr>
+                <tr>
+                    <td>eth0:</td>
+                    <td><span class="status-down">Down</span></td>
+                </tr>
+                <tr>
+                    <td>wlan0:</td>
+                    <td>{{ data.configuration.local_ip }} <span class="status-up">Up</span></td>
+                </tr>
+                <tr>
+                    <td colspan="2"><a href="#" class="view-log">View log</a></td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Inverter Configuration -->
+        <div class="config-card">
+            <h3>Inverter</h3>
+            <table class="config-table">
+                <tr>
+                    <td>Model:</td>
+                    <td>{{ data.configuration.inverter_model }}</td>
+                </tr>
+                <tr>
+                    <td>Interface:</td>
+                    <td>Local network</td>
+                </tr>
+                <tr>
+                    <td>Network device:</td>
+                    <td>{{ data.configuration.inverter_serial }} ({{ data.configuration.inverter_ip }})</td>
+                </tr>
+                <tr>
+                    <td>Status:</td>
+                    <td class="status-connected">Connected <a href="#" class="settings-link">Settings</a></td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Battery Configuration -->
+        <div class="config-card">
+            <h3>Battery</h3>
+            <table class="config-table">
+                <tr>
+                    <td>Battery:</td>
+                    <td>Use inverter values</td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <button class="btn btn-secondary">Advanced</button>
+                        <button class="btn btn-danger">Disconnect</button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- System Information -->
+        <div class="config-card">
+            <h3>System</h3>
+            <table class="config-table">
+                <tr>
+                    <td>Localization:</td>
+                    <td>English, {{ data.configuration.timezone }}</td>
+                </tr>
+                <tr>
+                    <td>Time:</td>
+                    <td id="system-time">{{ data.current.timestamp }}</td>
+                </tr>
+                <tr>
+                    <td>Services:</td>
+                    <td>Web, Bluetooth</td>
+                </tr>
+                <tr>
+                    <td>CPU Temperature:</td>
+                    <td>138.2 °F</td>
+                </tr>
+                <tr>
+                    <td>USB devices:</td>
+                    <td>4 <a href="#" class="view-detail">view detail</a></td>
+                </tr>
+                <tr>
+                    <td>Storage:</td>
+                    <td>15% of 31G <a href="#" class="view-detail">view detail</a></td>
+                </tr>
+                <tr>
+                    <td>Device board:</td>
+                    <td>Raspberry Pi 3 Model B Plus Rev 1.3</td>
+                </tr>
+                <tr>
+                    <td>Software version:</td>
+                    <td>2025-02-10 (EG4 Assistant)</td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- MQTT Configuration -->
+        <div class="config-card">
+            <h3>Configure MQTT Broker</h3>
+            <table class="config-table">
+                <tr>
+                    <td>Port:</td>
+                    <td>{{ data.configuration.mqtt_port }}</td>
+                </tr>
+                <tr>
+                    <td>Status:</td>
+                    <td class="status-connected">Enabled</td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <button class="btn btn-primary">Configure</button>
+                        <button class="btn btn-danger">Stop</button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function updatePageData(data) {
+    // Update system time
+    document.getElementById('system-time').textContent = new Date(data.timestamp).toLocaleString();
+}
+
+// Add click handlers for buttons
+document.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        alert('Feature coming soon!');
+    });
+});
+
+// Add click handlers for links
+document.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', function(e) {
+        if (link.getAttribute('href') === '#') {
+            e.preventDefault();
+            alert('Feature coming soon!');
+        }
+    });
+});
+</script>
+{% endblock %}

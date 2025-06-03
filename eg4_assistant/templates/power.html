@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Power Flow - EG4 Assistant{% endblock %}
+
+{% block content %}
+<div class="power-flow-container">
+    <h2>Power Flow Visualization</h2>
+    
+    <div class="power-flow-diagram">
+        <svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+            <!-- Solar Panel -->
+            <g id="solar-panel" transform="translate(100, 50)">
+                <rect x="0" y="0" width="120" height="80" fill="#FFC107" stroke="#F57C00" stroke-width="2" rx="5"/>
+                <text x="60" y="30" text-anchor="middle" fill="#333" font-weight="bold">Solar</text>
+                <text x="60" y="55" text-anchor="middle" fill="#333" font-size="20">
+                    <tspan id="svg-pv-power">{{ data.current.pv_power or 0 }}</tspan>W
+                </text>
+            </g>
+            
+            <!-- Battery -->
+            <g id="battery" transform="translate(100, 250)">
+                <rect x="0" y="0" width="120" height="80" fill="#4CAF50" stroke="#388E3C" stroke-width="2" rx="5"/>
+                <text x="60" y="30" text-anchor="middle" fill="#fff" font-weight="bold">Battery</text>
+                <text x="60" y="55" text-anchor="middle" fill="#fff" font-size="20">
+                    <tspan id="svg-battery-soc">{{ data.current.battery_soc or 0 }}</tspan>%
+                </text>
+            </g>
+            
+            <!-- Inverter (Center) -->
+            <g id="inverter" transform="translate(340, 200)">
+                <rect x="0" y="0" width="120" height="120" fill="#2196F3" stroke="#1976D2" stroke-width="2" rx="5"/>
+                <text x="60" y="40" text-anchor="middle" fill="#fff" font-weight="bold">EG4</text>
+                <text x="60" y="65" text-anchor="middle" fill="#fff">18kPV</text>
+                <text x="60" y="90" text-anchor="middle" fill="#fff" font-size="14">
+                    <tspan id="svg-status">{{ data.current.status or 'Normal' }}</tspan>
+                </text>
+            </g>
+            
+            <!-- Grid -->
+            <g id="grid" transform="translate(580, 50)">
+                <rect x="0" y="0" width="120" height="80" fill="#9C27B0" stroke="#7B1FA2" stroke-width="2" rx="5"/>
+                <text x="60" y="30" text-anchor="middle" fill="#fff" font-weight="bold">Grid</text>
+                <text x="60" y="55" text-anchor="middle" fill="#fff" font-size="20">
+                    <tspan id="svg-grid-power">{{ data.current.grid_power or 0 }}</tspan>W
+                </text>
+            </g>
+            
+            <!-- Load -->
+            <g id="load" transform="translate(580, 250)">
+                <rect x="0" y="0" width="120" height="80" fill="#FF5722" stroke="#D84315" stroke-width="2" rx="5"/>
+                <text x="60" y="30" text-anchor="middle" fill="#fff" font-weight="bold">Load</text>
+                <text x="60" y="55" text-anchor="middle" fill="#fff" font-size="20">
+                    <tspan id="svg-load-power">{{ data.current.load_power or 0 }}</tspan>W
+                </text>
+            </g>
+            
+            <!-- Power Flow Lines -->
+            <!-- Solar to Inverter -->
+            <line id="flow-solar" x1="220" y1="90" x2="340" y2="230" stroke="#FFC107" stroke-width="4" marker-end="url(#arrowhead-solar)"/>
+            
+            <!-- Battery to/from Inverter -->
+            <line id="flow-battery" x1="220" y1="290" x2="340" y2="270" stroke="#4CAF50" stroke-width="4" marker-end="url(#arrowhead-battery)"/>
+            
+            <!-- Grid to/from Inverter -->
+            <line id="flow-grid" x1="460" y1="230" x2="580" y2="90" stroke="#9C27B0" stroke-width="4" marker-end="url(#arrowhead-grid)"/>
+            
+            <!-- Inverter to Load -->
+            <line id="flow-load" x1="460" y1="270" x2="580" y2="290" stroke="#FF5722" stroke-width="4" marker-end="url(#arrowhead-load)"/>
+            
+            <!-- Arrow Markers -->
+            <defs>
+                <marker id="arrowhead-solar" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#FFC107"/>
+                </marker>
+                <marker id="arrowhead-battery" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#4CAF50"/>
+                </marker>
+                <marker id="arrowhead-grid" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#9C27B0"/>
+                </marker>
+                <marker id="arrowhead-load" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#FF5722"/>
+                </marker>
+            </defs>
+        </svg>
+    </div>
+    
+    <div class="power-details">
+        <div class="detail-card">
+            <h4>Energy Flow Summary</h4>
+            <table>
+                <tr>
+                    <td>Solar Generation:</td>
+                    <td><span id="detail-pv-power">{{ data.current.pv_power or 0 }}</span> W</td>
+                </tr>
+                <tr>
+                    <td>Battery Charge/Discharge:</td>
+                    <td><span id="detail-battery-power">{{ data.current.battery_power or 0 }}</span> W</td>
+                </tr>
+                <tr>
+                    <td>Grid Import/Export:</td>
+                    <td><span id="detail-grid-power">{{ data.current.grid_power or 0 }}</span> W</td>
+                </tr>
+                <tr>
+                    <td>Load Consumption:</td>
+                    <td><span id="detail-load-power">{{ data.current.load_power or 0 }}</span> W</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="detail-card">
+            <h4>System Status</h4>
+            <table>
+                <tr>
+                    <td>Inverter Temperature:</td>
+                    <td><span id="detail-inverter-temp">{{ data.current.inverter_temp or 0 }}</span> °C</td>
+                </tr>
+                <tr>
+                    <td>Battery Temperature:</td>
+                    <td><span id="detail-battery-temp">{{ data.current.battery_temp or 0 }}</span> °C</td>
+                </tr>
+                <tr>
+                    <td>System Efficiency:</td>
+                    <td>95.2%</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function updatePageData(data) {
+    // Update SVG values
+    document.getElementById('svg-pv-power').textContent = data.pv_power || 0;
+    document.getElementById('svg-battery-soc').textContent = data.battery_soc || 0;
+    document.getElementById('svg-grid-power').textContent = Math.abs(data.grid_power || 0);
+    document.getElementById('svg-load-power').textContent = data.load_power || 0;
+    document.getElementById('svg-status').textContent = data.status || 'Normal';
+    
+    // Update detail values
+    document.getElementById('detail-pv-power').textContent = data.pv_power || 0;
+    document.getElementById('detail-battery-power').textContent = data.battery_power || 0;
+    document.getElementById('detail-grid-power').textContent = data.grid_power || 0;
+    document.getElementById('detail-load-power').textContent = data.load_power || 0;
+    document.getElementById('detail-inverter-temp').textContent = data.inverter_temp || 0;
+    document.getElementById('detail-battery-temp').textContent = data.battery_temp || 0;
+    
+    // Update flow directions based on power values
+    updateFlowDirections(data);
+}
+
+function updateFlowDirections(data) {
+    // Battery flow direction
+    const batteryLine = document.getElementById('flow-battery');
+    if (data.battery_power > 0) {
+        // Discharging
+        batteryLine.setAttribute('x1', '220');
+        batteryLine.setAttribute('y1', '290');
+        batteryLine.setAttribute('x2', '340');
+        batteryLine.setAttribute('y2', '270');
+    } else {
+        // Charging
+        batteryLine.setAttribute('x1', '340');
+        batteryLine.setAttribute('y1', '270');
+        batteryLine.setAttribute('x2', '220');
+        batteryLine.setAttribute('y2', '290');
+    }
+    
+    // Grid flow direction
+    const gridLine = document.getElementById('flow-grid');
+    if (data.grid_power > 0) {
+        // Importing from grid
+        gridLine.setAttribute('x1', '580');
+        gridLine.setAttribute('y1', '90');
+        gridLine.setAttribute('x2', '460');
+        gridLine.setAttribute('y2', '230');
+    } else {
+        // Exporting to grid
+        gridLine.setAttribute('x1', '460');
+        gridLine.setAttribute('y1', '230');
+        gridLine.setAttribute('x2', '580');
+        gridLine.setAttribute('y2', '90');
+    }
+}
+
+// Initial update
+updateFlowDirections({{ data.current | tojson }});
+</script>
+{% endblock %}

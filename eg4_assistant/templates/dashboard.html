@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - EG4 Assistant{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="status-bar">
+        <div class="status-item">
+            <span class="label">Status:</span>
+            <span class="value status-normal">{{ data.current.status or 'Normal' }}</span>
+        </div>
+        <div class="status-item">
+            <span class="label">Mode:</span>
+            <span class="value">{{ data.current.mode or 'Grid-Tie' }}</span>
+        </div>
+        <div class="status-item">
+            <span class="label">Time:</span>
+            <span class="value" id="current-time">{{ data.current.timestamp or '' }}</span>
+        </div>
+    </div>
+    
+    <div class="dashboard-grid">
+        <!-- PV Input -->
+        <div class="dashboard-card">
+            <h3>Solar Input</h3>
+            <div class="metric-group">
+                <div class="metric">
+                    <span class="metric-value" id="pv-power">{{ data.current.pv_power or 0 }}</span>
+                    <span class="metric-unit">W</span>
+                </div>
+                <div class="metric-details">
+                    <div>PV1: <span id="pv1-voltage">{{ data.current.pv1_voltage or 0 }}</span>V / 
+                         <span id="pv1-current">{{ data.current.pv1_current or 0 }}</span>A</div>
+                    <div>PV2: <span id="pv2-voltage">{{ data.current.pv2_voltage or 0 }}</span>V / 
+                         <span id="pv2-current">{{ data.current.pv2_current or 0 }}</span>A</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Battery -->
+        <div class="dashboard-card">
+            <h3>Battery</h3>
+            <div class="metric-group">
+                <div class="metric">
+                    <span class="metric-value" id="battery-soc">{{ data.current.battery_soc or 0 }}</span>
+                    <span class="metric-unit">%</span>
+                </div>
+                <div class="metric-details">
+                    <div>Voltage: <span id="battery-voltage">{{ data.current.battery_voltage or 0 }}</span>V</div>
+                    <div>Current: <span id="battery-current">{{ data.current.battery_current or 0 }}</span>A</div>
+                    <div>Power: <span id="battery-power">{{ data.current.battery_power or 0 }}</span>W</div>
+                    <div>Temp: <span id="battery-temp">{{ data.current.battery_temp or 0 }}</span>°C</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Grid -->
+        <div class="dashboard-card">
+            <h3>Grid</h3>
+            <div class="metric-group">
+                <div class="metric">
+                    <span class="metric-value" id="grid-power">{{ data.current.grid_power or 0 }}</span>
+                    <span class="metric-unit">W</span>
+                </div>
+                <div class="metric-details">
+                    <div>Voltage: <span id="grid-voltage">{{ data.current.grid_voltage or 0 }}</span>V</div>
+                    <div>Frequency: <span id="grid-frequency">{{ data.current.grid_frequency or 0 }}</span>Hz</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Load -->
+        <div class="dashboard-card">
+            <h3>Load</h3>
+            <div class="metric-group">
+                <div class="metric">
+                    <span class="metric-value" id="load-power">{{ data.current.load_power or 0 }}</span>
+                    <span class="metric-unit">W</span>
+                </div>
+                <div class="metric-details">
+                    <div>Output: <span id="ac-output-voltage">{{ data.current.ac_output_voltage or 0 }}</span>V</div>
+                    <div>Frequency: <span id="ac-output-frequency">{{ data.current.ac_output_frequency or 0 }}</span>Hz</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Today's Summary -->
+    <div class="dashboard-card full-width">
+        <h3>Today's Summary</h3>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <span class="summary-label">Energy Produced:</span>
+                <span class="summary-value">{{ "%.2f"|format(data.totals.today.energy_produced) }} kWh</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Energy Consumed:</span>
+                <span class="summary-value">{{ "%.2f"|format(data.totals.today.energy_consumed) }} kWh</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Peak Power:</span>
+                <span class="summary-value" id="peak-power">0 W</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">System Efficiency:</span>
+                <span class="summary-value">95.2%</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function updatePageData(data) {
+    // Update all the values on the page
+    document.getElementById('current-time').textContent = new Date(data.timestamp).toLocaleTimeString();
+    
+    // PV
+    document.getElementById('pv-power').textContent = data.pv_power || 0;
+    document.getElementById('pv1-voltage').textContent = data.pv1_voltage || 0;
+    document.getElementById('pv1-current').textContent = data.pv1_current || 0;
+    document.getElementById('pv2-voltage').textContent = data.pv2_voltage || 0;
+    document.getElementById('pv2-current').textContent = data.pv2_current || 0;
+    
+    // Battery
+    document.getElementById('battery-soc').textContent = data.battery_soc || 0;
+    document.getElementById('battery-voltage').textContent = data.battery_voltage || 0;
+    document.getElementById('battery-current').textContent = data.battery_current || 0;
+    document.getElementById('battery-power').textContent = data.battery_power || 0;
+    document.getElementById('battery-temp').textContent = data.battery_temp || 0;
+    
+    // Grid
+    document.getElementById('grid-power').textContent = data.grid_power || 0;
+    document.getElementById('grid-voltage').textContent = data.grid_voltage || 0;
+    document.getElementById('grid-frequency').textContent = data.grid_frequency || 0;
+    
+    // Load
+    document.getElementById('load-power').textContent = data.load_power || 0;
+    document.getElementById('ac-output-voltage').textContent = data.ac_output_voltage || 0;
+    document.getElementById('ac-output-frequency').textContent = data.ac_output_frequency || 0;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,99 @@
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Virtual Environment
+solar_assistant_mount/
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+*.log
+*.db
+*.sqlite
+extracted_files/
+extracted_7z/
+
+# Solar Assistant image files (too large)
+*.img
+*.zip
+2024-08-14-solar-assistant.rpi64.img
+linux_partition.img
+solar-assistant-rpi64.img
+
+# Analysis output files
+sa_page_*.html
+sa_data_*.json
+solar_assistant_analysis.json
+eg4_iotos_analysis.json
+eg4_web_analysis.json
+
+# Temporary files
+*.tmp
+*.bak
+*.old
+
+# SSH keys
+*.pem
+*.key
+id_rsa*
+
+# Monitoring data
+monitoring_data/
+logs/
