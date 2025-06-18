@@ -6,6 +6,12 @@
 <div class="form-container">
     <h1>Add New Inverter</h1>
     
+    {% if error %}
+    <div class="alert alert-error">
+        {{ error }}
+    </div>
+    {% endif %}
+    
     <form method="POST" action="/inverters/add" class="inverter-form">
         <div class="form-group">
             <label for="name">Inverter Name *</label>

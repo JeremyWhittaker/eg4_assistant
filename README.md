@@ -1,90 +1,250 @@
-# EG4 Assistant - Web Monitoring for EG4 18kPV
+# Solar Assistant - Open Source Solar Monitoring System
 
-A web-based monitoring system for EG4 18kPV inverters with real-time data visualization.
+A comprehensive, Docker-based solar monitoring system that provides real-time monitoring, data visualization, and management capabilities for solar inverters. Originally designed for EG4 inverters but supports multiple protocols and brands.
 
-## Features
+## 🚀 Quick Start
 
-- **Real-time Monitoring**: Live data updates via WebSocket
-- **Dashboard**: Overview of all system parameters
-- **Power Flow Visualization**: Animated diagram showing energy flow
-- **Charts**: Real-time charts for power, battery, voltage, and temperature
-- **Energy Totals**: Daily, monthly, yearly, and lifetime statistics
-- **Configuration**: System settings and network status
+```bash
+# Clone the repository
+git clone git@github.com:JeremyWhittaker/solar_assistant.git
+cd solar_assistant/docker
 
-## Installation
+# Initial setup
+make install
 
-1. Install dependencies:
+# Start the system
+make up
+```
+
+Access the web interface at: http://localhost
+
+## 🌟 Features
+
+### Core Features
+- **Multi-Inverter Support**: Monitor unlimited inverters simultaneously
+- **Multi-Protocol Support**: IoTOS (EG4), Modbus TCP/RTU, expandable
+- **Real-time Monitoring**: 5-second update intervals via WebSocket
+- **Data Persistence**: SQLite with automatic backups
+- **Time Series Storage**: InfluxDB for long-term data analysis
+- **MQTT Integration**: Publish data and receive commands
+- **Alert System**: Configurable alerts with multiple notification methods
+- **Data Export**: CSV, JSON, Excel formats
+- **RESTful API**: Full API for third-party integration
+- **Mobile Responsive**: Works on all devices
+
+### Advanced Features
+- **Docker Containerized**: Easy deployment and scaling
+- **Microservices Architecture**: Modular and maintainable
+- **Automatic Backups**: Scheduled database backups with retention
+- **Energy Reports**: Daily/monthly/yearly statistics
+- **Weather Integration**: (Coming soon)
+- **Energy Prediction**: (Coming soon)
+
+## 📦 Installation Options
+
+### Option 1: Docker (Recommended)
+The Docker implementation provides a complete, production-ready system with all dependencies managed.
+
+```bash
+cd docker
+cp .env.example .env
+# Edit .env with your settings
+make up
+```
+
+### Option 2: Standalone Python
+For development or testing on a single machine.
+
 ```bash
 cd eg4_assistant
 pip install -r requirements.txt
+python app_v2.py
 ```
 
-2. Configure your EG4 inverter details in `.env`:
-```env
-EG4_IP=172.16.107.53
-EG4_WEB_IP=172.16.107.3
-EG4_WEB_URL=http://172.16.107.53/index_en.html
-EG4_USERNAME=admin
-EG4_PASSWORD=admin
+## 🏗️ Architecture
+
+### Docker Architecture
+```
+┌─────────────────┐     ┌──────────────┐     ┌─────────────┐
+│   Web Browser   │────▶│  Nginx (80)  │────▶│ Flask App   │
+└─────────────────┘     └──────────────┘     └─────────────┘
+                                                     │
+                              ┌──────────────────────┴───────────────────┐
+                              │                                          │
+                        ┌─────▼─────┐  ┌──────────┐  ┌────────┐  ┌─────▼────┐
+                        │  SQLite   │  │ InfluxDB │  │  MQTT  │  │  Redis   │
+                        └───────────┘  └──────────┘  └────────┘  └──────────┘
 ```
 
-3. Run the application:
+### Communication Flow
+```
+┌─────────────┐     Protocol      ┌──────────────┐     WebSocket    ┌─────────────┐
+│  Inverters  │ ◄─────────────► │ Solar Assistant│ ◄──────────────► │ Web Browser │
+│             │   IoTOS/Modbus   │     Server     │                   │             │
+└─────────────┘                  └──────────────┘                   └─────────────┘
+```
+
+## ⚙️ Configuration
+
+### Inverter Configuration
+Edit `config/config.yaml` to add your inverters:
+
+```yaml
+inverters:
+  - name: "EG4 18kPV Primary"
+    type: "eg4_18kpv"
+    protocol: "iotos"
+    host: "192.168.1.100"
+    port: 8000
+    enabled: true
+    
+  - name: "Generic Modbus Inverter"
+    type: "generic"
+    protocol: "modbus_tcp"
+    host: "192.168.1.101"
+    port: 502
+    unit_id: 1
+    enabled: true
+```
+
+### System Configuration
+- **Update Interval**: How often to poll inverters (default: 5 seconds)
+- **Data Retention**: How long to keep historical data (default: 30 days)
+- **MQTT Settings**: Broker connection and topics
+- **Alert Rules**: Define conditions for notifications
+
+## 📊 API Documentation
+
+### RESTful Endpoints
+- `GET /api/status` - System status and totals
+- `GET /api/inverters` - List all inverters
+- `GET /api/data/<inverter>/<period>` - Historical data
+- `GET /api/config` - Current configuration
+- `POST /api/config` - Update configuration
+- `GET /api/export/<format>` - Export data
+
+### WebSocket Events
+- `system_update` - Real-time system status
+- `inverter_update` - Individual inverter data
+- `alert` - System alerts
+
+### MQTT Topics
+Publishing:
+- `solar-assistant/system/status` - System totals
+- `solar-assistant/inverter/<name>` - Individual inverter data
+
+Subscribing:
+- `solar-assistant/command/+` - System commands
+- `solar-assistant/set/+` - Configuration changes
+
+## 🔧 Development
+
+### Project Structure
+```
+solar_assistant/
+├── docker/                 # Docker configuration
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   └── requirements.txt
+├── config/                 # Configuration files
+│   └── config.yaml
+├── eg4_assistant/         # Standalone version
+│   ├── app.py            # V1 (single inverter)
+│   └── app_v2.py         # V2 (multi-inverter)
+├── solar_assistant_server.py  # Docker main app
+├── mqtt_bridge.py         # MQTT service
+├── data_collector.py      # Background tasks
+└── database.py            # Database models
+```
+
+### Adding Protocol Support
+1. Create a new client in `protocol_clients/`
+2. Implement the standard interface
+3. Add to `solar_assistant_server.py`
+4. Update configuration schema
+
+### Running Tests
 ```bash
-python app.py
+make test
 ```
 
-4. Access the web interface at: http://localhost:5000
+## 🚀 Deployment
 
-## Architecture
+### Production Deployment
+1. Use a reverse proxy with SSL (nginx, Traefik)
+2. Set strong passwords in `.env`
+3. Configure firewall rules
+4. Enable automatic backups
+5. Set up monitoring
 
+### Scaling
+- Run multiple instances behind a load balancer
+- Use external PostgreSQL for larger deployments
+- Implement Redis for session storage
+
+## 🔄 Migration Guide
+
+### From EG4 Assistant V1/V2
+1. Export your data: `python export_data.py`
+2. Stop the old service
+3. Start Docker version
+4. Import data: `make restore file=backup.db`
+
+### From Other Systems
+Use the API to import historical data or configure MQTT bridging.
+
+## 🛠️ Troubleshooting
+
+### Common Issues
+1. **Connection Failed**: Check inverter IP and firewall
+2. **No Data**: Verify protocol settings match inverter
+3. **High CPU**: Reduce update interval or inverter count
+
+### Debug Commands
+```bash
+# View logs
+make logs
+
+# Access container
+make shell
+
+# Check service status
+make status
 ```
-┌─────────────┐     IoTOS      ┌──────────────┐     WebSocket    ┌─────────────┐
-│ EG4 18kPV   │ ◄─────────────► │ EG4 Assistant │ ◄──────────────► │ Web Browser │
-│ 172.16.107.53│     Port 8000  │ Flask Server │                   │             │
-└─────────────┘                 └──────────────┘                   └─────────────┘
-```
 
-## IoTOS Protocol
+## 📈 Roadmap
 
-The EG4 18kPV uses the IoTOS protocol on port 8000:
-- Binary protocol with 0xA1 header
-- Contains serial number and device ID
-- Real-time inverter data embedded in responses
+- [ ] Mobile app (PWA)
+- [ ] Cloud connectivity
+- [ ] Machine learning predictions
+- [ ] Voice control integration
+- [ ] Advanced battery management
+- [ ] Grid trading automation
 
-## API Endpoints
+## 🤝 Contributing
 
-- `/` - Dashboard
-- `/charts` - Real-time charts
-- `/totals` - Energy statistics
-- `/power` - Power flow visualization
-- `/configuration` - System settings
-- `/api/current` - Current inverter data (JSON)
-- `/api/history` - Historical data (JSON)
-- `/api/totals` - Energy totals (JSON)
-- `/api/configuration` - Configuration (JSON)
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
-## WebSocket Events
+## 📄 License
 
-- `connect` - Client connected
-- `disconnect` - Client disconnected
-- `inverter_update` - Real-time data update
-- `request_update` - Manual update request
+MIT License - see LICENSE file for details
 
-## Development
+## 🙏 Acknowledgments
 
-The system consists of:
-- `app.py` - Main Flask application
-- `eg4_iotos_client.py` - EG4 communication client
-- `templates/` - HTML templates
-- `static/` - CSS and JavaScript files
+- Inspired by Solar Assistant commercial product
+- Built on the shoulders of open source giants
+- Community contributions and feedback
 
-## Testing
+## 📞 Support
 
-Test scripts included:
-- `test_eg4_connection.py` - Test inverter connectivity
-- `eg4_iotos_client.py` - Protocol discovery
-- `eg4_monitor_alerts.py` - Monitoring with email alerts
+- GitHub Issues: [Report bugs or request features](https://github.com/JeremyWhittaker/solar_assistant/issues)
+- Documentation: See `/docker/README.md` for detailed Docker setup
+- Wiki: Coming soon
 
-## License
+---
 
-MIT License
+Made with ❤️ for the solar community

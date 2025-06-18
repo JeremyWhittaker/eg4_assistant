@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  solar-assistant:
+    build: .
+    container_name: solar-assistant
+    restart: unless-stopped
+    ports:
+      - "80:80"           # Web interface
+      - "5000:5000"       # API/WebSocket
+      - "1883:1883"       # MQTT
+      - "8000:8000"       # IoTOS protocol
+      - "502:502"         # Modbus TCP
+    volumes:
+      - ./data:/data
+      - ./config:/app/config
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=${TZ:-UTC}
+      - FLASK_ENV=production
+      - DATABASE_PATH=/data/db/solar_assistant.db
+      - LOG_PATH=/data/logs
+      - CONFIG_PATH=/app/config/config.yaml
+    networks:
+      - solar-net
+    depends_on:
+      - mqtt
+      - influxdb
+
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: solar-mqtt
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    networks:
+      - solar-net
+
+  influxdb:
+    image: influxdb:2.7-alpine
+    container_name: solar-influxdb
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    volumes:
+      - ./influxdb/data:/var/lib/influxdb2
+      - ./influxdb/config:/etc/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=solarpassword123
+      - DOCKER_INFLUXDB_INIT_ORG=solar-assistant
+      - DOCKER_INFLUXDB_INIT_BUCKET=solar-data
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=solar-assistant-token
+    networks:
+      - solar-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: solar-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis/data:/data
+    networks:
+      - solar-net
+
+networks:
+  solar-net:
+    driver: bridge

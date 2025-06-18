@@ -1,0 +1,62 @@
+# Web Framework
+Flask==3.0.0
+flask-socketio==5.3.5
+flask-cors==4.0.0
+
+# WebSocket
+python-socketio==5.10.0
+simple-websocket==1.0.0
+
+# Database
+SQLAlchemy==2.0.23
+alembic==1.13.0
+
+# Time Series Database
+influxdb-client==1.38.0
+
+# MQTT
+paho-mqtt==1.6.1
+
+# Modbus
+pymodbus==3.5.2
+pyserial==3.5
+
+# Async
+aiohttp==3.9.1
+asyncio==3.4.3
+
+# Scheduling
+APScheduler==3.10.4
+schedule==1.2.0
+
+# Data Processing
+pandas==2.1.4
+numpy==1.26.2
+
+# Configuration
+PyYAML==6.0.1
+python-dotenv==1.0.0
+
+# Monitoring & Logging
+prometheus-client==0.19.0
+python-json-logger==2.0.7
+
+# Utilities
+requests==2.31.0
+python-dateutil==2.8.2
+pytz==2023.3
+redis==5.0.1
+
+# Export formats
+openpyxl==3.1.2
+xlsxwriter==3.1.9
+
+# Security
+cryptography==41.0.7
+PyJWT==2.8.0
+
+# Development
+pytest==7.4.3
+pytest-asyncio==0.21.1
+black==23.12.0
+flake8==6.1.0

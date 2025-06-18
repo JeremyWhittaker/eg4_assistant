@@ -1,0 +1,115 @@
+# Solar Assistant Configuration File
+# This file persists between container restarts
+
+system:
+  name: "Solar Assistant"
+  timezone: "UTC"
+  locale: "en_US"
+  update_interval: 5  # seconds
+  data_retention: 30  # days
+
+web_server:
+  host: "0.0.0.0"
+  port: 5000
+  debug: false
+  secret_key: "change-this-secret-key-in-production"
+  session_timeout: 3600  # seconds
+
+database:
+  type: "sqlite"
+  path: "/data/db/solar_assistant.db"
+  backup:
+    enabled: true
+    interval: 86400  # daily backups
+    retention: 7  # keep 7 backups
+
+influxdb:
+  enabled: true
+  host: "influxdb"
+  port: 8086
+  token: "solar-assistant-token"
+  org: "solar-assistant"
+  bucket: "solar-data"
+
+mqtt:
+  enabled: true
+  host: "mqtt"
+  port: 1883
+  username: ""
+  password: ""
+  topics:
+    prefix: "solar-assistant"
+    publish_interval: 10  # seconds
+    qos: 1
+    retain: true
+
+inverters:
+  # Example inverter configuration
+  # - name: "EG4 18kPV"
+  #   type: "eg4_18kpv"
+  #   protocol: "iotos"
+  #   host: "192.168.1.100"
+  #   port: 8000
+  #   enabled: true
+  #   polling_interval: 5
+
+modbus:
+  timeout: 3
+  retry_count: 3
+  retry_delay: 1
+
+alerts:
+  enabled: true
+  email:
+    enabled: false
+    smtp_host: ""
+    smtp_port: 587
+    smtp_user: ""
+    smtp_password: ""
+    from_address: ""
+    to_addresses: []
+  
+  rules:
+    - name: "Battery Low"
+      condition: "battery_soc < 20"
+      severity: "warning"
+      cooldown: 3600
+    
+    - name: "Grid Lost"
+      condition: "grid_status == 0"
+      severity: "critical"
+      cooldown: 300
+    
+    - name: "Overload"
+      condition: "load_percentage > 90"
+      severity: "warning"
+      cooldown: 600
+
+export:
+  formats: ["csv", "json", "excel"]
+  path: "/data/exports"
+  
+api:
+  enabled: true
+  auth_required: false
+  rate_limit:
+    enabled: true
+    requests_per_minute: 60
+  cors:
+    enabled: true
+    origins: ["*"]
+
+logging:
+  level: "INFO"
+  path: "/data/logs"
+  max_size: "10MB"
+  backup_count: 5
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+features:
+  weather_integration: false
+  energy_prediction: false
+  auto_backup: true
+  remote_access: false
+  mobile_app: false
+  voice_control: false

@@ -141,6 +141,13 @@ class Database:
         row = cursor.fetchone()
         return dict(row) if row else None
     
+    def get_inverter_by_serial(self, serial_number: str) -> Dict:
+        """Get inverter by serial number"""
+        cursor = self.conn.cursor()
+        cursor.execute('SELECT * FROM inverters WHERE serial_number = ?', (serial_number,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    
     def update_inverter(self, inverter_id: int, **kwargs):
         """Update inverter settings"""
         allowed_fields = ['name', 'model', 'ip_address', 'port', 'protocol', 'serial_number', 'modbus_address']
