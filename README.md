@@ -37,6 +37,7 @@ Access the web interface at: http://localhost
 - **Microservices Architecture**: Modular and maintainable
 - **Automatic Backups**: Scheduled database backups with retention
 - **Energy Reports**: Daily/monthly/yearly statistics
+- **EG4 Cloud Monitor**: Remote monitoring via monitor.eg4electronics.com
 - **Weather Integration**: (Coming soon)
 - **Energy Prediction**: (Coming soon)
 
@@ -60,6 +61,17 @@ cd eg4_assistant
 pip install -r requirements.txt
 python app_v2.py
 ```
+
+### Option 3: EG4 Cloud Monitor
+For remote monitoring through EG4's cloud service.
+
+```bash
+pip install playwright python-dotenv
+playwright install chromium
+python3 eg4_soc_monitor.py
+```
+
+See [EG4_CLOUD_MONITOR.md](EG4_CLOUD_MONITOR.md) for detailed setup.
 
 ## 🏗️ Architecture
 
