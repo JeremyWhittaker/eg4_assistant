@@ -68,10 +68,10 @@ For remote monitoring through EG4's cloud service.
 ```bash
 pip install playwright python-dotenv
 playwright install chromium
-python3 eg4_soc_monitor.py
+python3 eg4_monitor.py
 ```
 
-See [EG4_CLOUD_MONITOR.md](EG4_CLOUD_MONITOR.md) for detailed setup.
+See [docs/EG4_CLOUD_MONITOR.md](docs/EG4_CLOUD_MONITOR.md) for detailed setup.
 
 ## 🏗️ Architecture
 

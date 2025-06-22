@@ -6,10 +6,10 @@ services:
     container_name: solar-assistant
     restart: unless-stopped
     ports:
-      - "80:80"           # Web interface
-      - "5000:5000"       # API/WebSocket
-      - "1883:1883"       # MQTT
-      - "8000:8000"       # IoTOS protocol
+      - "8500:80"         # Web interface
+      - "5001:5000"       # API/WebSocket
+      - "1884:1883"       # MQTT
+      - "8001:8000"       # IoTOS protocol
       - "502:502"         # Modbus TCP
     volumes:
       - ./data:/data
@@ -22,6 +22,12 @@ services:
       - DATABASE_PATH=/data/db/solar_assistant.db
       - LOG_PATH=/data/logs
       - CONFIG_PATH=/app/config/config.yaml
+      - INVERTER_IP=${INVERTER_IP:-172.16.107.129}
+      - INVERTER_PORT=${INVERTER_PORT:-8000}
+      - POLL_INTERVAL=${POLL_INTERVAL:-5}
+      - SOLAR_ASSISTANT_HOST=172.16.106.13
+      - SOLAR_ASSISTANT_USER=solar-assistant
+      - SOLAR_ASSISTANT_PASS=solar123
     networks:
       - solar-net
     depends_on:
@@ -33,8 +39,8 @@ services:
     container_name: solar-mqtt
     restart: unless-stopped
     ports:
-      - "1883:1883"
-      - "9001:9001"
+      - "1884:1883"
+      - "9002:9001"
     volumes:
       - ./mosquitto/config:/mosquitto/config
       - ./mosquitto/data:/mosquitto/data

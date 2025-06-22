@@ -26,10 +26,8 @@ class EG4IoTOSClient:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.settimeout(10)
             self.socket.connect((self.host, self.port))
-            print(f"✓ Connected to {self.host}:{self.port}")
             return True
-        except Exception as e:
-            print(f"✗ Failed to connect: {e}")
+        except Exception:
             return False
     
     def disconnect(self):
@@ -41,28 +39,24 @@ class EG4IoTOSClient:
     def send_receive(self, data, timeout=5):
         """Send data and receive response"""
         if not self.socket:
-            print("Not connected!")
             return None
             
         try:
-            print(f"\nSending: {binascii.hexlify(data)}")
+            # Send data without printing (to avoid BrokenPipeError on print)
             self.socket.send(data)
             
             self.socket.settimeout(timeout)
             response = self.socket.recv(4096)
             
-            if response:
-                print(f"Received: {binascii.hexlify(response)[:100]}...")
-                return response
-            else:
-                print("No response received")
-                return None
+            return response if response else None
                 
         except socket.timeout:
-            print("Response timeout")
             return None
-        except Exception as e:
-            print(f"Error: {e}")
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            # Connection issues - silently fail
+            return None
+        except Exception:
+            # Any other error - silently fail
             return None
     
     def decode_response(self, response):

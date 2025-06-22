@@ -13,7 +13,7 @@ build: ## Build Docker images
 
 up: ## Start all services
 	docker-compose up -d
-	@echo "Solar Assistant is running at http://localhost"
+	@echo "Solar Assistant is running at http://localhost:8500"
 
 down: ## Stop all services
 	docker-compose down

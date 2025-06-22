@@ -8,12 +8,12 @@ import json
 
 def test_connection():
     print("Testing connection to EG4 18kPV inverter...")
-    print("IP: 172.16.107.53")
+    print("IP: 172.16.107.129")
     print("Port: 8000")
     print("Protocol: IoTOS")
     print("-" * 50)
     
-    client = EG4IoTOSClient(host='172.16.107.53', port=8000)
+    client = EG4IoTOSClient(host='172.16.107.129', port=8000)
     
     if client.connect():
         print("✓ Connected successfully!")
