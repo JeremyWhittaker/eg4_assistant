@@ -20,7 +20,7 @@ def check_influx_raw():
     """Check InfluxDB raw queries"""
     
     # SSH connection details
-    host = "172.16.106.13"
+    host = "172.16.109.214"
     username = "solar-assistant"
     password = "solar123"
     

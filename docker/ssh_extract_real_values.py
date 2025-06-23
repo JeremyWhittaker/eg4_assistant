@@ -17,7 +17,7 @@ def extract_real_values():
     """Extract real values from Solar Assistant"""
     
     # SSH connection details
-    host = "172.16.106.13"
+    host = "172.16.109.214"
     username = "solar-assistant"
     password = "solar123"
     

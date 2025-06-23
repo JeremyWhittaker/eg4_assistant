@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # SSH commands to run on Solar Assistant server
-HOST="172.16.106.13"
+HOST="172.16.109.214"
 USER="solar-assistant"
 PASS="solar123"
 
@@ -52,7 +52,7 @@ EOF
 
 # Note to user about manual SSH
 echo "Please run the following command manually to connect to Solar Assistant:"
-echo "ssh solar-assistant@172.16.106.13"
+echo "ssh solar-assistant@172.16.109.214"
 echo "Password: solar123"
 echo ""
 echo "Then copy and paste these commands:"

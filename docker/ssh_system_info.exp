@@ -1,7 +1,7 @@
 #!/usr/bin/expect -f
 
 set timeout 30
-spawn ssh solar-assistant@172.16.106.13
+spawn ssh solar-assistant@172.16.109.214
 
 expect {
     "yes/no" {

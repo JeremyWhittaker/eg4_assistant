@@ -1,12 +1,12 @@
 #!/bin/bash
 # Script to analyze Solar Assistant structure via SSH
 
-SSH_HOST="solar-assistant@172.16.106.13"
+SSH_HOST="solar-assistant@172.16.109.214"
 SSH_PASS="solar123"
 
 echo "=== Analyzing Solar Assistant Web Application ==="
 echo "Please run this script manually with:"
-echo "ssh solar-assistant@172.16.106.13"
+echo "ssh solar-assistant@172.16.109.214"
 echo "Password: solar123"
 echo ""
 echo "Then run these commands:"

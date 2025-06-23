@@ -6,7 +6,7 @@ import json
 from real_data_collector import RealDataCollector
 
 # Set environment variables for testing
-os.environ['SOLAR_ASSISTANT_HOST'] = '172.16.106.13'
+os.environ['SOLAR_ASSISTANT_HOST'] = '172.16.109.214'
 os.environ['SOLAR_ASSISTANT_USER'] = 'solar-assistant'  
 os.environ['SOLAR_ASSISTANT_PASS'] = 'solar123'
 

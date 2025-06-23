@@ -1,7 +1,7 @@
 # Solar Assistant Web Interface Analysis
 
 ## Overview
-Solar Assistant is a Phoenix/Elixir-based web application that provides real-time monitoring and control of solar inverters. Based on my analysis of http://172.16.106.13/, here are the key findings:
+Solar Assistant is a Phoenix/Elixir-based web application that provides real-time monitoring and control of solar inverters. Based on my analysis of http://172.16.109.214/, here are the key findings:
 
 ## 1. Web Technology Stack
 - **Framework**: Phoenix LiveView (Elixir web framework)
@@ -75,7 +75,7 @@ For the EG4 inverter connected via network:
 ```
 EG4 Inverter (172.16.107.129)
     ↓ (Modbus TCP)
-Solar Assistant (172.16.106.13)
+Solar Assistant (172.16.109.214)
     ↓ (Phoenix LiveView WebSocket)
 Web Browser (Real-time updates)
     ↓ (MQTT - optional)
@@ -85,7 +85,7 @@ External systems
 ## 7. How to Access the Data
 
 ### Option 1: MQTT (Recommended)
-1. Connect to MQTT broker at 172.16.106.13:1883
+1. Connect to MQTT broker at 172.16.109.214:1883
 2. Subscribe to topics (need to determine exact topic structure)
 3. Parse JSON messages for real-time data
 

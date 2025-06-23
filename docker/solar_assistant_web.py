@@ -69,7 +69,7 @@ current_data = {
         "weekly_pv_kwh": 0,
         "monthly_pv_kwh": 0
     },
-    "error": "Waiting for data from Solar Assistant at 172.16.106.13..."
+    "error": "Waiting for data from Solar Assistant at 172.16.109.214..."
 }
 
 def load_latest_data():
@@ -162,7 +162,7 @@ def data_updater():
                 })
             else:
                 # Show error
-                error_msg = real_data.get('error', 'Cannot connect to Solar Assistant at 172.16.106.13')
+                error_msg = real_data.get('error', 'Cannot connect to Solar Assistant at 172.16.109.214')
                 current_data.update({
                     'timestamp': datetime.now().isoformat(),
                     'inverter': {

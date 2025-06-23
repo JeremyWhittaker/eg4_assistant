@@ -20,7 +20,7 @@ def execute_commands(ssh, commands):
 
 def main():
     # SSH connection parameters
-    hostname = '172.16.106.13'
+    hostname = '172.16.109.214'
     username = 'solar-assistant'
     password = 'solar123'
     

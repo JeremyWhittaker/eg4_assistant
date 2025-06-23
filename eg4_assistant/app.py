@@ -46,7 +46,7 @@ inverter_data = {
         'inverter_ip': '172.16.107.53',
         'wifi_ssid': 'Whittakers 🟩🟩🟩🟩🟩🟩',
         'wifi_status': 'Connected',
-        'local_ip': '172.16.106.13',
+        'local_ip': '172.16.109.214',
         'internet_ip': '70.166.112.82',
         'timezone': 'America/Phoenix',
         'mqtt_enabled': True,

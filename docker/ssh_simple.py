@@ -5,7 +5,7 @@ import time
 def run_ssh_command():
     try:
         # Connect to SSH
-        child = pexpect.spawn('ssh solar-assistant@172.16.106.13')
+        child = pexpect.spawn('ssh solar-assistant@172.16.109.214')
         child.timeout = 30
         
         # Handle authentication

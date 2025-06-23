@@ -8,7 +8,7 @@ from datetime import datetime
 
 class RealDataCollector:
     def __init__(self):
-        self.host = os.environ.get('SOLAR_ASSISTANT_HOST', '172.16.106.13')
+        self.host = os.environ.get('SOLAR_ASSISTANT_HOST', '172.16.109.214')
         self.username = os.environ.get('SOLAR_ASSISTANT_USER', 'solar-assistant')
         self.password = os.environ.get('SOLAR_ASSISTANT_PASS', 'solar123')
         self.data = {}

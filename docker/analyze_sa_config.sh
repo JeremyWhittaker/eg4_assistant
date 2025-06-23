@@ -4,7 +4,7 @@
 echo "=== Solar Assistant Configuration Analysis ==="
 echo "Please SSH into the Solar Assistant and run these commands:"
 echo ""
-echo "ssh solar-assistant@172.16.106.13"
+echo "ssh solar-assistant@172.16.109.214"
 echo "Password: solar123"
 echo ""
 echo "Then execute:"

@@ -6,7 +6,7 @@ import websocket
 from urllib.parse import urlparse
 
 # Solar Assistant URL
-BASE_URL = "http://172.16.106.13"
+BASE_URL = "http://172.16.109.214"
 
 # Session to maintain cookies
 session = requests.Session()
@@ -55,7 +55,7 @@ def analyze_websocket():
     print("\n=== Analyzing WebSocket ===")
     
     # Check for Phoenix LiveView WebSocket
-    ws_url = f"ws://172.16.106.13/live/websocket?_csrf_token=&vsn=2.0.0"
+    ws_url = f"ws://172.16.109.214/live/websocket?_csrf_token=&vsn=2.0.0"
     print(f"Attempting WebSocket connection to: {ws_url}")
     
     try:
@@ -137,7 +137,7 @@ def check_influxdb_query():
     
     # InfluxDB might be on port 8086
     try:
-        response = requests.get("http://172.16.106.13:8086/query?db=solar_assistant&q=SHOW MEASUREMENTS", timeout=5)
+        response = requests.get("http://172.16.109.214:8086/query?db=solar_assistant&q=SHOW MEASUREMENTS", timeout=5)
         print(f"InfluxDB direct access: {response.status_code}")
         if response.status_code == 200:
             print(f"Data: {response.text[:200]}...")

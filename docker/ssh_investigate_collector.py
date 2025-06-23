@@ -6,7 +6,7 @@ import time
 def run_ssh_commands():
     try:
         # SSH connection details
-        host = "172.16.106.13"
+        host = "172.16.109.214"
         user = "solar-assistant"
         password = "solar123"
         

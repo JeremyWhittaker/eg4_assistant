@@ -7,8 +7,8 @@ import re
 
 class SolarAssistantLiveCapture:
     def __init__(self):
-        self.base_url = "http://172.16.106.13"
-        self.ws_url = "ws://172.16.106.13/live/websocket?vsn=2.0.0"
+        self.base_url = "http://172.16.109.214"
+        self.ws_url = "ws://172.16.109.214/live/websocket?vsn=2.0.0"
         self.session = requests.Session()
         self.ws = None
         self.message_count = 0

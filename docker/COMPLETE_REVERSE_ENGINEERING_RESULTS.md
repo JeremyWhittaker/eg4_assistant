@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-Solar Assistant at 172.16.106.13 is a Phoenix/Elixir application (not Python) that's currently misconfigured. It's trying to connect to the EG4 inverter at 172.16.107.129:8000 but failing due to incorrect protocol configuration.
+Solar Assistant at 172.16.109.214 is a Phoenix/Elixir application (not Python) that's currently misconfigured. It's trying to connect to the EG4 inverter at 172.16.107.129:8000 but failing due to incorrect protocol configuration.
 
 ## Technical Details
 
@@ -11,7 +11,7 @@ Solar Assistant at 172.16.106.13 is a Phoenix/Elixir application (not Python) th
 - **Framework**: Phoenix LiveView (Elixir/Erlang)
 - **Process Name**: `influx-bridge` (beam.smp - Erlang VM)
 - **PID**: 583
-- **WebSocket**: `ws://172.16.106.13/live/websocket?vsn=2.0.0`
+- **WebSocket**: `ws://172.16.109.214/live/websocket?vsn=2.0.0`
 - **Data Storage**: InfluxDB (local)
 - **MQTT Broker**: Mosquitto on port 1883
 
@@ -19,7 +19,7 @@ Solar Assistant at 172.16.106.13 is a Phoenix/Elixir application (not Python) th
 
 From `netstat` output, Solar Assistant is attempting to connect to:
 ```
-172.16.106.13:56130 -> 172.16.107.129:8000 SYN_SENT
+172.16.109.214:56130 -> 172.16.107.129:8000 SYN_SENT
 ```
 
 This confirms:

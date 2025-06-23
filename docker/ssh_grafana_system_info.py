@@ -20,7 +20,7 @@ def execute_commands(ssh, commands):
 
 def main():
     # SSH connection parameters
-    hostname = '172.16.106.13'
+    hostname = '172.16.109.214'
     username = 'solar-assistant'
     password = 'solar123'
     
@@ -79,8 +79,8 @@ def main():
             
             # Direct Solar Assistant access
             "echo '\n=== 9. Direct Solar Assistant Access ==='",
-            "curl -s 'http://172.16.106.13/' | head -100",
-            "curl -s 'http://172.16.106.13/api/stats' 2>&1 | head -50",
+            "curl -s 'http://172.16.109.214/' | head -100",
+            "curl -s 'http://172.16.109.214/api/stats' 2>&1 | head -50",
             
             # Final check for monitoring
             "echo '\n=== 10. Process Monitoring ==='",

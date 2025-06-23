@@ -20,7 +20,7 @@ def investigate_luxpower_config():
     """SSH into Solar Assistant and investigate Luxpower configuration"""
     
     # SSH connection details
-    host = "172.16.106.13"
+    host = "172.16.109.214"
     username = "solar-assistant"
     password = "solar123"
     

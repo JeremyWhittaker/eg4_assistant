@@ -1,0 +1,288 @@
+/* Solar Assistant Gauge Styles */
+
+/* Card Styles */
+.card {
+    box-sizing: border-box;
+    background: #fff;
+    border: 1px solid #efefef;
+    border-radius: 3px;
+    margin-bottom: .5em;
+}
+
+.card .card-section {
+    padding: 40px;
+}
+
+.card .card-section:not(:first-child) {
+    border-top: 1px solid #efefef;
+}
+
+@media only screen and (max-width: 78em) {
+    .card .card-section {
+        padding: 30px;
+    }
+}
+
+@media only screen and (max-width: 62em) {
+    .card .card-section {
+        padding: 20px;
+    }
+}
+
+@media only screen and (max-width: 46em) {
+    .card .card-section {
+        padding: 15px;
+    }
+}
+
+/* Dashboard Specific */
+.dashboard .dashboard-gauges,
+.dashboard .dashboard-info {
+    justify-content: space-evenly;
+    padding: 0 8px;
+}
+
+/* Flex Grid */
+.flex-grid {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: stretch;
+    gap: 4px;
+}
+
+.flex {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.flex .half {
+    flex-basis: 50%;
+}
+
+/* Gauge Styles */
+.gauge {
+    position: relative;
+    width: 11.5em;
+    margin-left: auto;
+    margin-right: auto;
+    padding-top: 2em;
+    padding-bottom: 2em;
+}
+
+@media only screen and (max-width: 62em) {
+    .gauge {
+        padding-top: 1.5em;
+        padding-bottom: 1.5em;
+    }
+}
+
+.gauge .mask {
+    display: block;
+    position: relative;
+    overflow: hidden;
+    width: 11.5em;
+    height: 5.75em;
+}
+
+.gauge .semi-circle {
+    position: relative;
+    display: block;
+    margin: 1px 1px 0;
+    width: calc(11.5em - 2px);
+    height: calc(5.75em - 1px);
+    border-radius: 50% 50% 50% 50%/100% 100% 0 0;
+}
+
+/* Color Gradients */
+.gauge .semi-circle.red {
+    background: linear-gradient(-75deg, #ffa200, red, #ff664d, red);
+    background-size: 400% 400%;
+    animation: animated-gradient 5s ease infinite;
+}
+
+.gauge .semi-circle.blue {
+    background: linear-gradient(-45deg, #00b7ff, #001aff, #6588e8, #0048ff);
+    background-size: 400% 400%;
+    animation: animated-gradient 5s ease infinite;
+}
+
+.gauge .semi-circle.yellow {
+    background: linear-gradient(-120deg, #fff900, #ffb100, #ffe500, #ffe396);
+    background-size: 400% 400%;
+    animation: animated-gradient 10s ease infinite;
+}
+
+.gauge .semi-circle.green {
+    background: linear-gradient(120deg, #3bff29, #3e9e00, #00ff0f, #92ff7f);
+    background-size: 400% 400%;
+    animation: animated-gradient 3s ease infinite;
+}
+
+/* Inner white circle */
+.gauge .semi-circle:before {
+    display: block;
+    position: absolute;
+    bottom: -2px;
+    content: "";
+    left: 50%;
+    z-index: 2;
+    width: 8.5em;
+    height: 4.25em;
+    margin-left: -4.25em;
+    background: #fff;
+    border-radius: 50% 50% 50% 50%/100% 100% 0 0;
+}
+
+/* Mask for gauge rotation */
+.gauge .semi-circle--mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 11.5em;
+    height: 11.5em;
+    background: transparent;
+    transform: rotate(0deg);
+    transform-origin: center center;
+    backface-visibility: hidden;
+    transition: all .3s ease-in-out;
+}
+
+.gauge .semi-circle--mask:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    display: block;
+    width: 11.5em;
+    height: 5.75em;
+    background: #efefef;
+    border-radius: 50% 50% 50% 50%/100% 100% 0 0;
+}
+
+/* Value and Label */
+.gauge .value {
+    position: absolute;
+    bottom: 3.5em;
+    width: 11.5em;
+    text-align: center;
+    font-weight: 700;
+    z-index: 3;
+}
+
+@media only screen and (max-width: 62em) {
+    .gauge .value {
+        bottom: 3em;
+    }
+}
+
+.gauge .label {
+    position: absolute;
+    bottom: 2em;
+    width: 11.5em;
+    text-align: center;
+    font-size: 1em;
+    z-index: 3;
+}
+
+@media only screen and (max-width: 62em) {
+    .gauge .label {
+        bottom: 1.5em;
+    }
+}
+
+/* Animated Gradient */
+@keyframes animated-gradient {
+    0% {
+        background-position: 0 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    to {
+        background-position: 0 50%;
+    }
+}
+
+/* Status Styles */
+.status,
+a.status,
+a.status:visited {
+    display: flex;
+    width: 16em;
+    margin: 2em auto;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: #464c54;
+}
+
+.status > img {
+    width: 80px;
+    height: 80px;
+    flex: none;
+    padding: 15px;
+    border: 2px solid #efefef;
+    box-shadow: 5px 5px 10px -10px rgba(0, 0, 0, .05);
+    border-radius: 3px;
+    background: linear-gradient(90deg, #fff, #f7f7f7);
+}
+
+.status > div {
+    width: calc(100% - 68px);
+    margin-left: 1.5em;
+}
+
+.status > div .label {
+    display: flex;
+    font-weight: 700;
+}
+
+.status > div .value {
+    display: flex;
+    align-items: center;
+    line-height: 1.4em;
+}
+
+/* Battery Change Indicator */
+.dashboard .battery-change {
+    font-size: 9pt;
+    font-weight: 500;
+}
+
+.dashboard .battery-change .negative:before {
+    position: absolute;
+    margin-left: -.6em;
+    content: "-";
+}
+
+.dashboard .battery-change .positive:before {
+    position: absolute;
+    margin-left: -.7em;
+    content: "+";
+}
+
+/* Color Classes */
+span.positive {
+    color: #5ebb87;
+}
+
+span.negative {
+    color: #f9584b;
+}
+
+/* GAUGE ROTATION FORMULA:
+ * The rotation angle for the gauge mask is calculated based on the percentage of the maximum value.
+ * Formula: rotation = percentage * 180 degrees
+ * 
+ * Examples from the HTML:
+ * - Load gauge: 4480W with rotation 162deg (90% of max)
+ * - Solar PV: 12.4kW with rotation 180deg (100% of max)
+ * - Grid: 0W with rotation 0deg (0% of max)
+ * - Battery: 7586W with rotation 180deg (100% of max)
+ * 
+ * The gauge shows values from 0-180 degrees, where:
+ * - 0deg = 0% (empty/minimum)
+ * - 90deg = 50% (half)
+ * - 180deg = 100% (full/maximum)
+ */

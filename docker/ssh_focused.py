@@ -4,7 +4,7 @@ import time
 
 def run_focused_commands():
     try:
-        child = pexpect.spawn('ssh solar-assistant@172.16.106.13')
+        child = pexpect.spawn('ssh solar-assistant@172.16.109.214')
         child.timeout = 30
         
         i = child.expect(['password:', 'yes/no'])

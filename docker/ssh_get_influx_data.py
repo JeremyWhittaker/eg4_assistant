@@ -15,7 +15,7 @@ def get_influx_data():
     """Get real values from Solar Assistant InfluxDB"""
     
     # SSH connection details
-    host = "172.16.106.13"
+    host = "172.16.109.214"
     username = "solar-assistant"
     password = "solar123"
     

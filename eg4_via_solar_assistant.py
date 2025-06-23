@@ -10,7 +10,7 @@ from datetime import datetime
 
 class EG4ViaSolarAssistant:
     def __init__(self):
-        self.host = "172.16.106.13"
+        self.host = "172.16.109.214"
         self.username = "solar-assistant"
         self.password = "solar123"
         

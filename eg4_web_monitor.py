@@ -157,68 +157,70 @@ class EG4WebMonitor:
                     
                     // Helper function to clean text
                     const cleanText = (text) => {
-                        if (!text || text === '--' || text === '') return '--';
+                        if (!text || text === '--' || text === '') return '';
                         return text.trim();
                     };
                     
                     // Battery Status
+                    const battPower = cleanText(document.querySelector('.batteryPowerText')?.textContent);
+                    const battSoc = cleanText(document.querySelector('.socText')?.textContent);
+                    const battVoltage = cleanText(document.querySelector('.vbatText')?.textContent);
+                    
                     data.battery = {
-                        power: cleanText(document.querySelector('.batteryPowerText')?.textContent || 
-                                       document.querySelector('[class*="battery-power"]')?.textContent),
-                        soc: cleanText(document.querySelector('.socText')?.textContent ||
-                                     document.querySelector('[class*="soc-text"]')?.textContent),
-                        voltage: cleanText(document.querySelector('.vbatText')?.textContent ||
-                                         document.querySelector('[class*="vbat"]')?.textContent),
-                        current: cleanText(document.querySelector('.batteryCurrentText')?.textContent ||
-                                         document.querySelector('[class*="battery-current"]')?.textContent)
+                        power: battPower ? battPower + ' W' : '--',
+                        soc: battSoc ? battSoc + '%' : '--',
+                        voltage: battVoltage ? battVoltage + ' V' : '--',
+                        current: '--'
                     };
                     
                     // PV Status
+                    const pv1 = parseInt(cleanText(document.querySelector('.pv1PowerText')?.textContent)) || 0;
+                    const pv2 = parseInt(cleanText(document.querySelector('.pv2PowerText')?.textContent)) || 0;
+                    const pv3 = parseInt(cleanText(document.querySelector('.pv3PowerText')?.textContent)) || 0;
+                    const pvTotal = pv1 + pv2 + pv3;
+                    
                     data.pv = {
-                        pv1_power: cleanText(document.querySelector('.pv1PowerText')?.textContent ||
-                                           document.querySelector('[class*="pv1-power"]')?.textContent),
-                        pv2_power: cleanText(document.querySelector('.pv2PowerText')?.textContent ||
-                                           document.querySelector('[class*="pv2-power"]')?.textContent),
-                        total_power: cleanText(document.querySelector('.pvPowerText')?.textContent ||
-                                             document.querySelector('[class*="pv-power"]')?.textContent)
+                        pv1_power: pv1 + ' W',
+                        pv2_power: pv2 + ' W',
+                        total_power: pvTotal + ' W'
                     };
                     
                     // Grid Status
+                    const gridPower = cleanText(document.querySelector('.gridPowerText')?.textContent);
+                    const gridVoltage = cleanText(document.querySelector('.vacText')?.textContent);
+                    const gridFreq = cleanText(document.querySelector('.facText')?.textContent);
+                    
                     data.grid = {
-                        power: cleanText(document.querySelector('.gridPowerText')?.textContent ||
-                                       document.querySelector('[class*="grid-power"]')?.textContent),
-                        voltage: cleanText(document.querySelector('.vacText')?.textContent ||
-                                         document.querySelector('[class*="vac"]')?.textContent),
-                        frequency: cleanText(document.querySelector('.facText')?.textContent ||
-                                           document.querySelector('[class*="fac"]')?.textContent)
+                        power: gridPower ? gridPower + ' W' : '--',
+                        voltage: gridVoltage ? gridVoltage + ' V' : '--',
+                        frequency: gridFreq ? gridFreq + ' Hz' : '--'
                     };
                     
                     // Load/Consumption
+                    const loadPower = cleanText(document.querySelector('.consumptionPowerText')?.textContent);
+                    
                     data.load = {
-                        power: cleanText(document.querySelector('.consumptionPowerText')?.textContent ||
-                                       document.querySelector('[class*="consumption-power"]')?.textContent ||
-                                       document.querySelector('[class*="load-power"]')?.textContent),
-                        percentage: cleanText(document.querySelector('.loadPercentText')?.textContent ||
-                                            document.querySelector('[class*="load-percent"]')?.textContent)
+                        power: loadPower ? loadPower + ' W' : '--',
+                        percentage: '--'
                     };
                     
                     // Daily statistics
+                    const solarYield = cleanText(document.querySelector('#todayYieldingText')?.textContent);
+                    const consumption = cleanText(document.querySelector('#todayUsageText')?.textContent);
+                    const gridImport = cleanText(document.querySelector('#todayImportText')?.textContent);
+                    const gridExport = cleanText(document.querySelector('#todayExportText')?.textContent);
+                    
                     data.daily = {
-                        solar_yield: cleanText(document.querySelector('#todayYieldingText')?.textContent ||
-                                             document.querySelector('[class*="today-yield"]')?.textContent ||
-                                             document.querySelector('[class*="daily-solar"]')?.textContent),
-                        consumption: cleanText(document.querySelector('#todayUsageText')?.textContent ||
-                                             document.querySelector('[class*="today-usage"]')?.textContent ||
-                                             document.querySelector('[class*="daily-consumption"]')?.textContent)
+                        solar_yield: solarYield ? solarYield + ' kWh' : '--',
+                        consumption: consumption ? consumption + ' kWh' : '--',
+                        grid_import: gridImport ? gridImport + ' kWh' : '--',
+                        grid_export: gridExport ? gridExport + ' kWh' : '--'
                     };
                     
                     // System Info
                     data.system = {
-                        status: cleanText(document.querySelector('#infoListLabel')?.textContent ||
-                                        document.querySelector('[class*="status"]')?.textContent ||
-                                        'Online'),
-                        temperature: cleanText(document.querySelector('.tempText')?.textContent ||
-                                             document.querySelector('[class*="temp"]')?.textContent)
+                        status: cleanText(document.querySelector('#infoListLabel')?.textContent) || 'Normal',
+                        temperature: cleanText(document.querySelector('.tempText')?.textContent) || '--'
                     };
                     
                     return data;
@@ -242,6 +244,157 @@ async def verify_credentials_async(username, password):
     """Verify credentials asynchronously"""
     monitor = EG4WebMonitor(username, password)
     return await monitor.verify_credentials()
+
+class SRPMonitor:
+    def __init__(self, username=None, password=None):
+        self.username = (username or os.getenv('SRP_USERNAME', '')).strip().strip("'\"")
+        self.password = (password or os.getenv('SRP_PASSWORD', '')).strip().strip("'\"")
+        self.base_url = 'https://myaccount.srpnet.com'
+        self.browser = None
+        self.page = None
+        self.playwright = None
+        
+    async def start(self):
+        """Start the browser"""
+        self.playwright = await async_playwright().start()
+        self.browser = await self.playwright.chromium.launch(headless=True)
+        self.page = await self.browser.new_page()
+        
+    async def login(self):
+        """Login to SRP account"""
+        try:
+            print(f"Attempting SRP login with username: {self.username}")
+            
+            # Go to the main page which should redirect to login
+            await self.page.goto(self.base_url, wait_until='networkidle')
+            await asyncio.sleep(2)
+            
+            # Check if we're already logged in
+            if 'MyAccount/Dashboard' in self.page.url:
+                print("Already logged in to SRP")
+                return True
+            
+            # Look for the login form
+            try:
+                # Try desktop username field first
+                username_field = await self.page.wait_for_selector('input[name="username"], input#username_desktop', timeout=10000)
+                await username_field.fill(self.username)
+                print("Filled username")
+                
+                # Fill password
+                password_field = await self.page.query_selector('input[name="password"], input#password_desktop')
+                if password_field:
+                    await password_field.fill(self.password)
+                    print("Filled password")
+                    
+                    # Find and click the login button
+                    login_button = await self.page.query_selector('button[type="submit"], input[type="submit"], button:has-text("Log in")')
+                    if login_button:
+                        await login_button.click()
+                        print("Clicked login button")
+                    else:
+                        # Try pressing Enter
+                        await password_field.press('Enter')
+                        print("Pressed Enter to submit")
+                    
+                    # Wait for navigation
+                    await asyncio.sleep(5)
+                    
+                    # Now try to navigate to dashboard
+                    await self.page.goto(f"{self.base_url}/power/MyAccount/Dashboard", wait_until='networkidle')
+                    await asyncio.sleep(3)
+                    
+                    # Check if login successful
+                    current_url = self.page.url
+                    if 'Dashboard' in current_url or 'MyAccount' in current_url:
+                        print("SRP login successful!")
+                        return True
+                    else:
+                        print(f"SRP login failed - ended up at: {current_url}")
+                        return False
+                        
+            except Exception as e:
+                print(f"Login form error: {e}")
+                return False
+                
+        except Exception as e:
+            print(f"SRP login error: {e}")
+            return False
+    
+    async def get_peak_demand(self):
+        """Get peak demand data from SRP dashboard"""
+        try:
+            # Wait for page to stabilize
+            await asyncio.sleep(2)
+            
+            # Extract peak demand value - more generic approach
+            demand_data = await self.page.evaluate("""
+                () => {
+                    // Look for kW values in the page
+                    const bodyText = document.body.textContent || '';
+                    const kwRegex = /(\\d+\\.?\\d*)\\s*kW/gi;
+                    const kwMatches = bodyText.match(kwRegex) || [];
+                    
+                    // Look for demand-related text
+                    let demandValue = '--';
+                    let demandType = 'PEAK DEMAND';
+                    let cycleInfo = '';
+                    
+                    // Try to find card with demand info
+                    const cards = document.querySelectorAll('.card, [class*="card"], .srp-card-details');
+                    for (const card of cards) {
+                        const cardText = card.textContent || '';
+                        if (cardText.toLowerCase().includes('demand') || cardText.toLowerCase().includes('peak')) {
+                            // Extract the first kW value from this card
+                            const cardKwMatch = cardText.match(kwRegex);
+                            if (cardKwMatch && cardKwMatch[0]) {
+                                demandValue = cardKwMatch[0];
+                            }
+                            
+                            // Look for cycle/billing info
+                            if (cardText.includes('Billing cycle') || cardText.includes('cycle')) {
+                                const cycleMatch = cardText.match(/Billing cycle[^.]+/i);
+                                if (cycleMatch) {
+                                    cycleInfo = cycleMatch[0];
+                                }
+                            }
+                            
+                            break;
+                        }
+                    }
+                    
+                    // If no card found, use the first kW value from the page
+                    if (demandValue === '--' && kwMatches.length > 0) {
+                        demandValue = kwMatches[0];
+                    }
+                    
+                    return {
+                        demand: demandValue,
+                        type: demandType,
+                        cycleInfo: cycleInfo,
+                        timestamp: new Date().toISOString(),
+                        allKwValues: kwMatches.slice(0, 5)  // For debugging
+                    };
+                }
+            """)
+            
+            if demand_data:
+                print(f"SRP demand extracted: {demand_data['demand']}")
+                if demand_data.get('allKwValues'):
+                    print(f"All kW values found: {demand_data['allKwValues']}")
+            
+            return demand_data
+            
+        except Exception as e:
+            print(f"Error getting peak demand: {e}")
+            return {'error': str(e), 'demand': '--', 'type': 'ERROR'}
+    
+    async def close(self):
+        """Close the browser"""
+        if self.browser:
+            await self.browser.close()
+        if self.playwright:
+            await self.playwright.stop()
 
 def check_alerts(data):
     """Check all configured alerts and send notifications"""
@@ -393,7 +546,7 @@ def start_monitoring_if_needed():
 @app.route('/')
 def index():
     """Main page with tabs"""
-    return render_template('index_editor.html')
+    return render_template('index_solar_style.html')
 
 @app.route('/api/config', methods=['GET', 'POST'])
 def config():
@@ -421,7 +574,8 @@ def config():
                     'enabled': alert_config['cloud_connectivity']['enabled']
                 }
             },
-            'credentials_verified': credentials_verified
+            'credentials_verified': credentials_verified,
+            'srp_username': os.getenv('SRP_USERNAME', '').strip().strip("'\"")
         }
         return jsonify(config_copy)
     
@@ -476,12 +630,51 @@ def config():
                 if key in alert_config:
                     alert_config[key].update(data['alerts'][key])
         
+        # Update SRP credentials if provided
+        if 'srp_username' in data and 'srp_password' in data:
+            srp_username = data['srp_username'].strip()
+            srp_password = data['srp_password'].strip()
+            
+            # Save to environment and .env file
+            os.environ['SRP_USERNAME'] = srp_username
+            os.environ['SRP_PASSWORD'] = srp_password
+            
+            # Update .env file
+            env_path = Path('.env')
+            set_key(env_path, 'SRP_USERNAME', srp_username)
+            set_key(env_path, 'SRP_PASSWORD', srp_password)
+            
+            return jsonify({'status': 'success', 'message': 'SRP credentials saved'})
+        
         return jsonify({'status': 'success'})
 
 @app.route('/api/monitor/data', methods=['GET'])
 def get_monitor_data():
     """Get current monitor data"""
     return jsonify(monitor_data)
+
+@app.route('/api/srp/demand', methods=['GET'])
+def get_srp_demand():
+    """Get SRP peak demand data"""
+    async def fetch_srp_data():
+        srp = SRPMonitor()
+        try:
+            await srp.start()
+            if await srp.login():
+                demand_data = await srp.get_peak_demand()
+                return demand_data
+            else:
+                return {'error': 'Failed to login to SRP'}
+        except Exception as e:
+            return {'error': str(e)}
+        finally:
+            await srp.close()
+    
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    result = loop.run_until_complete(fetch_srp_data())
+    
+    return jsonify(result)
 
 @app.route('/api/files', methods=['GET'])
 def list_files():

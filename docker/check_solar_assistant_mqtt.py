@@ -19,8 +19,8 @@ client.on_connect = on_connect
 client.on_message = on_message
 
 try:
-    print("Connecting to Solar Assistant MQTT at 172.16.106.13:1883...")
-    client.connect("172.16.106.13", 1883, 60)
+    print("Connecting to Solar Assistant MQTT at 172.16.109.214:1883...")
+    client.connect("172.16.109.214", 1883, 60)
     
     # Run for 10 seconds
     start_time = time.time()

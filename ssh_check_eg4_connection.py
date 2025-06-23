@@ -7,7 +7,7 @@ import time
 def check_eg4_connection():
     """SSH to Solar Assistant and check EG4 connection method"""
     
-    host = "172.16.106.13"
+    host = "172.16.109.214"
     username = "solar-assistant"
     password = "solar123"
     

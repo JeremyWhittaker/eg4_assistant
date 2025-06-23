@@ -5,7 +5,7 @@ import paramiko
 import time
 
 # Connection details
-HOST = '172.16.106.13'
+HOST = '172.16.109.214'
 USERNAME = 'solar-assistant'
 PASSWORD = 'solar123'
 

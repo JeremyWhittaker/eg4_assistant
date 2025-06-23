@@ -71,9 +71,9 @@ def get_eg4_direct():
     except ConnectionRefusedError:
         print("\nERROR: Connection refused")
         print("The EG4 dongle may only allow one connection at a time.")
-        print("Solar Assistant is currently connected at 172.16.106.13")
+        print("Solar Assistant is currently connected at 172.16.109.214")
         print("\nTo connect directly, you need to stop Solar Assistant:")
-        print("1. SSH to solar-assistant@172.16.106.13")
+        print("1. SSH to solar-assistant@172.16.109.214")
         print("2. Run: sudo systemctl stop solar-assistant")
         print("3. Then run this monitor")
         print("4. When done, restart: sudo systemctl start solar-assistant")

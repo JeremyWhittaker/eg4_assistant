@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Simple Solar Assistant Web Interface - REAL DATA ONLY
-Shows actual values from Solar Assistant at 172.16.106.13
+Shows actual values from Solar Assistant at 172.16.109.214
 """
 
 from flask import Flask, jsonify
@@ -37,7 +37,7 @@ def index():
 </head>
 <body>
     <div class="container">
-        <h1>Solar Assistant - Real Data from 172.16.106.13</h1>
+        <h1>Solar Assistant - Real Data from 172.16.109.214</h1>
         <div class="data">{json.dumps(data, indent=2)}</div>
         <div class="timestamp">Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</div>
     </div>
@@ -60,7 +60,7 @@ def index():
 <body>
     <div class="container">
         <h1>Solar Assistant - Connection Error</h1>
-        <div class="error">Cannot connect to Solar Assistant at 172.16.106.13<br><br>Error: {collector.error}</div>
+        <div class="error">Cannot connect to Solar Assistant at 172.16.109.214<br><br>Error: {collector.error}</div>
     </div>
 </body>
 </html>

@@ -3,7 +3,7 @@
 ## SSH Investigation Results
 
 ### System Information
-- **Host**: 172.16.106.13
+- **Host**: 172.16.109.214
 - **User**: solar-assistant / solar123
 - **OS**: Debian GNU/Linux on Raspberry Pi (aarch64)
 - **Kernel**: 6.6.31+rpt-rpi-v8
@@ -59,7 +59,7 @@ The inverter IP (172.16.107.129) configuration could be in:
 Since automated SSH didn't provide complete output, run these manually:
 
 ```bash
-ssh solar-assistant@172.16.106.13
+ssh solar-assistant@172.16.109.214
 # Password: solar123
 
 # Get complete service configuration

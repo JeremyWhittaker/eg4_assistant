@@ -7,7 +7,7 @@ SYSTEM ARCHITECTURE:
 - Application runs from memory filesystem: /dev/shm/grafana-sync/
 
 MANUAL SSH COMMANDS TO RUN:
-ssh solar-assistant@172.16.106.13
+ssh solar-assistant@172.16.109.214
 Password: solar123
 
 Then run these commands one by one:

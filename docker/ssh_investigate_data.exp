@@ -1,7 +1,7 @@
 #!/usr/bin/expect -f
 
 set timeout 30
-set host "172.16.106.13"
+set host "172.16.109.214"
 set user "solar-assistant"
 set password "solar123"
 

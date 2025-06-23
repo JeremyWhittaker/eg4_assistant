@@ -10,7 +10,7 @@ import json
 
 def test_mqtt_connection():
     """Test basic TCP connection to MQTT broker"""
-    host = "172.16.106.13"
+    host = "172.16.109.214"
     port = 1883
     
     print(f"Testing MQTT connection to {host}:{port}...")
@@ -58,9 +58,9 @@ def discover_mqtt_topics():
         print(f"  - {topic}")
     
     print("\nTo test with mosquitto client:")
-    print("  mosquitto_sub -h 172.16.106.13 -p 1883 -t '#' -v")
+    print("  mosquitto_sub -h 172.16.109.214 -p 1883 -t '#' -v")
     print("\nOr with authentication if required:")
-    print("  mosquitto_sub -h 172.16.106.13 -p 1883 -u USERNAME -P PASSWORD -t '#' -v")
+    print("  mosquitto_sub -h 172.16.109.214 -p 1883 -u USERNAME -P PASSWORD -t '#' -v")
 
 def main():
     print("Solar Assistant MQTT Discovery\n" + "="*40)
@@ -72,7 +72,7 @@ def main():
         
         print("\n\nNext steps:")
         print("1. Configure MQTT in Solar Assistant web interface at:")
-        print("   http://172.16.106.13/configuration/mqtt")
+        print("   http://172.16.109.214/configuration/mqtt")
         print("2. Enable MQTT publishing if not already enabled")
         print("3. Use MQTT client to subscribe and discover exact topic structure")
         print("4. Document the topic/payload format for integration")

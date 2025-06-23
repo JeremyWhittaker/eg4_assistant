@@ -81,7 +81,7 @@ def update_data():
         current_data = {
             'timestamp': datetime.now().isoformat(),
             'connected': False,
-            'error': real_data.get('error', 'Cannot connect to Solar Assistant at 172.16.106.13')
+            'error': real_data.get('error', 'Cannot connect to Solar Assistant at 172.16.109.214')
         }
 
 def data_updater():

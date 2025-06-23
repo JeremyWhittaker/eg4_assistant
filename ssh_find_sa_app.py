@@ -8,7 +8,7 @@ def find_app():
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     
     try:
-        ssh.connect("172.16.106.13", username="solar-assistant", password="solar123")
+        ssh.connect("172.16.109.214", username="solar-assistant", password="solar123")
         print("Connected to Solar Assistant\n")
         
         # From the process, we can see it's in /dev/shm/grafana-sync/...

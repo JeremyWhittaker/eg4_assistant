@@ -3,7 +3,7 @@ import paramiko
 
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-ssh.connect("172.16.106.13", username="solar-assistant", password="solar123")
+ssh.connect("172.16.109.214", username="solar-assistant", password="solar123")
 
 # Check connection
 print(ssh.exec_command("netstat -tn | grep 172.16.107.129:8000")[1].read().decode())
