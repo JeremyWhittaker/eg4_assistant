@@ -264,14 +264,16 @@ class SRPMonitor:
         """Login to SRP account"""
         try:
             print(f"Attempting SRP login with username: {self.username}")
+            app.logger.info(f"SRP login attempt for user: {self.username}")
             
-            # Go to the main page which should redirect to login
-            await self.page.goto(self.base_url, wait_until='networkidle')
+            # Go directly to the login page
+            await self.page.goto('https://myaccount.srpnet.com/power', wait_until='networkidle')
             await asyncio.sleep(2)
             
             # Check if we're already logged in
-            if 'MyAccount/Dashboard' in self.page.url:
+            if 'Dashboard' in self.page.url and 'login' not in self.page.url.lower():
                 print("Already logged in to SRP")
+                app.logger.info("SRP already logged in")
                 return True
             
             # Look for the login form
@@ -280,113 +282,116 @@ class SRPMonitor:
                 username_field = await self.page.wait_for_selector('input[name="username"], input#username_desktop', timeout=10000)
                 await username_field.fill(self.username)
                 print("Filled username")
+                app.logger.info("SRP username filled")
                 
                 # Fill password
                 password_field = await self.page.query_selector('input[name="password"], input#password_desktop')
                 if password_field:
                     await password_field.fill(self.password)
                     print("Filled password")
+                    app.logger.info("SRP password filled")
                     
-                    # Find and click the login button
-                    login_button = await self.page.query_selector('button[type="submit"], input[type="submit"], button:has-text("Log in")')
-                    if login_button:
-                        await login_button.click()
-                        print("Clicked login button")
-                    else:
-                        # Try pressing Enter
-                        await password_field.press('Enter')
-                        print("Pressed Enter to submit")
+                    # Submit the form by pressing Enter (more reliable than clicking button)
+                    await password_field.press('Enter')
+                    print("Pressed Enter to submit")
+                    app.logger.info("SRP form submitted with Enter")
                     
                     # Wait for navigation
                     await asyncio.sleep(5)
                     
-                    # Now try to navigate to dashboard
-                    await self.page.goto(f"{self.base_url}/power/MyAccount/Dashboard", wait_until='networkidle')
+                    # Navigate to the usage page where peak demand is shown
+                    await self.page.goto(f"{self.base_url}/power/myaccount/usage", wait_until='networkidle')
                     await asyncio.sleep(3)
                     
                     # Check if login successful
                     current_url = self.page.url
-                    if 'Dashboard' in current_url or 'MyAccount' in current_url:
+                    if 'myaccount' in current_url.lower() and 'login' not in current_url.lower():
                         print("SRP login successful!")
+                        app.logger.info("SRP login successful")
                         return True
                     else:
                         print(f"SRP login failed - ended up at: {current_url}")
+                        app.logger.error(f"SRP login failed - URL: {current_url}")
                         return False
                         
             except Exception as e:
                 print(f"Login form error: {e}")
+                app.logger.error(f"SRP login form error: {e}")
                 return False
                 
         except Exception as e:
             print(f"SRP login error: {e}")
+            app.logger.error(f"SRP login error: {e}")
             return False
     
     async def get_peak_demand(self):
-        """Get peak demand data from SRP dashboard"""
+        """Get peak demand data from SRP usage page"""
         try:
-            # Wait for page to stabilize
-            await asyncio.sleep(2)
+            # Make sure we're on the usage page
+            current_url = self.page.url
+            if 'usage' not in current_url:
+                await self.page.goto(f"{self.base_url}/power/myaccount/usage", wait_until='networkidle')
+                await asyncio.sleep(2)
             
-            # Extract peak demand value - more generic approach
+            # Extract peak demand value from the specific element
             demand_data = await self.page.evaluate("""
                 () => {
-                    // Look for kW values in the page
-                    const bodyText = document.body.textContent || '';
-                    const kwRegex = /(\\d+\\.?\\d*)\\s*kW/gi;
-                    const kwMatches = bodyText.match(kwRegex) || [];
-                    
-                    // Look for demand-related text
+                    // Look for the specific srp-red-text element with kW value
+                    const srpRedText = document.querySelector('.srp-red-text strong');
                     let demandValue = '--';
-                    let demandType = 'PEAK DEMAND';
-                    let cycleInfo = '';
                     
-                    // Try to find card with demand info
-                    const cards = document.querySelectorAll('.card, [class*="card"], .srp-card-details');
-                    for (const card of cards) {
-                        const cardText = card.textContent || '';
-                        if (cardText.toLowerCase().includes('demand') || cardText.toLowerCase().includes('peak')) {
-                            // Extract the first kW value from this card
-                            const cardKwMatch = cardText.match(kwRegex);
-                            if (cardKwMatch && cardKwMatch[0]) {
-                                demandValue = cardKwMatch[0];
+                    if (srpRedText) {
+                        demandValue = srpRedText.textContent.trim();
+                    } else {
+                        // Fallback: look for any element with srp-red-text class
+                        const redTexts = document.querySelectorAll('.srp-red-text');
+                        for (const elem of redTexts) {
+                            const text = elem.textContent || '';
+                            if (text.includes('kW')) {
+                                demandValue = text.trim();
+                                break;
                             }
-                            
-                            // Look for cycle/billing info
-                            if (cardText.includes('Billing cycle') || cardText.includes('cycle')) {
-                                const cycleMatch = cardText.match(/Billing cycle[^.]+/i);
-                                if (cycleMatch) {
-                                    cycleInfo = cycleMatch[0];
-                                }
-                            }
-                            
+                        }
+                    }
+                    
+                    // Get billing cycle info if available
+                    let cycleInfo = '';
+                    const billingTexts = document.querySelectorAll('*');
+                    for (const elem of billingTexts) {
+                        const text = elem.textContent || '';
+                        if (text.includes('Billing cycle') || text.includes('billing period')) {
+                            cycleInfo = text.trim();
                             break;
                         }
                     }
                     
-                    // If no card found, use the first kW value from the page
-                    if (demandValue === '--' && kwMatches.length > 0) {
-                        demandValue = kwMatches[0];
-                    }
+                    // Also collect all kW values on the page for debugging
+                    const bodyText = document.body.textContent || '';
+                    const kwRegex = /(\\d+\\.?\\d*)\\s*kW/gi;
+                    const allKwValues = bodyText.match(kwRegex) || [];
                     
                     return {
                         demand: demandValue,
-                        type: demandType,
+                        type: 'PEAK DEMAND',
                         cycleInfo: cycleInfo,
                         timestamp: new Date().toISOString(),
-                        allKwValues: kwMatches.slice(0, 5)  // For debugging
+                        allKwValues: allKwValues.slice(0, 10),  // For debugging
+                        url: window.location.href  // For debugging
                     };
                 }
             """)
             
             if demand_data:
-                print(f"SRP demand extracted: {demand_data['demand']}")
+                print(f"SRP demand extracted: {demand_data['demand']} from {demand_data['url']}")
                 if demand_data.get('allKwValues'):
-                    print(f"All kW values found: {demand_data['allKwValues']}")
+                    print(f"All kW values found on page: {demand_data['allKwValues']}")
+                app.logger.info(f"SRP demand: {demand_data['demand']}")
             
             return demand_data
             
         except Exception as e:
             print(f"Error getting peak demand: {e}")
+            app.logger.error(f"Error getting peak demand: {e}")
             return {'error': str(e), 'demand': '--', 'type': 'ERROR'}
     
     async def close(self):
@@ -600,8 +605,23 @@ def config():
                 
                 # Create or update .env file (without quotes)
                 env_path = Path('.env')
-                set_key(env_path, 'EG4_MONITOR_USERNAME', username)
-                set_key(env_path, 'EG4_MONITOR_PASSWORD', password)
+                # Read existing content
+                env_content = {}
+                if env_path.exists():
+                    with open(env_path, 'r') as f:
+                        for line in f:
+                            if '=' in line and not line.strip().startswith('#'):
+                                key, value = line.strip().split('=', 1)
+                                env_content[key] = value
+                
+                # Update values
+                env_content['EG4_MONITOR_USERNAME'] = username
+                env_content['EG4_MONITOR_PASSWORD'] = password
+                
+                # Write back without quotes
+                with open(env_path, 'w') as f:
+                    for key, value in env_content.items():
+                        f.write(f"{key}={value}\n")
                 
                 if verified:
                     credentials_verified = True
@@ -639,10 +659,25 @@ def config():
             os.environ['SRP_USERNAME'] = srp_username
             os.environ['SRP_PASSWORD'] = srp_password
             
-            # Update .env file
+            # Update .env file without quotes
             env_path = Path('.env')
-            set_key(env_path, 'SRP_USERNAME', srp_username)
-            set_key(env_path, 'SRP_PASSWORD', srp_password)
+            # Read existing content
+            env_content = {}
+            if env_path.exists():
+                with open(env_path, 'r') as f:
+                    for line in f:
+                        if '=' in line and not line.strip().startswith('#'):
+                            key, value = line.strip().split('=', 1)
+                            env_content[key] = value
+            
+            # Update SRP values
+            env_content['SRP_USERNAME'] = srp_username
+            env_content['SRP_PASSWORD'] = srp_password
+            
+            # Write back without quotes
+            with open(env_path, 'w') as f:
+                for key, value in env_content.items():
+                    f.write(f"{key}={value}\n")
             
             return jsonify({'status': 'success', 'message': 'SRP credentials saved'})
         

@@ -1009,15 +1009,20 @@
             }
         }
         
-        // Update loadConfiguration to include alerts
+        // Load configuration from server
         async function loadConfiguration() {
             const response = await fetch('/api/config');
             if (response.ok) {
                 const config = await response.json();
                 
-                // Set username
+                // Set EG4 username
                 if (config.username) {
                     document.getElementById('config-username').value = config.username;
+                }
+                
+                // Set SRP username
+                if (config.srp_username) {
+                    document.getElementById('srp-username').value = config.srp_username;
                 }
                 
                 // Update credentials status
@@ -1046,6 +1051,11 @@
                     if (config.alerts.cloud_connectivity) {
                         document.getElementById('cloud-alert-enabled').checked = config.alerts.cloud_connectivity.enabled;
                     }
+                }
+                
+                // Auto-load SRP data if on SRP tab and credentials exist
+                if (config.srp_username && document.getElementById('srp-tab').classList.contains('active')) {
+                    refreshSRPDemand();
                 }
             }
         }
@@ -1118,59 +1128,7 @@
             }
         }
         
-        // Update loadConfiguration to include SRP username
-        async function loadConfiguration() {
-            const response = await fetch('/api/config');
-            if (response.ok) {
-                const config = await response.json();
-                
-                // Set username
-                if (config.username) {
-                    document.getElementById('config-username').value = config.username;
-                }
-                
-                // Set SRP username
-                if (config.srp_username) {
-                    document.getElementById('srp-username').value = config.srp_username;
-                }
-                
-                // Update credentials status
-                credentialsVerified = config.credentials_verified || false;
-                updateCredentialsStatus(credentialsVerified);
-                
-                // Load alerts if present
-                if (config.alerts) {
-                    // Battery SOC
-                    if (config.alerts.battery_soc) {
-                        document.getElementById('battery-alert-enabled').checked = config.alerts.battery_soc.enabled;
-                        document.getElementById('battery-check-time').value = config.alerts.battery_soc.check_time;
-                        document.getElementById('battery-min-soc').value = config.alerts.battery_soc.min_soc;
-                    }
-                    
-                    // Peak Demand
-                    if (config.alerts.peak_demand) {
-                        document.getElementById('peak-alert-enabled').checked = config.alerts.peak_demand.enabled;
-                        document.getElementById('peak-start-time').value = config.alerts.peak_demand.start_time;
-                        document.getElementById('peak-end-time').value = config.alerts.peak_demand.end_time;
-                        document.getElementById('peak-max-load').value = config.alerts.peak_demand.max_load;
-                        document.getElementById('peak-duration').value = config.alerts.peak_demand.duration_minutes;
-                    }
-                    
-                    // Cloud Connectivity
-                    if (config.alerts.cloud_connectivity) {
-                        document.getElementById('cloud-alert-enabled').checked = config.alerts.cloud_connectivity.enabled;
-                    }
-                }
-                
-                // Check if SRP credentials exist
-                if (config.srp_username) {
-                    // Auto-load SRP data if on SRP tab
-                    if (document.getElementById('srp-tab').classList.contains('active')) {
-                        refreshSRPDemand();
-                    }
-                }
-            }
-        }
+        // Duplicate function removed - see loadConfiguration above
         
         // Update tab switching to load SRP data
         function switchTab(tabName) {
@@ -1182,10 +1140,8 @@
             
             // Load SRP data when switching to SRP tab
             if (tabName === 'srp') {
-                const srpUsername = document.getElementById('srp-username').value;
-                if (srpUsername) {
-                    refreshSRPDemand();
-                }
+                // Always try to refresh SRP data - the backend will check if credentials exist
+                refreshSRPDemand();
             }
         }
         

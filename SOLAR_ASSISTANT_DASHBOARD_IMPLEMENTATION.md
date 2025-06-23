@@ -43,6 +43,13 @@ SRP_USERNAME=your_srp_username
 SRP_PASSWORD=your_srp_password
 ```
 
+#### Credential Persistence
+- Credentials entered in the web interface are automatically saved to the `.env` file
+- On startup, the application loads and verifies saved credentials
+- Usernames are displayed in the configuration form for easy reference
+- Passwords are securely hidden with dots in the interface
+- To switch accounts, simply enter new credentials and click save
+
 ### Running the Monitor
 ```bash
 python eg4_web_monitor.py
@@ -81,10 +88,17 @@ The gauges use CSS masks and transforms to create the semi-circular appearance:
 
 ### SRP Integration
 The SRP integration uses Playwright to:
-1. Navigate to https://myaccount.srpnet.com
-2. Login with stored credentials
-3. Extract peak demand data from the dashboard
-4. Return formatted JSON with demand value and billing cycle
+1. Navigate to https://myaccount.srpnet.com/power
+2. Login with stored credentials (automatically loaded from .env)
+3. Navigate to the usage page at https://myaccount.srpnet.com/power/myaccount/usage
+4. Extract peak demand data from the `.srp-red-text strong` element
+5. Return formatted JSON with demand value and billing cycle
+
+#### Important Notes:
+- Credentials are saved without quotes to the `.env` file
+- On startup, credentials are automatically loaded and verified
+- The system navigates to the usage page specifically to get accurate peak demand data
+- No re-login is required after container restarts
 
 ## File Structure
 ```
@@ -100,9 +114,17 @@ solar_assistant/
 
 ### SRP Login Issues
 If SRP login fails:
-1. Verify credentials in `.env` file (remove any quotes)
+1. Verify credentials in `.env` file (should NOT have quotes around values)
 2. Check if SRP website has changed by running `python find_srp_login.py`
 3. Ensure Playwright and Chromium are properly installed
+4. The login URL is `https://myaccount.srpnet.com/power`
+5. Peak demand data is on the usage page: `https://myaccount.srpnet.com/power/myaccount/usage`
+
+### Common Issues Fixed
+1. **Quotes in .env file**: The system now saves credentials without quotes
+2. **Wrong peak demand value**: Fixed by navigating to the usage page instead of dashboard
+3. **Login button not clickable**: Fixed by using Enter key to submit form
+4. **Credentials not persisting**: Fixed by properly writing to .env file without quotes
 
 ### Gauge Display Issues
 If gauges appear broken:
