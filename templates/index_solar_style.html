@@ -448,6 +448,57 @@
             font-size: 1.125rem;
             font-weight: 600;
         }
+        
+        /* Chart styles */
+        .chart-bar {
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        
+        .chart-bar:hover {
+            opacity: 0.8;
+        }
+        
+        .chart-tooltip {
+            position: fixed;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .chart-type-btn {
+            margin: 0 5px;
+            padding: 8px 16px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 4px;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .chart-type-btn:hover {
+            background: #334155;
+            color: #e2e8f0;
+        }
+        
+        .chart-type-btn.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+        
+        #srp-usage-chart {
+            background: #0f172a;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -464,7 +515,8 @@
             <div class="tab active" onclick="switchTab('monitoring')">Monitoring</div>
             <div class="tab" onclick="switchTab('configuration')">Configuration</div>
             <div class="tab" onclick="switchTab('alerts')">Alerts</div>
-            <div class="tab" onclick="switchTab('srp')">SRP</div>
+            <div class="tab" onclick="switchTab('srp')">SRP Demand</div>
+            <div class="tab" onclick="switchTab('srp-usage')">SRP Usage</div>
         </div>
         
         <!-- Monitoring Tab -->
@@ -786,7 +838,97 @@
                 </div>
             </div>
         </div>
+        
+        <!-- SRP Usage Tab -->
+        <div id="srp-usage-tab" class="tab-content">
+            <div class="card">
+                <div class="card-section">
+                    <h2 style="margin-bottom: 1.5rem;">SRP Daily Usage Chart</h2>
+                    
+                    <div id="srp-usage-loading" style="display: none; text-align: center; padding: 3rem;">
+                        <div class="loading" style="width: 40px; height: 40px; margin: 0 auto 1rem;"></div>
+                        <p style="color: #94a3b8;">Loading usage data...</p>
+                    </div>
+                    
+                    <div id="srp-usage-chart-container" style="display: none;">
+                        <!-- Chart controls -->
+                        <div style="margin-bottom: 2rem;">
+                            <span style="margin-right: 1rem;">View my</span>
+                            <button class="btn chart-type-btn active" onclick="switchChartType('usage')">Usage</button>
+                            <button class="btn chart-type-btn" onclick="switchChartType('generation')">Generation</button>
+                            <button class="btn chart-type-btn" onclick="switchChartType('demand')">Demand</button>
+                            <button class="btn chart-type-btn" onclick="switchChartType('netEnergy')">Net Energy</button>
+                        </div>
+                        
+                        <!-- Chart will be rendered here -->
+                        <div id="srp-chart-svg-container" style="background: #1e293b; border: 1px solid #334155; border-radius: 0.5rem; padding: 2rem;">
+                            <svg id="srp-usage-chart" width="800" height="400" style="width: 100%; height: auto;">
+                                <!-- SVG content will be dynamically generated -->
+                            </svg>
+                        </div>
+                        
+                        <!-- Chart legend -->
+                        <div id="srp-chart-legend" style="margin-top: 1rem; display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div style="width: 20px; height: 20px; background: #3b82f6; border-radius: 4px;"></div>
+                                <span>Off-peak</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div style="width: 20px; height: 20px; background: #ef4444; border-radius: 4px;"></div>
+                                <span>On-peak</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div style="width: 20px; height: 20px; background: #22c55e; border-radius: 4px;"></div>
+                                <span>Super off-peak</span>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 2rem; text-align: center;">
+                            <p id="srp-chart-date-range" style="color: #94a3b8; margin-bottom: 1rem;"></p>
+                            <button class="btn" onclick="refreshSRPChart()">
+                                Refresh Chart Data
+                                <span id="srp-chart-refresh-loading" class="loading" style="display: none;"></span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="srp-usage-no-data" style="display: none; text-align: center; padding: 3rem;">
+                        <p style="color: #94a3b8;">Configure SRP credentials to view usage chart</p>
+                    </div>
+                    
+                    <div id="srp-usage-no-data" style="display: none; text-align: center; padding: 3rem; color: #64748b;">
+                        <p style="margin-bottom: 1rem;">Configure SRP credentials to view usage data</p>
+                        <button class="btn" onclick="document.querySelector('.tab:nth-child(2)').click()">
+                            Go to Configuration
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+    
+    <style>
+        .chart-type-btn {
+            background: #334155;
+            border: 1px solid #475569;
+            color: #e2e8f0;
+            padding: 0.5rem 1rem;
+            margin: 0 0.25rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .chart-type-btn:hover {
+            background: #475569;
+        }
+        
+        .chart-type-btn.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+    </style>
     
     <script>
         const socket = io();
@@ -1241,6 +1383,225 @@
                 if (!displayVisible && !loadingVisible) {
                     refreshSRPDemand();
                 }
+            } else if (tabName === 'srp-usage') {
+                // Load SRP usage chart if not already loaded
+                const chartVisible = document.getElementById('srp-usage-chart-container').style.display === 'block';
+                if (!chartVisible) {
+                    refreshSRPChart();
+                }
+            }
+        }
+        
+        // SRP Usage Chart Functions
+        let currentChartType = 'usage';
+        let srpChartData = null;
+        
+        function switchChartType(type) {
+            currentChartType = type;
+            document.querySelectorAll('.chart-type-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (srpChartData) {
+                renderSRPChart(srpChartData);
+            }
+        }
+        
+        async function refreshSRPChart() {
+            // Hide all sections
+            document.getElementById('srp-usage-loading').style.display = 'block';
+            document.getElementById('srp-usage-chart-container').style.display = 'none';
+            document.getElementById('srp-usage-no-data').style.display = 'none';
+            document.getElementById('srp-chart-refresh-loading').style.display = 'inline-block';
+            
+            try {
+                const response = await fetch('/api/srp/chart');
+                const data = await response.json();
+                
+                if (response.status === 401 && data.error === 'no_credentials') {
+                    document.getElementById('srp-usage-loading').style.display = 'none';
+                    document.getElementById('srp-usage-no-data').style.display = 'block';
+                } else if (data.error) {
+                    showAlert('Error loading chart data: ' + data.error, 'error');
+                    document.getElementById('srp-usage-loading').style.display = 'none';
+                    document.getElementById('srp-usage-no-data').style.display = 'block';
+                } else {
+                    srpChartData = data;
+                    renderSRPChart(data);
+                    document.getElementById('srp-usage-loading').style.display = 'none';
+                    document.getElementById('srp-usage-chart-container').style.display = 'block';
+                }
+            } catch (error) {
+                showAlert('Error fetching chart data', 'error');
+                document.getElementById('srp-usage-loading').style.display = 'none';
+                document.getElementById('srp-usage-no-data').style.display = 'block';
+            } finally {
+                document.getElementById('srp-chart-refresh-loading').style.display = 'none';
+            }
+        }
+        
+        function renderSRPChart(data) {
+            const svg = document.getElementById('srp-usage-chart');
+            svg.innerHTML = ''; // Clear existing content
+            
+            // Set dimensions
+            const margin = { top: 20, right: 30, bottom: 70, left: 60 };
+            const width = 800 - margin.left - margin.right;
+            const height = 400 - margin.top - margin.bottom;
+            
+            // Create main group
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
+            svg.appendChild(g);
+            
+            // Get data based on chart type
+            let chartData = [];
+            if (currentChartType === 'netEnergy') {
+                chartData = data.netEnergy || [];
+            } else if (currentChartType === 'generation') {
+                chartData = data.generation || [];
+            } else if (currentChartType === 'usage') {
+                chartData = data.usage || [];
+            } else if (currentChartType === 'demand') {
+                chartData = data.demand || [];
+            }
+            
+            // Calculate max value for scaling
+            const maxValue = Math.max(...chartData, 1) * 1.1; // Add 10% padding
+            
+            // Create scales
+            const barWidth = width / (data.dates ? data.dates.length : 30);
+            
+            // Draw bars based on chart type
+            if (data.dates && chartData.length > 0) {
+                data.dates.forEach((date, i) => {
+                    const x = i * barWidth;
+                    const value = chartData[i] || 0;
+                    
+                    if (value > 0) {
+                        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                        rect.setAttribute('x', x + 2);
+                        rect.setAttribute('y', height - (value / maxValue) * height);
+                        rect.setAttribute('width', barWidth - 4);
+                        rect.setAttribute('height', (value / maxValue) * height);
+                        
+                        // Color based on chart type
+                        let color = '#3b82f6'; // blue for usage
+                        if (currentChartType === 'generation') color = '#22c55e'; // green
+                        else if (currentChartType === 'demand') color = '#ef4444'; // red
+                        else if (currentChartType === 'netEnergy') color = '#8b5cf6'; // purple
+                        
+                        rect.setAttribute('fill', color);
+                        rect.setAttribute('rx', '3');
+                        rect.setAttribute('class', 'chart-bar');
+                        rect.setAttribute('data-date', date);
+                        rect.setAttribute('data-value', value);
+                        
+                        // Add hover effect
+                        rect.addEventListener('mouseenter', function(e) {
+                            showChartTooltip(e, date, value, currentChartType);
+                        });
+                        rect.addEventListener('mouseleave', hideChartTooltip);
+                        
+                        g.appendChild(rect);
+                    }
+                    
+                    // Add date label
+                    if (i % Math.ceil(data.dates.length / 6) === 0) { // Show ~6 date labels
+                        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        text.setAttribute('x', x + barWidth / 2);
+                        text.setAttribute('y', height + 20);
+                        text.setAttribute('text-anchor', 'middle');
+                        text.setAttribute('fill', '#94a3b8');
+                        text.setAttribute('font-size', '12');
+                        text.textContent = date.split(',')[1].trim(); // Show just the date part
+                        g.appendChild(text);
+                    }
+                });
+            }
+            
+            // Add Y-axis labels
+            const yLabels = 5;
+            for (let i = 0; i <= yLabels; i++) {
+                const y = height - (i / yLabels) * height;
+                const value = Math.round((i / yLabels) * maxValue);
+                
+                // Grid line
+                const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                gridLine.setAttribute('x1', 0);
+                gridLine.setAttribute('y1', y);
+                gridLine.setAttribute('x2', width);
+                gridLine.setAttribute('y2', y);
+                gridLine.setAttribute('stroke', '#334155');
+                gridLine.setAttribute('stroke-opacity', '0.3');
+                gridLine.setAttribute('stroke-dasharray', '2,2');
+                g.appendChild(gridLine);
+                
+                // Label
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('x', -10);
+                label.setAttribute('y', y + 5);
+                label.setAttribute('text-anchor', 'end');
+                label.setAttribute('fill', '#94a3b8');
+                label.setAttribute('font-size', '12');
+                label.textContent = value + (currentChartType === 'demand' ? ' kW' : ' kWh');
+                g.appendChild(label);
+            }
+            
+            // Add axes
+            // Y-axis
+            const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            yAxis.setAttribute('x1', 0);
+            yAxis.setAttribute('y1', 0);
+            yAxis.setAttribute('x2', 0);
+            yAxis.setAttribute('y2', height);
+            yAxis.setAttribute('stroke', '#475569');
+            g.appendChild(yAxis);
+            
+            // X-axis
+            const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            xAxis.setAttribute('x1', 0);
+            xAxis.setAttribute('y1', height);
+            xAxis.setAttribute('x2', width);
+            xAxis.setAttribute('y2', height);
+            xAxis.setAttribute('stroke', '#475569');
+            g.appendChild(xAxis);
+            
+            // Add title
+            const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            title.setAttribute('x', width / 2);
+            title.setAttribute('y', -5);
+            title.setAttribute('text-anchor', 'middle');
+            title.setAttribute('fill', '#e2e8f0');
+            title.setAttribute('font-size', '16');
+            title.setAttribute('font-weight', '600');
+            title.textContent = `Daily ${currentChartType.charAt(0).toUpperCase() + currentChartType.slice(1)} (${currentChartType === 'demand' ? 'kW' : 'kWh'})`;
+            g.appendChild(title);
+            
+            // Update date range
+            if (data.dateRange) {
+                document.getElementById('srp-chart-date-range').textContent = data.dateRange;
+            }
+        }
+        
+        function showChartTooltip(event, date, value, type) {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'chart-tooltip';
+            tooltip.innerHTML = `
+                <div><strong>${date}</strong></div>
+                <div>${value} ${type === 'demand' ? 'kW' : 'kWh'}</div>
+            `;
+            
+            document.body.appendChild(tooltip);
+            
+            const rect = event.target.getBoundingClientRect();
+            tooltip.style.left = rect.left + rect.width / 2 - tooltip.offsetWidth / 2 + 'px';
+            tooltip.style.top = rect.top - tooltip.offsetHeight - 10 + 'px';
+        }
+        
+        function hideChartTooltip() {
+            const tooltip = document.querySelector('.chart-tooltip');
+            if (tooltip) {
+                tooltip.remove();
             }
         }
         

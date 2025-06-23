@@ -152,9 +152,24 @@ If real-time data stops:
 2. Verify network connectivity
 3. Restart the monitor service
 
+### 5. SRP Daily Usage Chart
+- Interactive chart visualization showing energy usage patterns over the past 30 days
+- Multiple view types:
+  - **Usage**: Total energy consumption
+  - **Generation**: Solar/battery generation (if applicable)
+  - **Demand**: Peak demand values
+  - **Net Energy**: Net usage after generation
+- Color-coded bars for different rate periods:
+  - Blue: Off-peak hours
+  - Red: On-peak hours (3-8 PM)
+  - Green: Super off-peak hours (11 PM - 5 AM)
+- Hover tooltips showing exact values for each day
+- Automatic data extraction from SRP website
+- Date range display showing the period covered
+
 ## Future Enhancements
-1. Historical data graphing
-2. Export functionality
+1. Historical data graphing with longer time ranges
+2. Export functionality for chart data (CSV/PDF)
 3. Mobile app integration
 4. Additional utility provider integrations
-5. Energy usage predictions
+5. Energy usage predictions based on historical patterns

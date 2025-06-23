@@ -97,3 +97,4 @@ id_rsa*
 # Monitoring data
 monitoring_data/
 logs/docker/redis/
+docker/redis/data/

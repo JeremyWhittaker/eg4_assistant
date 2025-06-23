@@ -414,6 +414,161 @@ class SRPMonitor:
             app.logger.error(f"Error getting peak demand: {e}")
             return {'error': str(e), 'demand': '--', 'type': 'ERROR'}
     
+    async def get_daily_usage_chart(self):
+        """Extract daily usage chart data from SRP page"""
+        try:
+            # Make sure we're on the usage page
+            current_url = self.page.url
+            if 'usage' not in current_url:
+                await self.page.goto(f"{self.base_url}/power/myaccount/usage", wait_until='networkidle')
+                await asyncio.sleep(3)
+            
+            # Extract chart data from the page
+            chart_data = await self.page.evaluate(r"""
+                () => {
+                    // Look for the SVG chart
+                    const chart = document.querySelector('#usagePageChart');
+                    if (!chart) {
+                        return { error: 'Chart not found' };
+                    }
+                    
+                    // Extract data from the bar elements
+                    const data = {
+                        dates: [],
+                        usage: [],
+                        generation: [],
+                        netEnergy: [],
+                        demand: [],
+                        temperatures: { high: [], low: [] },
+                        dateRange: '',
+                        chartAvailable: true
+                    };
+                    
+                    // Get date labels from x-axis
+                    const dateLabels = chart.querySelectorAll('.usage-date-axis .tick text');
+                    dateLabels.forEach(label => {
+                        if (label.textContent) {
+                            data.dates.push(label.textContent.trim());
+                        }
+                    });
+                    
+                    // Find which chart group is visible (daily or monthly)
+                    const dailyChartGroups = chart.querySelectorAll('#dailyChartMainGroup');
+                    let activeGroup = null;
+                    
+                    for (const group of dailyChartGroups) {
+                        const parent = group.parentElement;
+                        if (parent && parent.getAttribute('transform') && !parent.getAttribute('transform').includes('translate(0,0)')) {
+                            activeGroup = group;
+                            break;
+                        }
+                    }
+                    
+                    if (!activeGroup && dailyChartGroups.length > 0) {
+                        activeGroup = dailyChartGroups[0];
+                    }
+                    
+                    if (activeGroup) {
+                        // Extract bar data from visible chart
+                        const extractBarHeights = (group, className) => {
+                            const bars = group.querySelectorAll(`.${className} g path`);
+                            const heights = [];
+                            
+                            bars.forEach(bar => {
+                                const d = bar.getAttribute('d');
+                                if (d && d.includes('v')) {
+                                    // Extract height from path
+                                    const heightMatch = d.match(/v([\d.]+)/);
+                                    if (heightMatch) {
+                                        heights.push(Math.round(parseFloat(heightMatch[1])));
+                                    } else {
+                                        heights.push(0);
+                                    }
+                                } else {
+                                    heights.push(0);
+                                }
+                            });
+                            
+                            return heights;
+                        };
+                        
+                        // Extract different data series
+                        const offPeakData = extractBarHeights(activeGroup, 'viz-offPeak');
+                        const onPeakData = extractBarHeights(activeGroup, 'viz-onPeak');
+                        const superOffPeakData = extractBarHeights(activeGroup, 'viz-superOffPeak');
+                        
+                        // Combine into usage data (sum of all rate periods)
+                        for (let i = 0; i < data.dates.length; i++) {
+                            const usage = (offPeakData[i] || 0) + (onPeakData[i] || 0) + (superOffPeakData[i] || 0);
+                            data.usage.push(usage);
+                            data.generation.push(0); // Placeholder
+                            data.netEnergy.push(usage); // Placeholder
+                            data.demand.push(0); // Placeholder
+                        }
+                        
+                        // Store rate period breakdown
+                        data.rateBreakdown = {
+                            offPeak: offPeakData,
+                            onPeak: onPeakData,
+                            superOffPeak: superOffPeakData
+                        };
+                    }
+                    
+                    // Extract temperature data
+                    const tempPaths = chart.querySelectorAll('.viz-high-temp, .viz-low-temp');
+                    tempPaths.forEach(path => {
+                        const d = path.getAttribute('d');
+                        const isHigh = path.classList.contains('viz-high-temp');
+                        
+                        if (d) {
+                            // Extract coordinates from path
+                            const points = d.match(/L[\d.]+,([\d.]+)/g);
+                            if (points) {
+                                const temps = points.map(p => {
+                                    const y = parseFloat(p.split(',')[1]);
+                                    // Convert y-coordinate to temperature (approximate)
+                                    return Math.round(120 - (y / 2));
+                                });
+                                
+                                if (isHigh) {
+                                    data.temperatures.high = temps;
+                                } else {
+                                    data.temperatures.low = temps;
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Find date range in page
+                    const headings = document.querySelectorAll('h2, h3, .date-range');
+                    for (const heading of headings) {
+                        const text = heading.textContent || '';
+                        if (text.match(/\w+\s+\d+.*through.*\w+\s+\d+/)) {
+                            data.dateRange = text.trim();
+                            break;
+                        }
+                    }
+                    
+                    // If no date range found, create one from dates
+                    if (!data.dateRange && data.dates.length > 0) {
+                        data.dateRange = `${data.dates[0]} through ${data.dates[data.dates.length - 1]}`;
+                    }
+                    
+                    return data;
+                }
+            """)
+            
+            if chart_data:
+                print(f"SRP daily usage chart extracted: {len(chart_data.get('dates', []))} days")
+                app.logger.info(f"SRP chart data extracted successfully")
+            
+            return chart_data
+            
+        except Exception as e:
+            print(f"Error getting daily usage chart: {e}")
+            app.logger.error(f"Error getting daily usage chart: {e}")
+            return {'error': str(e)}
+    
     async def close(self):
         """Close the browser"""
         if self.browser:
@@ -789,6 +944,53 @@ def get_srp_demand():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     result = loop.run_until_complete(fetch_srp_data())
+    
+    return jsonify(result)
+
+@app.route('/api/srp/chart', methods=['GET'])
+def get_srp_chart():
+    """Get SRP daily usage chart data"""
+    # Check if credentials exist
+    username = os.getenv('SRP_USERNAME', '').strip().strip("'\"")
+    password = os.getenv('SRP_PASSWORD', '').strip().strip("'\"")
+    
+    if not username or not password:
+        return jsonify({'error': 'no_credentials', 'message': 'SRP credentials not configured'}), 401
+    
+    # Fetch chart data
+    async def fetch_chart_data():
+        srp = SRPMonitor()
+        try:
+            await srp.start()
+            if await srp.login():
+                chart_data = await srp.get_daily_usage_chart()
+                return chart_data
+            else:
+                return {'error': 'Failed to login to SRP'}
+        except Exception as e:
+            return {'error': str(e)}
+        finally:
+            await srp.close()
+    
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    result = loop.run_until_complete(fetch_chart_data())
+    
+    # Process the result to add combined usage data
+    if result and not result.get('error'):
+        # Calculate usage as sum of all rate periods
+        if 'rateBreakdown' in result:
+            usage = []
+            num_days = len(result.get('dates', []))
+            
+            for i in range(num_days):
+                daily_usage = 0
+                for rate_type in ['offPeak', 'onPeak', 'superOffPeak']:
+                    if rate_type in result['rateBreakdown'] and i < len(result['rateBreakdown'][rate_type]):
+                        daily_usage += result['rateBreakdown'][rate_type][i]
+                usage.append(daily_usage)
+            
+            result['usage'] = usage
     
     return jsonify(result)
 
