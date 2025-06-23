@@ -739,28 +739,45 @@
                 <div class="card-section">
                     <h2 style="margin-bottom: 1.5rem;">SRP Peak Demand Monitor</h2>
                     
+                    <div id="srp-loading-state" style="display: none; text-align: center; padding: 3rem;">
+                        <div class="loading" style="width: 40px; height: 40px; margin: 0 auto 1rem;"></div>
+                        <p style="color: #94a3b8;">Loading peak demand data...</p>
+                    </div>
+                    
                     <div id="srp-demand-display" style="display: none;">
                         <div style="background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 2rem; margin-bottom: 2rem;">
                             <div style="text-align: center;">
                                 <div id="demand-type" style="color: #3b82f6; font-weight: 600; font-size: 1.125rem; margin-bottom: 1rem;">
-                                    HIGH DEMAND
+                                    PEAK DEMAND
                                 </div>
                                 <div id="demand-value" style="color: #ef4444; font-size: 3rem; font-weight: 700; margin-bottom: 1rem;">
                                     0.0 kW
                                 </div>
+                                <div id="demand-date" style="color: #e2e8f0; font-size: 1rem; margin-bottom: 0.5rem;">
+                                    <!-- Peak demand date will be shown here -->
+                                </div>
                                 <div id="cycle-info" style="color: #94a3b8; font-size: 0.875rem;">
                                     Loading...
+                                </div>
+                                <div id="cache-info" style="color: #64748b; font-size: 0.75rem; margin-top: 1rem; font-style: italic;">
+                                    <!-- Cache info will be shown here -->
                                 </div>
                             </div>
                         </div>
                         
-                        <button class="btn" onclick="refreshSRPDemand()">
-                            Refresh Demand Data
-                            <span id="srp-loading" class="loading" style="display: none;"></span>
-                        </button>
+                        <div style="display: flex; gap: 1rem; justify-content: center;">
+                            <button class="btn" onclick="refreshSRPDemand(false)">
+                                Refresh Demand Data
+                                <span id="srp-refresh-loading" class="loading" style="display: none;"></span>
+                            </button>
+                            <button class="btn" onclick="refreshSRPDemand(true)" style="background: #475569;">
+                                Force Refresh
+                                <span id="srp-force-loading" class="loading" style="display: none;"></span>
+                            </button>
+                        </div>
                     </div>
                     
-                    <div id="srp-no-data" style="text-align: center; padding: 3rem; color: #64748b;">
+                    <div id="srp-no-data" style="display: none; text-align: center; padding: 3rem; color: #64748b;">
                         <p style="margin-bottom: 1rem;">Configure SRP credentials to view peak demand data</p>
                         <button class="btn" onclick="document.querySelector('.tab:nth-child(2)').click()">
                             Go to Configuration
@@ -1055,7 +1072,8 @@
                 
                 // Auto-load SRP data if on SRP tab and credentials exist
                 if (config.srp_username && document.getElementById('srp-tab').classList.contains('active')) {
-                    refreshSRPDemand();
+                    // Delay slightly to ensure DOM is ready
+                    setTimeout(() => refreshSRPDemand(), 100);
                 }
             }
         }
@@ -1101,31 +1119,103 @@
         }
         
         // Refresh SRP demand data
-        async function refreshSRPDemand() {
-            document.getElementById('srp-loading').style.display = 'inline-block';
+        async function refreshSRPDemand(forceRefresh = false) {
+            // Show appropriate loading spinner on buttons if they're visible
+            const demandDisplayVisible = document.getElementById('srp-demand-display').style.display === 'block';
+            
+            if (demandDisplayVisible) {
+                // Just show button spinners, don't hide the display
+                if (forceRefresh) {
+                    document.getElementById('srp-force-loading').style.display = 'inline-block';
+                } else {
+                    document.getElementById('srp-refresh-loading').style.display = 'inline-block';
+                }
+            } else {
+                // Initial load - hide all and show loading state
+                document.getElementById('srp-loading-state').style.display = 'block';
+                document.getElementById('srp-demand-display').style.display = 'none';
+                document.getElementById('srp-no-data').style.display = 'none';
+            }
             
             try {
-                const response = await fetch('/api/srp/demand');
+                const url = forceRefresh ? '/api/srp/demand?force_refresh=true' : '/api/srp/demand';
+                const response = await fetch(url);
                 const data = await response.json();
                 
-                if (data.error) {
+                if (response.status === 401 && data.error === 'no_credentials') {
+                    // No credentials configured
+                    document.getElementById('srp-loading-state').style.display = 'none';
+                    document.getElementById('srp-no-data').style.display = 'block';
+                } else if (data.error) {
                     showAlert('Error fetching SRP data: ' + data.error, 'error');
-                    document.getElementById('srp-demand-display').style.display = 'none';
+                    document.getElementById('srp-loading-state').style.display = 'none';
                     document.getElementById('srp-no-data').style.display = 'block';
                 } else {
                     // Update display
-                    document.getElementById('demand-type').textContent = data.type || 'DEMAND';
+                    document.getElementById('demand-type').textContent = data.type || 'PEAK DEMAND';
                     document.getElementById('demand-value').textContent = data.demand || '0.0 kW';
-                    document.getElementById('cycle-info').textContent = data.cycleInfo || 'Current bill cycle';
+                    document.getElementById('cycle-info').textContent = data.cycleInfo || 'Current billing cycle';
                     
+                    // Show demand date
+                    if (data.demandDate) {
+                        // Parse the date string properly
+                        let dateStr = data.demandDate;
+                        let date;
+                        
+                        // Check if it's a full date (YYYY-MM-DD) or short format (Oct 23)
+                        if (dateStr.includes('-') && dateStr.length === 10) {
+                            date = new Date(dateStr);
+                        } else {
+                            // For short format, use current year
+                            const currentYear = new Date().getFullYear();
+                            date = new Date(`${dateStr} ${currentYear}`);
+                        }
+                        
+                        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                        document.getElementById('demand-date').textContent = 
+                            `Peak demand as of ${date.toLocaleDateString('en-US', options)}`;
+                    } else {
+                        // If no date provided, use today
+                        const today = new Date();
+                        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                        document.getElementById('demand-date').textContent = 
+                            `Peak demand as of ${today.toLocaleDateString('en-US', options)}`;
+                    }
+                    
+                    // Show cache info
+                    if (data.cached && data.cache_timestamp) {
+                        const cacheTime = new Date(data.cache_timestamp);
+                        const timeAgo = getTimeAgo(cacheTime);
+                        document.getElementById('cache-info').textContent = 
+                            `Data cached ${timeAgo} • Updates daily`;
+                    } else {
+                        document.getElementById('cache-info').textContent = 'Live data • Updates daily';
+                    }
+                    
+                    document.getElementById('srp-loading-state').style.display = 'none';
                     document.getElementById('srp-demand-display').style.display = 'block';
-                    document.getElementById('srp-no-data').style.display = 'none';
                 }
             } catch (error) {
                 showAlert('Error fetching SRP demand data', 'error');
+                document.getElementById('srp-loading-state').style.display = 'none';
+                document.getElementById('srp-no-data').style.display = 'block';
             } finally {
-                document.getElementById('srp-loading').style.display = 'none';
+                document.getElementById('srp-refresh-loading').style.display = 'none';
+                document.getElementById('srp-force-loading').style.display = 'none';
             }
+        }
+        
+        // Helper function to get time ago string
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+            
+            if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+            if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+            return 'just now';
         }
         
         // Duplicate function removed - see loadConfiguration above
@@ -1140,8 +1230,12 @@
             
             // Load SRP data when switching to SRP tab
             if (tabName === 'srp') {
-                // Always try to refresh SRP data - the backend will check if credentials exist
-                refreshSRPDemand();
+                // Check if we need to load data (only if not already displayed)
+                const displayVisible = document.getElementById('srp-demand-display').style.display === 'block';
+                const loadingVisible = document.getElementById('srp-loading-state').style.display === 'block';
+                if (!displayVisible && !loadingVisible) {
+                    refreshSRPDemand();
+                }
             }
         }
         

@@ -92,13 +92,19 @@ The SRP integration uses Playwright to:
 2. Login with stored credentials (automatically loaded from .env)
 3. Navigate to the usage page at https://myaccount.srpnet.com/power/myaccount/usage
 4. Extract peak demand data from the `.srp-red-text strong` element
-5. Return formatted JSON with demand value and billing cycle
+5. Extract the demand date from the page (defaults to today if not found)
+6. Return formatted JSON with demand value, date, and billing cycle
+7. Cache the data for 24 hours since peak demand only updates daily
 
 #### Important Notes:
 - Credentials are saved without quotes to the `.env` file
 - On startup, credentials are automatically loaded and verified
 - The system navigates to the usage page specifically to get accurate peak demand data
 - No re-login is required after container restarts
+- Peak demand data is cached for 24 hours to reduce load on SRP servers
+- Users can force a fresh fetch using the "Force Refresh" button
+- The UI displays "Peak demand as of [date]" showing when the data was recorded
+- Cache information is displayed (e.g., "Data cached 2 hours ago • Updates daily")
 
 ## File Structure
 ```
@@ -125,6 +131,9 @@ If SRP login fails:
 2. **Wrong peak demand value**: Fixed by navigating to the usage page instead of dashboard
 3. **Login button not clickable**: Fixed by using Enter key to submit form
 4. **Credentials not persisting**: Fixed by properly writing to .env file without quotes
+5. **"Configure credentials" shown when credentials exist**: Fixed by showing loading state when credentials are present
+6. **Excessive API calls**: Implemented 24-hour caching since peak demand only updates daily
+7. **No date information**: Now displays "Peak demand as of [date]" with the actual demand date
 
 ### Gauge Display Issues
 If gauges appear broken:

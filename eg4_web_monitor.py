@@ -33,6 +33,14 @@ monitor_thread = None
 monitor_running = False
 monitor_data = {}
 credentials_verified = False
+
+# SRP data cache
+srp_cache = {
+    'data': None,
+    'timestamp': None,
+    'cache_duration': 3600 * 24  # 24 hours in seconds
+}
+
 alert_config = {
     'battery_soc': {
         'enabled': False,
@@ -370,10 +378,23 @@ class SRPMonitor:
                     const kwRegex = /(\\d+\\.?\\d*)\\s*kW/gi;
                     const allKwValues = bodyText.match(kwRegex) || [];
                     
+                    // Extract date from cycle info or page content
+                    let demandDate = new Date().toISOString().split('T')[0]; // Default to today
+                    
+                    // Try to find date in cycle info or nearby text
+                    const dateRegex = /(\\d{1,2}\\/\\d{1,2}\\/\\d{4})/g;
+                    const pageDates = bodyText.match(dateRegex) || [];
+                    if (pageDates.length > 0) {
+                        // Use the first date found, which is usually the demand date
+                        const [month, day, year] = pageDates[0].split('/');
+                        demandDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                    }
+                    
                     return {
                         demand: demandValue,
                         type: 'PEAK DEMAND',
                         cycleInfo: cycleInfo,
+                        demandDate: demandDate,
                         timestamp: new Date().toISOString(),
                         allKwValues: allKwValues.slice(0, 10),  // For debugging
                         url: window.location.href  // For debugging
@@ -690,13 +711,43 @@ def get_monitor_data():
 
 @app.route('/api/srp/demand', methods=['GET'])
 def get_srp_demand():
-    """Get SRP peak demand data"""
+    """Get SRP peak demand data with caching"""
+    global srp_cache
+    
+    # Check if we have valid cached data
+    force_refresh = request.args.get('force_refresh', 'false').lower() == 'true'
+    
+    if not force_refresh and srp_cache['data'] and srp_cache['timestamp']:
+        # Check if cache is still valid (less than 24 hours old)
+        cache_age = datetime.now() - srp_cache['timestamp']
+        if cache_age.total_seconds() < srp_cache['cache_duration']:
+            print(f"Returning cached SRP data from {srp_cache['timestamp']}")
+            # Add cache info to response
+            cached_data = srp_cache['data'].copy()
+            cached_data['cached'] = True
+            cached_data['cache_timestamp'] = srp_cache['timestamp'].isoformat()
+            return jsonify(cached_data)
+    
+    # Check if credentials exist
+    username = os.getenv('SRP_USERNAME', '').strip().strip("'\"")
+    password = os.getenv('SRP_PASSWORD', '').strip().strip("'\"")
+    
+    if not username or not password:
+        return jsonify({'error': 'no_credentials', 'message': 'SRP credentials not configured'}), 401
+    
+    # Fetch fresh data
     async def fetch_srp_data():
         srp = SRPMonitor()
         try:
             await srp.start()
             if await srp.login():
                 demand_data = await srp.get_peak_demand()
+                # Cache the successful result
+                if demand_data and 'error' not in demand_data:
+                    srp_cache['data'] = demand_data
+                    srp_cache['timestamp'] = datetime.now()
+                    demand_data['cached'] = False
+                    demand_data['cache_timestamp'] = srp_cache['timestamp'].isoformat()
                 return demand_data
             else:
                 return {'error': 'Failed to login to SRP'}
