@@ -1,0 +1,81 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+spawn ssh solar-assistant@172.16.106.13
+
+expect {
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "password:" {
+        send "solar123\r"
+    }
+}
+
+expect "$ "
+
+# Command 1: Check CPU temperature
+send "echo '=== 1. CPU Temperature Information ==='\r"
+expect "$ "
+send "cat /sys/class/thermal/thermal_zone0/temp\r"
+expect "$ "
+send "vcgencmd measure_temp 2>/dev/null || echo 'vcgencmd not available'\r"
+expect "$ "
+
+# Command 2: Check storage information
+send "echo '=== 2. Storage Information ==='\r"
+expect "$ "
+send "df -h /\r"
+expect "$ "
+send "df -h | grep -E '/$|/var|/opt'\r"
+expect "$ "
+
+# Command 3: Check system services
+send "echo '=== 3. System Services ==='\r"
+expect "$ "
+send "systemctl status influx-bridge.service | head -20\r"
+expect "$ "
+send "ps aux | grep -E 'beam|elixir|solar' | head -10\r"
+expect "$ "
+
+# Command 4: Check for system info scripts or configuration
+send "echo '=== 4. System Info Scripts/Config ==='\r"
+expect "$ "
+send "sudo find /opt /var -name '*system*' -type f 2>/dev/null | grep -v log | head -20\r"
+expect {
+    "password" {
+        send "solar123\r"
+        expect "$ "
+    }
+    "$ " {}
+}
+send "sudo find /opt /var -name '*status*' -type f 2>/dev/null | grep -v log | head -20\r"
+expect "$ "
+
+# Command 5: Look for Phoenix LiveView endpoints
+send "echo '=== 5. Phoenix LiveView Endpoints ==='\r"
+expect "$ "
+send "sudo grep -r 'cpu_temp\\|storage\\|system' /opt 2>/dev/null | head -20\r"
+expect "$ "
+send "sudo find /opt -name '*.ex' -o -name '*.exs' | xargs grep -l 'thermal\\|temperature' 2>/dev/null | head -10\r"
+expect "$ "
+
+# Command 6: Check device info
+send "echo '=== 6. Device Information ==='\r"
+expect "$ "
+send "cat /proc/device-tree/model\r"
+expect "$ "
+send "uname -a\r"
+expect "$ "
+send "lsb_release -a 2>/dev/null || cat /etc/os-release\r"
+expect "$ "
+
+# Additional check for Solar Assistant specific files
+send "echo '=== 7. Solar Assistant Specific Files ==='\r"
+expect "$ "
+send "sudo find /opt/solar_assistant -name '*.ex' | xargs grep -l 'system_info\\|cpu_temp\\|storage' 2>/dev/null | head -10\r"
+expect "$ "
+
+send "exit\r"
+expect eof

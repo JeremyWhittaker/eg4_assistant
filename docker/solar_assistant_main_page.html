@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1"/>
+<meta content="ZjQuZgACBy0hFng5OR0lFR0yKCYfE1k07GlWSTeXfpKKRy_sLqbmMBhL" name="csrf-token">
+<title>SolarAssistant</title>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Exo:wght@400;500;600&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'"/>
+    <noscript>
+        <link href="https://fonts.googleapis.com/css2?family=Exo:wght@400;500;600&display=swap" rel="stylesheet" type="text/css"/>
+    </noscript>
+    <link phx-track-static rel="stylesheet" href="/css/app-17b668327ffae86535bf237829bb8536.css?vsn=d"/>
+    <link rel="manifest" href="/manifest.json">
+
+    <script defer phx-track-static type="text/javascript" src="/js/app-2e582bc3a264a32a8c0d8e3affea6b5a.js?vsn=d"></script>
+    <script defer phx-track-static type="text/javascript" src="/js/vendor/echarts.min-c5ef426b883db4257694b21b88257a57.js?vsn=d"></script>
+</head>
+<body class="with-header">
+<div class="header">
+    <div class="container">
+        <div class="logo"></div>
+        <div class="menu">
+<a href="/" class="menu-item" data-phx-link="redirect" data-phx-link-state="push">
+            <div class="item-img" style="background-image: url(/images/tabs/dashboard-5b9c34163b40b727c3b5dcd31076d3ff.svg?vsn=d);"></div>
+            <span class="item-caption">Dashboard</span>
+</a>
+            <a href="#charts" data-iframe="/grafana/d/sa-charts?kiosk=tv" class="menu-item">
+                <div class="item-img" style="background-image: url(/images/tabs/chart-dd06fb016ea913612257201243918626.svg?vsn=d);"></div>
+                <span class="item-caption">Charts</span>
+            </a>
+<a href="/totals" class="menu-item" data-phx-link="redirect" data-phx-link-state="push">
+            <div class="item-img" style="background-image: url(/images/tabs/totals-686818307521c3750d0cc7888abd3e32.svg?vsn=d);"></div>
+            <span class="item-caption">Totals</span>
+</a>
+<a href="/power" class="menu-item" data-phx-link="redirect" data-phx-link-state="push">
+            <div class="item-img" style="background-image: url(/images/tabs/power-5546d2b53839f64e84fe6970bfe31771.svg?vsn=d);"></div>
+            <span class="item-caption">Power</span>
+</a>
+<a href="/configuration" class="menu-item" data-phx-link="redirect" data-phx-link-state="push">
+            <div class="item-img" style="background-image: url(/images/tabs/config-f7911c4bceb5f8f535f156a57634bfe3.svg?vsn=d);"></div>
+            <span class="item-caption">Configuration</span>
+</a>
+        </div>
+    </div>
+</div>
+<main role="main" id="main" class="main">
+<div data-phx-main data-phx-session="SFMyNTY.g2gDaAJhBXQAAAAIZAACaWRtAAAAFHBoeC1HRXBVLVI4dEdNeWtJdnlCZAAMbGl2ZV9zZXNzaW9uaAJkAAR1c2VybggAQM-UELb6IhhkAApwYXJlbnRfcGlkZAADbmlsZAAIcm9vdF9waWRkAANuaWxkAAlyb290X3ZpZXdkACxFbGl4aXIuU29sYXJBc3Npc3RhbnRXZWIuTGl2ZS5EYXNoYm9hcmQuU2hvd2QABnJvdXRlcmQAH0VsaXhpci5Tb2xhckFzc2lzdGFudFdlYi5Sb3V0ZXJkAAdzZXNzaW9udAAAAABkAAR2aWV3ZAAsRWxpeGlyLlNvbGFyQXNzaXN0YW50V2ViLkxpdmUuRGFzaGJvYXJkLlNob3duBgBiQkyGlwFiAAFRgA.4ydp73lHr7ihpbVAEz8Xl2CX-2GKwhEuUuzKT6NmZPM" data-phx-static="SFMyNTY.g2gDaAJhBXQAAAADZAAKYXNzaWduX25ld2pkAAVmbGFzaHQAAAAAZAACaWRtAAAAFHBoeC1HRXBVLVI4dEdNeWtJdnlCbgYAY0JMhpcBYgABUYA.u8pFwid7pwAMWZoSeCY_sMZ-y5N7hDCsaxOCljX2vOw" id="phx-GEpU-R8tGMykIvyB"><p class="flash info" role="alert" phx-click="lv:clear-flash" phx-value-key="info"></p>
+<p class="flash error" role="alert" phx-click="lv:clear-flash" phx-value-key="error"></p>
+<div class="content">
+  <div class="flex-grid dashboard">
+    <div class="card">
+        <div class="card-section dashboard-info flex">
+            <div class="half">
+<a href="/inverter/status" class="status" data-phx-link="redirect" data-phx-link-state="push">
+
+<img src="/images/inverter/ok-fe2f1b85ef70c1dfaa2faf139b94b233.svg?vsn=d">
+
+                <div>
+                    <div class="label">
+Inverter
+                    </div>
+                    <div class="value">
+Grid mode
+                    </div>
+                </div>
+</a>
+            </div>
+            <div class="half">
+                <div class="status">
+<img src="/images/forecast/3-9418d74806ffd07e6c45f53919408ecb.svg?vsn=d">
+                    <div>
+                        <div class="label">
+Solar PV
+                        </div>
+                        <div class="value small">
+                            D:  kWh
+                        </div>
+                        <div class="value small">
+                            W:  kWh
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="half">
+<a href="/grid/status" class="status" data-phx-link="redirect" data-phx-link-state="push">
+<img src="/images/grid/ok-1df0795fc70704d18afc2143eea5d7b6.svg?vsn=d">
+                <div>
+                    <div class="label">
+Grid
+                    </div>
+                    <div class="value">
+235.3 V
+                    </div>
+                    <div class="value font-small">
+                        <span class=""></span>
+                    </div>
+                </div>
+</a>
+            </div>
+            <div class="half">
+<a href="/battery/status" class="status" data-phx-link="redirect" data-phx-link-state="push">
+<img src="/images/battery/low-charging-1ddce1efd57082f4bc086d662cf24023.svg?vsn=d">
+                <div>
+                    <div class="label">
+Battery
+                    </div>
+
+
+                    <div class="value">
+21 %
+                    </div>
+                    <div class="value battery-change">
+<span class="positive">2.0 %/hr</span>
+                    </div>
+
+                </div>
+</a>
+            </div>
+        </div>
+
+        <div class="card-section dashboard-gauges flex">
+            <div class="half">
+                <div class="gauge">
+                    <div class="mask">
+                        <div class="semi-circle blue"></div>
+                        <div class="semi-circle--mask"
+                              style="transform: rotate(180.0deg)"></div>
+                    </div>
+                    <div class="value">
+7083 W
+                    </div>
+                    <div class="label">
+Load
+                    </div>
+                </div>
+            </div>
+            <div class="half">
+                <div class="gauge">
+                    <div class="mask">
+                        <div class="semi-circle yellow"></div>
+                        <div class="semi-circle--mask"
+                              style="transform: rotate(0.0deg)"></div>
+                    </div>
+                    <div class="value">
+0 W
+                    </div>
+                    <div class="label">
+Solar PV
+                    </div>
+                </div>
+            </div>
+            <div class="half">
+                <div class="gauge">
+                    <div class="mask">
+                        <div class="semi-circle red"></div>
+                        <div class="semi-circle--mask"
+                              style="transform: rotate(180.0deg)"></div>
+                    </div>
+                    <div class="value">
+7702 W
+                    </div>
+                    <div class="label">
+Grid
+                    </div>
+                </div>
+            </div>
+            <div class="half">
+                <div class="gauge">
+                    <div class="mask">
+                        <div class="semi-circle green"></div>
+                        <div class="semi-circle--mask"
+                              style="transform: rotate(20.052000000000003deg)"></div>
+                    </div>
+                    <div class="value">
+557 W
+                    </div>
+                    <div class="label">
+Battery
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <iframe src="/grafana/d-solo/sa-charts?orgId=1&refresh=1m&panelId=1" class="iframe-overview" scrolling="no"
+                frameborder="0">
+        </iframe>
+    </div>
+
+    <div class="card">
+        <iframe src="/grafana/d-solo/sa-charts?orgId=1&refresh=1m&panelId=2" class="iframe-battery-power"
+                scrolling="no" frameborder="0">
+        </iframe>
+        <iframe src="/grafana/d-solo/sa-charts?orgId=1&refresh=1m&panelId=3" class="iframe-battery-soc"
+                scrolling="no" frameborder="0">
+        </iframe>
+    </div>
+  </div>
+</div>
+</div>
+</main>
+</body>
+</html>

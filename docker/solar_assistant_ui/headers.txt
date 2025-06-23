@@ -1,0 +1,15 @@
+HTTP/1.1 302 Found
+cache-control: max-age=0, private, must-revalidate
+content-length: 74
+content-type: text/html; charset=utf-8
+date: Wed, 18 Jun 2025 19:21:41 GMT
+location: /sign_in
+referrer-policy: strict-origin-when-cross-origin
+server: Cowboy
+x-content-type-options: nosniff
+x-download-options: noopen
+x-frame-options: SAMEORIGIN
+x-permitted-cross-domain-policies: none
+x-request-id: GEo5YtQWiouRehUAkJfj
+set-cookie: _solar_assistant_key=SFMyNTY.g3QAAAABbQAAAA51c2VyX3JldHVybl90b20AAAABLw.OEw7P1eBz3XWBx-VAaPu7G26g-VOMIR0OnVXPQf9jvs; path=/; expires=Fri, 18 Jul 2025 19:21:41 GMT; max-age=2592000; HttpOnly
+

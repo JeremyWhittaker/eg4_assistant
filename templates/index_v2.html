@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EG4 Web Monitor</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #ddd;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            margin-right: 5px;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input[type="text"], input[type="password"], input[type="number"], input[type="time"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+            margin-right: 10px;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .alert-config {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-config h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .monitoring-data {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .data-card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .data-card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .data-card h3 span {
+            margin-right: 10px;
+        }
+        
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .data-item:last-child {
+            border-bottom: none;
+        }
+        
+        .battery-bar {
+            width: 100%;
+            height: 30px;
+            background: #ddd;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+            position: relative;
+        }
+        
+        .battery-fill {
+            height: 100%;
+            background: linear-gradient(to right, #27ae60, #2ecc71);
+            transition: width 0.5s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .battery-fill.charging {
+            background: linear-gradient(to right, #3498db, #2980b9);
+        }
+        
+        .battery-fill.discharging {
+            background: linear-gradient(to right, #e74c3c, #c0392b);
+        }
+        
+        .alert-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            animation: slideIn 0.3s;
+            z-index: 1000;
+        }
+        
+        .alert-notification.warning {
+            background: #f39c12;
+        }
+        
+        .alert-notification.critical {
+            background: #e74c3c;
+        }
+        
+        .alert-notification.success {
+            background: #27ae60;
+        }
+        
+        .alert-notification.error {
+            background: #e74c3c;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+        
+        .status-indicator.online {
+            background: #27ae60;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-indicator.offline {
+            background: #e74c3c;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .time-range {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .time-range input {
+            width: auto;
+            flex: 1;
+        }
+        
+        .credentials-status {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .credentials-status.verified {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .credentials-status.unverified {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .no-data-message {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>EG4 Web Monitor</h1>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('monitoring')">Monitoring</div>
+            <div class="tab" onclick="switchTab('configuration')">Configuration</div>
+        </div>
+        
+        <!-- Monitoring Tab -->
+        <div id="monitoring-tab" class="tab-content active">
+            <div id="credentials-status" class="credentials-status unverified">
+                ⚠️ Please configure and verify credentials in the Configuration tab first
+            </div>
+            
+            <h2>Real-time Monitoring <span id="connection-status" class="status-indicator offline"></span></h2>
+            
+            <div id="no-data-message" class="no-data-message">
+                No data available. Please start monitoring after configuring credentials.
+            </div>
+            
+            <div id="monitoring-data" class="monitoring-data" style="display: none;">
+                <div class="data-card">
+                    <h3><span>🔋</span> Battery</h3>
+                    <div class="battery-bar">
+                        <div id="battery-fill" class="battery-fill" style="width: 0%">0%</div>
+                    </div>
+                    <div class="data-item">
+                        <span>Power:</span>
+                        <span id="battery-power">--</span>
+                    </div>
+                    <div class="data-item">
+                        <span>Voltage:</span>
+                        <span id="battery-voltage">--</span>
+                    </div>
+                    <div class="data-item">
+                        <span>Current:</span>
+                        <span id="battery-current">--</span>
+                    </div>
+                </div>
+                
+                <div class="data-card">
+                    <h3><span>☀️</span> Solar</h3>
+                    <div class="data-item">
+                        <span>Total Power:</span>
+                        <span id="pv-total">--</span>
+                    </div>
+                    <div class="data-item">
+                        <span>PV1:</span>
+                        <span id="pv1-power">--</span>
+                    </div>
+                    <div class="data-item">
+                        <span>PV2:</span>
+                        <span id="pv2-power">--</span>
+                    </div>
+                </div>
+                
+                <div class="data-card">
+                    <h3><span>⚡</span> Grid</h3>
+                    <div class="data-item">
+                        <span>Power:</span>
+                        <span id="grid-power">--</span>
+                    </div>
+                    <div class="data-item">
+                        <span>Voltage:</span>
+                        <span id="grid-voltage">--</span>
+                    </div>
+                    <div class="data-item">
+                        <span>Frequency:</span>
+                        <span id="grid-frequency">--</span>
+                    </div>
+                </div>
+                
+                <div class="data-card">
+                    <h3><span>🏠</span> Load</h3>
+                    <div class="data-item">
+                        <span>Power:</span>
+                        <span id="load-power">--</span>
+                    </div>
+                    <div class="data-item">
+                        <span>Percentage:</span>
+                        <span id="load-percentage">--</span>
+                    </div>
+                </div>
+                
+                <div class="data-card">
+                    <h3><span>📊</span> Today's Energy</h3>
+                    <div class="data-item">
+                        <span>Solar Yield:</span>
+                        <span id="daily-yield">--</span>
+                    </div>
+                    <div class="data-item">
+                        <span>Consumption:</span>
+                        <span id="daily-consumption">--</span>
+                    </div>
+                    <div class="data-item">
+                        <span>Grid Import:</span>
+                        <span id="daily-import">--</span>
+                    </div>
+                    <div class="data-item">
+                        <span>Grid Export:</span>
+                        <span id="daily-export">--</span>
+                    </div>
+                </div>
+                
+                <div class="data-card">
+                    <h3><span>⚙️</span> System</h3>
+                    <div class="data-item">
+                        <span>Status:</span>
+                        <span id="system-status">--</span>
+                    </div>
+                    <div class="data-item">
+                        <span>Temperature:</span>
+                        <span id="system-temp">--</span>
+                    </div>
+                    <div class="data-item">
+                        <span>Last Update:</span>
+                        <span id="last-update">--</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <button id="start-monitoring-btn" onclick="startMonitoring()" style="background: #27ae60;" disabled>Start Monitoring</button>
+                <button id="stop-monitoring-btn" onclick="stopMonitoring()" style="background: #e74c3c;" disabled>Stop Monitoring</button>
+                <button onclick="refreshData()" style="background: #95a5a6;">Refresh Data</button>
+            </div>
+            
+            <h2 style="margin-top: 30px;">Alert Configuration</h2>
+            
+            <div class="alert-config">
+                <h3>🔋 Battery SOC Alert</h3>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="battery-alert-enabled">
+                        Enable Battery SOC Alert
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>Check Time:</label>
+                    <input type="time" id="battery-check-time" value="06:00">
+                </div>
+                <div class="form-group">
+                    <label>Minimum SOC (%):</label>
+                    <input type="number" id="battery-min-soc" min="0" max="100" value="80">
+                </div>
+            </div>
+            
+            <div class="alert-config">
+                <h3>⚡ Peak Demand Alert</h3>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="peak-alert-enabled">
+                        Enable Peak Demand Alert
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>Time Range:</label>
+                    <div class="time-range">
+                        <input type="time" id="peak-start-time" value="16:00">
+                        <span>to</span>
+                        <input type="time" id="peak-end-time" value="21:00">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Maximum Load (W):</label>
+                    <input type="number" id="peak-max-load" min="0" value="5000">
+                </div>
+                <div class="form-group">
+                    <label>Duration (minutes):</label>
+                    <input type="number" id="peak-duration" min="1" value="5">
+                </div>
+            </div>
+            
+            <div class="alert-config">
+                <h3>☁️ Cloud Connectivity Alert</h3>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="cloud-alert-enabled">
+                        Enable Cloud Connectivity Alert
+                    </label>
+                </div>
+            </div>
+            
+            <button onclick="saveAlertConfig()">Save Alert Configuration</button>
+        </div>
+        
+        <!-- Configuration Tab -->
+        <div id="configuration-tab" class="tab-content">
+            <h2>EG4 Cloud Configuration</h2>
+            
+            <div class="form-group">
+                <label>Username:</label>
+                <input type="text" id="config-username" placeholder="Enter EG4 username">
+            </div>
+            
+            <div class="form-group">
+                <label>Password:</label>
+                <input type="password" id="config-password" placeholder="Enter EG4 password">
+            </div>
+            
+            <button onclick="testCredentials()" style="background: #95a5a6;">Test Credentials</button>
+            <button onclick="saveConfiguration()">Save Configuration</button>
+            <span id="config-loading" class="loading" style="display: none;"></span>
+            
+            <div id="config-message" style="margin-top: 20px; display: none;">
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const socket = io();
+        let monitoringActive = false;
+        let credentialsVerified = false;
+        
+        // Socket event handlers
+        socket.on('connect', () => {
+            document.getElementById('connection-status').classList.add('online');
+            document.getElementById('connection-status').classList.remove('offline');
+            console.log('Connected to server');
+        });
+        
+        socket.on('disconnect', () => {
+            document.getElementById('connection-status').classList.remove('online');
+            document.getElementById('connection-status').classList.add('offline');
+            console.log('Disconnected from server');
+        });
+        
+        socket.on('monitor_update', (data) => {
+            console.log('Received monitor update:', data);
+            updateMonitoringData(data);
+            document.getElementById('no-data-message').style.display = 'none';
+            document.getElementById('monitoring-data').style.display = 'grid';
+        });
+        
+        socket.on('alert', (alert) => {
+            showAlert(alert);
+        });
+        
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+        
+        // Update monitoring data
+        function updateMonitoringData(data) {
+            // Battery
+            if (data.battery) {
+                document.getElementById('battery-power').textContent = data.battery.power || '--';
+                document.getElementById('battery-voltage').textContent = data.battery.voltage || '--';
+                document.getElementById('battery-current').textContent = data.battery.current || '--';
+                
+                // Battery bar
+                const soc = data.battery.soc;
+                if (soc && soc !== '--') {
+                    const socValue = parseInt(soc.replace('%', ''));
+                    const batteryFill = document.getElementById('battery-fill');
+                    batteryFill.style.width = socValue + '%';
+                    batteryFill.textContent = soc;
+                    
+                    // Update color based on power
+                    const powerStr = data.battery.power;
+                    if (powerStr && powerStr !== '--') {
+                        const power = parseInt(powerStr.replace('W', '').replace(',', '').trim()) || 0;
+                        batteryFill.classList.remove('charging', 'discharging');
+                        if (power > 0) {
+                            batteryFill.classList.add('charging');
+                        } else if (power < 0) {
+                            batteryFill.classList.add('discharging');
+                        }
+                    }
+                }
+            }
+            
+            // Solar
+            if (data.pv) {
+                document.getElementById('pv-total').textContent = data.pv.total_power || '--';
+                document.getElementById('pv1-power').textContent = data.pv.pv1_power || '--';
+                document.getElementById('pv2-power').textContent = data.pv.pv2_power || '--';
+            }
+            
+            // Grid
+            if (data.grid) {
+                document.getElementById('grid-power').textContent = data.grid.power || '--';
+                document.getElementById('grid-voltage').textContent = data.grid.voltage || '--';
+                document.getElementById('grid-frequency').textContent = data.grid.frequency || '--';
+            }
+            
+            // Load
+            if (data.load) {
+                document.getElementById('load-power').textContent = data.load.power || '--';
+                document.getElementById('load-percentage').textContent = data.load.percentage || '--';
+            }
+            
+            // Daily statistics
+            if (data.daily) {
+                document.getElementById('daily-yield').textContent = data.daily.solar_yield || '--';
+                document.getElementById('daily-consumption').textContent = data.daily.consumption || '--';
+                document.getElementById('daily-import').textContent = data.daily.grid_import || '--';
+                document.getElementById('daily-export').textContent = data.daily.grid_export || '--';
+            }
+            
+            // System
+            if (data.system) {
+                document.getElementById('system-status').textContent = data.system.status || '--';
+                document.getElementById('system-temp').textContent = data.system.temperature || '--';
+            }
+            
+            // Update timestamp
+            if (data.timestamp) {
+                const date = new Date(data.timestamp);
+                document.getElementById('last-update').textContent = date.toLocaleTimeString();
+            }
+        }
+        
+        // Show alert notification
+        function showAlert(alert) {
+            const notification = document.createElement('div');
+            notification.className = `alert-notification ${alert.severity}`;
+            notification.textContent = alert.message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 10000);
+        }
+        
+        // Show message notification
+        function showMessage(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `alert-notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+        
+        // Test credentials
+        async function testCredentials() {
+            const username = document.getElementById('config-username').value;
+            const password = document.getElementById('config-password').value;
+            
+            if (!username || !password) {
+                showMessage('Please enter both username and password', 'error');
+                return;
+            }
+            
+            document.getElementById('config-loading').style.display = 'inline-block';
+            
+            try {
+                const response = await fetch('/api/test-credentials', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, password})
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showMessage('Credentials are valid!', 'success');
+                } else {
+                    showMessage(result.message || 'Invalid credentials', 'error');
+                }
+            } catch (error) {
+                showMessage('Error testing credentials', 'error');
+            } finally {
+                document.getElementById('config-loading').style.display = 'none';
+            }
+        }
+        
+        // Save configuration
+        async function saveConfiguration() {
+            const username = document.getElementById('config-username').value;
+            const password = document.getElementById('config-password').value;
+            
+            if (!username || !password) {
+                showMessage('Please enter both username and password', 'error');
+                return;
+            }
+            
+            document.getElementById('config-loading').style.display = 'inline-block';
+            
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, password})
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showMessage('Configuration saved successfully!', 'success');
+                    credentialsVerified = true;
+                    updateCredentialsStatus(true);
+                    // Switch to monitoring tab
+                    document.querySelector('.tab').click();
+                } else {
+                    showMessage(result.message || 'Failed to save configuration', 'error');
+                }
+            } catch (error) {
+                showMessage('Error saving configuration', 'error');
+            } finally {
+                document.getElementById('config-loading').style.display = 'none';
+            }
+        }
+        
+        // Update credentials status
+        function updateCredentialsStatus(verified) {
+            const statusEl = document.getElementById('credentials-status');
+            const startBtn = document.getElementById('start-monitoring-btn');
+            const stopBtn = document.getElementById('stop-monitoring-btn');
+            
+            if (verified) {
+                statusEl.className = 'credentials-status verified';
+                statusEl.textContent = '✅ Credentials verified - Ready to monitor';
+                startBtn.disabled = false;
+                stopBtn.disabled = false;
+            } else {
+                statusEl.className = 'credentials-status unverified';
+                statusEl.textContent = '⚠️ Please configure and verify credentials in the Configuration tab first';
+                startBtn.disabled = true;
+                stopBtn.disabled = true;
+            }
+        }
+        
+        // Save alert configuration
+        async function saveAlertConfig() {
+            const alerts = {
+                battery_soc: {
+                    enabled: document.getElementById('battery-alert-enabled').checked,
+                    check_time: document.getElementById('battery-check-time').value,
+                    min_soc: parseInt(document.getElementById('battery-min-soc').value)
+                },
+                peak_demand: {
+                    enabled: document.getElementById('peak-alert-enabled').checked,
+                    start_time: document.getElementById('peak-start-time').value,
+                    end_time: document.getElementById('peak-end-time').value,
+                    max_load: parseInt(document.getElementById('peak-max-load').value),
+                    duration_minutes: parseInt(document.getElementById('peak-duration').value)
+                },
+                cloud_connectivity: {
+                    enabled: document.getElementById('cloud-alert-enabled').checked
+                }
+            };
+            
+            const response = await fetch('/api/config', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({alerts})
+            });
+            
+            if (response.ok) {
+                showMessage('Alert configuration saved!', 'success');
+            }
+        }
+        
+        // Start monitoring
+        async function startMonitoring() {
+            const response = await fetch('/api/monitor/start', {method: 'POST'});
+            const result = await response.json();
+            
+            if (response.ok) {
+                monitoringActive = true;
+                showMessage('Monitoring started!', 'success');
+            } else {
+                showMessage(result.message || 'Failed to start monitoring', 'error');
+            }
+        }
+        
+        // Stop monitoring
+        async function stopMonitoring() {
+            const response = await fetch('/api/monitor/stop', {method: 'POST'});
+            if (response.ok) {
+                monitoringActive = false;
+                showMessage('Monitoring stopped!', 'success');
+            }
+        }
+        
+        // Refresh data
+        async function refreshData() {
+            const response = await fetch('/api/monitor/data');
+            if (response.ok) {
+                const data = await response.json();
+                if (data && !data.error) {
+                    updateMonitoringData(data);
+                    document.getElementById('no-data-message').style.display = 'none';
+                    document.getElementById('monitoring-data').style.display = 'grid';
+                }
+            }
+        }
+        
+        // Load configuration on page load
+        async function loadConfiguration() {
+            const response = await fetch('/api/config');
+            if (response.ok) {
+                const config = await response.json();
+                
+                // Set username
+                if (config.username) {
+                    document.getElementById('config-username').value = config.username;
+                }
+                
+                // Update credentials status
+                credentialsVerified = config.credentials_verified || false;
+                updateCredentialsStatus(credentialsVerified);
+                
+                // Set alerts
+                if (config.alerts) {
+                    // Battery SOC
+                    document.getElementById('battery-alert-enabled').checked = config.alerts.battery_soc.enabled;
+                    document.getElementById('battery-check-time').value = config.alerts.battery_soc.check_time;
+                    document.getElementById('battery-min-soc').value = config.alerts.battery_soc.min_soc;
+                    
+                    // Peak Demand
+                    document.getElementById('peak-alert-enabled').checked = config.alerts.peak_demand.enabled;
+                    document.getElementById('peak-start-time').value = config.alerts.peak_demand.start_time;
+                    document.getElementById('peak-end-time').value = config.alerts.peak_demand.end_time;
+                    document.getElementById('peak-max-load').value = config.alerts.peak_demand.max_load;
+                    document.getElementById('peak-duration').value = config.alerts.peak_demand.duration_minutes;
+                    
+                    // Cloud Connectivity
+                    document.getElementById('cloud-alert-enabled').checked = config.alerts.cloud_connectivity.enabled;
+                }
+            }
+        }
+        
+        // Load config on startup
+        loadConfiguration();
+    </script>
+</body>
+</html>

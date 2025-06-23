@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+
+{% block title %}Advanced Charts - EG4 Assistant{% endblock %}
+
+{% block content %}
+<div class="charts-container">
+    <div class="charts-header">
+        <h1>Advanced Charts</h1>
+        <div class="chart-controls">
+            <select id="inverter-select" class="form-control">
+                <option value="all">All Inverters</option>
+                {% for inverter in inverters %}
+                <option value="{{ inverter.id }}">{{ inverter.name }}</option>
+                {% endfor %}
+            </select>
+            
+            <select id="time-range" class="form-control">
+                <option value="1h">Last Hour</option>
+                <option value="6h">Last 6 Hours</option>
+                <option value="24h" selected>Last 24 Hours</option>
+                <option value="7d">Last 7 Days</option>
+                <option value="30d">Last 30 Days</option>
+            </select>
+            
+            <button class="btn btn-secondary" onclick="exportChartData()">
+                <i class="icon-download"></i> Export Data
+            </button>
+        </div>
+    </div>
+    
+    <div class="charts-grid">
+        <!-- Power Overview -->
+        <div class="chart-card full-width">
+            <h3>Power Overview</h3>
+            <div id="power-overview-chart" style="width: 100%; height: 400px;"></div>
+        </div>
+        
+        <!-- Energy Production -->
+        <div class="chart-card">
+            <h3>Energy Production</h3>
+            <div id="energy-production-chart" style="width: 100%; height: 300px;"></div>
+        </div>
+        
+        <!-- Battery State -->
+        <div class="chart-card">
+            <h3>Battery State</h3>
+            <div id="battery-state-chart" style="width: 100%; height: 300px;"></div>
+        </div>
+        
+        <!-- System Efficiency -->
+        <div class="chart-card">
+            <h3>System Efficiency</h3>
+            <div id="efficiency-chart" style="width: 100%; height: 300px;"></div>
+        </div>
+        
+        <!-- Temperature Monitoring -->
+        <div class="chart-card">
+            <h3>Temperature Monitoring</h3>
+            <div id="temperature-chart" style="width: 100%; height: 300px;"></div>
+        </div>
+        
+        <!-- Grid Analysis -->
+        <div class="chart-card full-width">
+            <h3>Grid Analysis</h3>
+            <div id="grid-analysis-chart" style="width: 100%; height: 300px;"></div>
+        </div>
+        
+        <!-- Custom Chart -->
+        <div class="chart-card full-width">
+            <h3>Custom Chart Builder</h3>
+            <div class="custom-chart-controls">
+                <select id="metric1" class="form-control">
+                    <option value="">Select Metric 1</option>
+                    <option value="pv_power">PV Power</option>
+                    <option value="battery_power">Battery Power</option>
+                    <option value="grid_power">Grid Power</option>
+                    <option value="load_power">Load Power</option>
+                    <option value="battery_soc">Battery SOC</option>
+                    <option value="battery_voltage">Battery Voltage</option>
+                    <option value="grid_voltage">Grid Voltage</option>
+                    <option value="inverter_temp">Inverter Temperature</option>
+                </select>
+                
+                <select id="metric2" class="form-control">
+                    <option value="">Select Metric 2 (Optional)</option>
+                    <option value="pv_power">PV Power</option>
+                    <option value="battery_power">Battery Power</option>
+                    <option value="grid_power">Grid Power</option>
+                    <option value="load_power">Load Power</option>
+                    <option value="battery_soc">Battery SOC</option>
+                    <option value="battery_voltage">Battery Voltage</option>
+                    <option value="grid_voltage">Grid Voltage</option>
+                    <option value="inverter_temp">Inverter Temperature</option>
+                </select>
+                
+                <button class="btn btn-primary" onclick="updateCustomChart()">Update Chart</button>
+            </div>
+            <div id="custom-chart" style="width: 100%; height: 400px;"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+.charts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.chart-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 20px;
+}
+
+.chart-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.chart-card.full-width {
+    grid-column: 1 / -1;
+}
+
+.chart-card h3 {
+    margin-bottom: 20px;
+    color: #1976D2;
+}
+
+.custom-chart-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.form-control {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Chart instances
+const charts = {};
+
+// Initialize all charts
+function initCharts() {
+    // Power Overview Chart
+    charts.powerOverview = echarts.init(document.getElementById('power-overview-chart'));
+    charts.powerOverview.setOption({
+        title: { text: 'Power Flow Over Time' },
+        tooltip: { trigger: 'axis' },
+        legend: {
+            data: ['PV Power', 'Battery Power', 'Grid Power', 'Load Power']
+        },
+        xAxis: { type: 'time' },
+        yAxis: { 
+            type: 'value',
+            name: 'Power (W)',
+            axisLabel: { formatter: '{value} W' }
+        },
+        series: [
+            {
+                name: 'PV Power',
+                type: 'line',
+                smooth: true,
+                data: [],
+                itemStyle: { color: '#FFC107' }
+            },
+            {
+                name: 'Battery Power',
+                type: 'line',
+                smooth: true,
+                data: [],
+                itemStyle: { color: '#4CAF50' }
+            },
+            {
+                name: 'Grid Power',
+                type: 'line',
+                smooth: true,
+                data: [],
+                itemStyle: { color: '#9C27B0' }
+            },
+            {
+                name: 'Load Power',
+                type: 'line',
+                smooth: true,
+                data: [],
+                itemStyle: { color: '#FF5722' }
+            }
+        ],
+        dataZoom: [
+            {
+                type: 'slider',
+                show: true,
+                xAxisIndex: [0],
+                start: 0,
+                end: 100
+            }
+        ]
+    });
+    
+    // Energy Production Chart
+    charts.energyProduction = echarts.init(document.getElementById('energy-production-chart'));
+    charts.energyProduction.setOption({
+        title: { text: 'Daily Energy Production' },
+        tooltip: { trigger: 'axis' },
+        xAxis: { type: 'category', data: [] },
+        yAxis: { 
+            type: 'value',
+            name: 'Energy (kWh)',
+            axisLabel: { formatter: '{value} kWh' }
+        },
+        series: [{
+            name: 'Energy',
+            type: 'bar',
+            data: [],
+            itemStyle: { color: '#FFC107' }
+        }]
+    });
+    
+    // Battery State Chart
+    charts.batteryState = echarts.init(document.getElementById('battery-state-chart'));
+    charts.batteryState.setOption({
+        title: { text: 'Battery State of Charge' },
+        tooltip: { trigger: 'axis' },
+        xAxis: { type: 'time' },
+        yAxis: { 
+            type: 'value',
+            name: 'SOC (%)',
+            min: 0,
+            max: 100,
+            axisLabel: { formatter: '{value}%' }
+        },
+        series: [{
+            name: 'Battery SOC',
+            type: 'line',
+            smooth: true,
+            areaStyle: {},
+            data: [],
+            itemStyle: { color: '#4CAF50' }
+        }],
+        visualMap: {
+            show: false,
+            pieces: [
+                {lte: 20, color: '#FF5722'},
+                {gt: 20, lte: 50, color: '#FFC107'},
+                {gt: 50, color: '#4CAF50'}
+            ]
+        }
+    });
+    
+    // Initialize other charts...
+    
+    // Resize charts on window resize
+    window.addEventListener('resize', function() {
+        Object.values(charts).forEach(chart => chart.resize());
+    });
+}
+
+// Load chart data
+function loadChartData() {
+    const inverterId = document.getElementById('inverter-select').value;
+    const timeRange = document.getElementById('time-range').value;
+    
+    // Calculate date range
+    const now = new Date();
+    let startDate = new Date();
+    
+    switch(timeRange) {
+        case '1h': startDate.setHours(now.getHours() - 1); break;
+        case '6h': startDate.setHours(now.getHours() - 6); break;
+        case '24h': startDate.setDate(now.getDate() - 1); break;
+        case '7d': startDate.setDate(now.getDate() - 7); break;
+        case '30d': startDate.setDate(now.getDate() - 30); break;
+    }
+    
+    // Fetch data from API
+    const params = new URLSearchParams({
+        start_date: startDate.toISOString(),
+        end_date: now.toISOString()
+    });
+    
+    if (inverterId !== 'all') {
+        params.append('inverter_id', inverterId);
+    }
+    
+    fetch(`/api/v1/charts/data?${params}`)
+        .then(response => response.json())
+        .then(data => updateCharts(data));
+}
+
+// Update charts with new data
+function updateCharts(data) {
+    // Update power overview
+    if (charts.powerOverview && data.power) {
+        charts.powerOverview.setOption({
+            series: [
+                { data: data.power.pv_power },
+                { data: data.power.battery_power },
+                { data: data.power.grid_power },
+                { data: data.power.load_power }
+            ]
+        });
+    }
+    
+    // Update other charts...
+}
+
+// Export chart data
+function exportChartData() {
+    const inverterId = document.getElementById('inverter-select').value;
+    const timeRange = document.getElementById('time-range').value;
+    
+    window.location.href = `/api/v1/export/csv?inverter_id=${inverterId}&time_range=${timeRange}`;
+}
+
+// Update custom chart
+function updateCustomChart() {
+    const metric1 = document.getElementById('metric1').value;
+    const metric2 = document.getElementById('metric2').value;
+    
+    if (!metric1) {
+        alert('Please select at least one metric');
+        return;
+    }
+    
+    // Initialize custom chart if not exists
+    if (!charts.custom) {
+        charts.custom = echarts.init(document.getElementById('custom-chart'));
+    }
+    
+    // Build chart configuration
+    const series = [{
+        name: metric1,
+        type: 'line',
+        smooth: true,
+        data: []
+    }];
+    
+    if (metric2) {
+        series.push({
+            name: metric2,
+            type: 'line',
+            smooth: true,
+            data: [],
+            yAxisIndex: 1
+        });
+    }
+    
+    charts.custom.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { data: [metric1, metric2].filter(Boolean) },
+        xAxis: { type: 'time' },
+        yAxis: [
+            { type: 'value', name: metric1 },
+            metric2 ? { type: 'value', name: metric2 } : null
+        ].filter(Boolean),
+        series: series
+    });
+    
+    // Load data for custom metrics
+    loadCustomChartData(metric1, metric2);
+}
+
+// Initialize on load
+window.addEventListener('load', function() {
+    initCharts();
+    loadChartData();
+    
+    // Reload data periodically
+    setInterval(loadChartData, 60000); // Every minute
+});
+
+// Event listeners
+document.getElementById('inverter-select').addEventListener('change', loadChartData);
+document.getElementById('time-range').addEventListener('change', loadChartData);
+</script>
+{% endblock %}

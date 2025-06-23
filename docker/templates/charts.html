@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}Charts - EG4 Assistant{% endblock %}
+
+{% block content %}
+<div class="charts-container">
+    <h2>Real-time Charts</h2>
+    
+    <div class="charts-grid">
+        <!-- Power Chart -->
+        <div class="chart-card">
+            <div id="power-chart" style="width: 100%; height: 400px;"></div>
+        </div>
+        
+        <!-- Battery SOC Chart -->
+        <div class="chart-card">
+            <div id="battery-chart" style="width: 100%; height: 400px;"></div>
+        </div>
+        
+        <!-- Voltage Chart -->
+        <div class="chart-card">
+            <div id="voltage-chart" style="width: 100%; height: 400px;"></div>
+        </div>
+        
+        <!-- Temperature Chart -->
+        <div class="chart-card">
+            <div id="temperature-chart" style="width: 100%; height: 400px;"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Initialize all charts
+const charts = {
+    power: echarts.init(document.getElementById('power-chart')),
+    battery: echarts.init(document.getElementById('battery-chart')),
+    voltage: echarts.init(document.getElementById('voltage-chart')),
+    temperature: echarts.init(document.getElementById('temperature-chart'))
+};
+
+// Chart data storage
+const chartData = {
+    timestamps: [],
+    pv_power: [],
+    battery_power: [],
+    grid_power: [],
+    load_power: [],
+    battery_soc: [],
+    pv_voltage: [],
+    battery_voltage: [],
+    grid_voltage: [],
+    battery_temp: [],
+    inverter_temp: []
+};
+
+// Power Chart Options
+const powerChartOption = {
+    title: { text: 'Power Flow', left: 'center' },
+    tooltip: { trigger: 'axis' },
+    legend: {
+        data: ['PV Power', 'Battery Power', 'Grid Power', 'Load Power'],
+        bottom: 0
+    },
+    xAxis: {
+        type: 'time',
+        boundaryGap: false
+    },
+    yAxis: {
+        type: 'value',
+        name: 'Power (W)',
+        axisLabel: { formatter: '{value} W' }
+    },
+    series: [
+        {
+            name: 'PV Power',
+            type: 'line',
+            smooth: true,
+            data: [],
+            itemStyle: { color: '#FFC107' }
+        },
+        {
+            name: 'Battery Power',
+            type: 'line',
+            smooth: true,
+            data: [],
+            itemStyle: { color: '#4CAF50' }
+        },
+        {
+            name: 'Grid Power',
+            type: 'line',
+            smooth: true,
+            data: [],
+            itemStyle: { color: '#9C27B0' }
+        },
+        {
+            name: 'Load Power',
+            type: 'line',
+            smooth: true,
+            data: [],
+            itemStyle: { color: '#FF5722' }
+        }
+    ]
+};
+
+// Battery SOC Chart Options
+const batteryChartOption = {
+    title: { text: 'Battery State of Charge', left: 'center' },
+    tooltip: { trigger: 'axis' },
+    xAxis: {
+        type: 'time',
+        boundaryGap: false
+    },
+    yAxis: {
+        type: 'value',
+        name: 'SOC (%)',
+        min: 0,
+        max: 100,
+        axisLabel: { formatter: '{value}%' }
+    },
+    series: [{
+        name: 'Battery SOC',
+        type: 'line',
+        smooth: true,
+        areaStyle: {},
+        data: [],
+        itemStyle: { color: '#4CAF50' }
+    }]
+};
+
+// Voltage Chart Options
+const voltageChartOption = {
+    title: { text: 'System Voltages', left: 'center' },
+    tooltip: { trigger: 'axis' },
+    legend: {
+        data: ['PV Voltage', 'Battery Voltage', 'Grid Voltage'],
+        bottom: 0
+    },
+    xAxis: {
+        type: 'time',
+        boundaryGap: false
+    },
+    yAxis: {
+        type: 'value',
+        name: 'Voltage (V)',
+        axisLabel: { formatter: '{value} V' }
+    },
+    series: [
+        {
+            name: 'PV Voltage',
+            type: 'line',
+            smooth: true,
+            data: [],
+            itemStyle: { color: '#FFC107' }
+        },
+        {
+            name: 'Battery Voltage',
+            type: 'line',
+            smooth: true,
+            data: [],
+            itemStyle: { color: '#4CAF50' }
+        },
+        {
+            name: 'Grid Voltage',
+            type: 'line',
+            smooth: true,
+            data: [],
+            itemStyle: { color: '#9C27B0' }
+        }
+    ]
+};
+
+// Temperature Chart Options
+const temperatureChartOption = {
+    title: { text: 'System Temperatures', left: 'center' },
+    tooltip: { trigger: 'axis' },
+    legend: {
+        data: ['Battery Temp', 'Inverter Temp'],
+        bottom: 0
+    },
+    xAxis: {
+        type: 'time',
+        boundaryGap: false
+    },
+    yAxis: {
+        type: 'value',
+        name: 'Temperature (°C)',
+        axisLabel: { formatter: '{value}°C' }
+    },
+    series: [
+        {
+            name: 'Battery Temp',
+            type: 'line',
+            smooth: true,
+            data: [],
+            itemStyle: { color: '#4CAF50' }
+        },
+        {
+            name: 'Inverter Temp',
+            type: 'line',
+            smooth: true,
+            data: [],
+            itemStyle: { color: '#2196F3' }
+        }
+    ]
+};
+
+// Set chart options
+charts.power.setOption(powerChartOption);
+charts.battery.setOption(batteryChartOption);
+charts.voltage.setOption(voltageChartOption);
+charts.temperature.setOption(temperatureChartOption);
+
+// Resize charts on window resize
+window.addEventListener('resize', function() {
+    Object.values(charts).forEach(chart => chart.resize());
+});
+
+// Update function for real-time data
+function updatePageData(data) {
+    const timestamp = new Date(data.timestamp);
+    
+    // Keep only last 100 data points
+    if (chartData.timestamps.length > 100) {
+        Object.keys(chartData).forEach(key => chartData[key].shift());
+    }
+    
+    // Add new data
+    chartData.timestamps.push(timestamp);
+    chartData.pv_power.push([timestamp, data.pv_power || 0]);
+    chartData.battery_power.push([timestamp, data.battery_power || 0]);
+    chartData.grid_power.push([timestamp, data.grid_power || 0]);
+    chartData.load_power.push([timestamp, data.load_power || 0]);
+    chartData.battery_soc.push([timestamp, data.battery_soc || 0]);
+    chartData.pv_voltage.push([timestamp, data.pv1_voltage || 0]);
+    chartData.battery_voltage.push([timestamp, data.battery_voltage || 0]);
+    chartData.grid_voltage.push([timestamp, data.grid_voltage || 0]);
+    chartData.battery_temp.push([timestamp, data.battery_temp || 0]);
+    chartData.inverter_temp.push([timestamp, data.inverter_temp || 0]);
+    
+    // Update charts
+    charts.power.setOption({
+        series: [
+            { data: chartData.pv_power },
+            { data: chartData.battery_power },
+            { data: chartData.grid_power },
+            { data: chartData.load_power }
+        ]
+    });
+    
+    charts.battery.setOption({
+        series: [{ data: chartData.battery_soc }]
+    });
+    
+    charts.voltage.setOption({
+        series: [
+            { data: chartData.pv_voltage },
+            { data: chartData.battery_voltage },
+            { data: chartData.grid_voltage }
+        ]
+    });
+    
+    charts.temperature.setOption({
+        series: [
+            { data: chartData.battery_temp },
+            { data: chartData.inverter_temp }
+        ]
+    });
+}
+</script>
+{% endblock %}

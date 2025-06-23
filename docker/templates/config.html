@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Assistant - Configuration</title>
+    <link rel="stylesheet" href="/static/css/app.css">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <nav class="header">
+            <a href="/">
+                <img src="/static/images/logo.png" alt="Solar Assistant" style="height: 40px;">
+            </a>
+            <div class="nav-menu">
+                <a href="/">Status</a>
+                <a href="/charts">Charts</a>
+                <a href="/totals">Totals</a>
+                <a href="/power">Power</a>
+                <a href="/configuration" class="active">Config</a>
+            </div>
+        </nav>
+
+        <main class="main">
+            <div class="content">
+                <div class="flex-grid">
+                    <!-- Inverter Configuration -->
+                    <div class="card">
+                        <div class="card-section">
+                            <h3>Inverter Configuration</h3>
+                            <form id="inverter-config-form" method="POST" action="/config/inverter">
+                                <table class="config-table">
+                                    <tr>
+                                        <td>Inverter Type:</td>
+                                        <td>
+                                            <select name="inverter_type" class="config-input">
+                                                <option value="eg4_18kpv" selected>EG4 18kPV</option>
+                                                <option value="eg4_12kpv">EG4 12kPV</option>
+                                                <option value="eg4_6000ex">EG4 6000EX</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Inverter IP Address:</td>
+                                        <td>
+                                            <input type="text" name="inverter_ip" value="{{ config.inverter_ip }}" 
+                                                   class="config-input" placeholder="172.16.107.129" required>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Port:</td>
+                                        <td>
+                                            <input type="number" name="inverter_port" value="{{ config.inverter_port }}" 
+                                                   class="config-input" placeholder="8000" required>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Poll Interval (seconds):</td>
+                                        <td>
+                                            <input type="number" name="poll_interval" value="{{ config.poll_interval }}" 
+                                                   class="config-input" min="1" max="300" placeholder="5" required>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2">
+                                            <button type="submit" class="btn btn-primary">Save Inverter Settings</button>
+                                            <button type="button" class="btn btn-secondary" onclick="testConnection()">Test Connection</button>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </form>
+                            <div id="connection-status" class="status-message"></div>
+                        </div>
+                    </div>
+
+                    <!-- System Information -->
+                    <div class="card">
+                        <div class="card-section">
+                            <h3>System Information</h3>
+                            <table class="config-table">
+                                <tr>
+                                    <td>Solar Assistant Version:</td>
+                                    <td>{{ config.version }}</td>
+                                </tr>
+                                <tr>
+                                    <td>System Uptime:</td>
+                                    <td>{{ config.uptime }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Database Size:</td>
+                                    <td>{{ config.db_size }} MB</td>
+                                </tr>
+                                <tr>
+                                    <td>Last Data Collection:</td>
+                                    <td id="last-collection">{{ config.last_collection }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Connection Status:</td>
+                                    <td id="conn-status" class="{{ 'status-ok' if config.connected else 'status-error' }}">
+                                        {{ 'Connected' if config.connected else 'Disconnected' }}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- MQTT Settings -->
+                    <div class="card">
+                        <div class="card-section">
+                            <h3>MQTT Settings</h3>
+                            <form id="mqtt-config-form" method="POST" action="/config/mqtt">
+                                <table class="config-table">
+                                    <tr>
+                                        <td>MQTT Broker:</td>
+                                        <td>
+                                            <input type="text" name="mqtt_host" value="{{ config.mqtt_host }}" 
+                                                   class="config-input" placeholder="localhost">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>MQTT Port:</td>
+                                        <td>
+                                            <input type="number" name="mqtt_port" value="{{ config.mqtt_port }}" 
+                                                   class="config-input" placeholder="1883">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Topic Prefix:</td>
+                                        <td>
+                                            <input type="text" name="mqtt_prefix" value="{{ config.mqtt_prefix }}" 
+                                                   class="config-input" placeholder="solar_assistant">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Publish Interval:</td>
+                                        <td>
+                                            <select name="mqtt_interval" class="config-input">
+                                                <option value="realtime" {{ 'selected' if config.mqtt_interval == 'realtime' }}>Real-time</option>
+                                                <option value="5" {{ 'selected' if config.mqtt_interval == '5' }}>Every 5 seconds</option>
+                                                <option value="10" {{ 'selected' if config.mqtt_interval == '10' }}>Every 10 seconds</option>
+                                                <option value="30" {{ 'selected' if config.mqtt_interval == '30' }}>Every 30 seconds</option>
+                                                <option value="60" {{ 'selected' if config.mqtt_interval == '60' }}>Every minute</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2">
+                                            <button type="submit" class="btn btn-primary">Save MQTT Settings</button>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Data Management -->
+                    <div class="card">
+                        <div class="card-section">
+                            <h3>Data Management</h3>
+                            <table class="config-table">
+                                <tr>
+                                    <td>Data Retention:</td>
+                                    <td>
+                                        <select name="data_retention" class="config-input">
+                                            <option value="7">7 days</option>
+                                            <option value="30" selected>30 days</option>
+                                            <option value="90">90 days</option>
+                                            <option value="365">1 year</option>
+                                            <option value="0">Forever</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Export Data:</td>
+                                    <td>
+                                        <button class="btn btn-secondary">Export CSV</button>
+                                        <button class="btn btn-secondary">Export JSON</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Clear Data:</td>
+                                    <td>
+                                        <button class="btn btn-danger" onclick="confirmClearData()">Clear All Data</button>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- System Actions -->
+                    <div class="card">
+                        <div class="card-section">
+                            <h3>System Actions</h3>
+                            <table class="config-table">
+                                <tr>
+                                    <td colspan="2">
+                                        <button class="btn btn-primary" onclick="restartCollector()">Restart Data Collector</button>
+                                        <button class="btn btn-secondary" onclick="downloadLogs()">Download Logs</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        <button class="btn btn-warning" onclick="restartSystem()">Restart System</button>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <style>
+        .config-table {
+            width: 100%;
+            margin: 20px 0;
+        }
+        
+        .config-table td {
+            padding: 10px;
+            vertical-align: middle;
+        }
+        
+        .config-table td:first-child {
+            width: 40%;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .config-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .config-input:focus {
+            outline: none;
+            border-color: #f1852b;
+            box-shadow: 0 0 0 2px rgba(241, 133, 43, 0.2);
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #f1852b;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #e57520;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        
+        .status-ok {
+            color: #4CAF50;
+            font-weight: 600;
+        }
+        
+        .status-error {
+            color: #f44336;
+            font-weight: 600;
+        }
+        
+        .status-message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+    </style>
+
+    <script>
+        // Test inverter connection
+        function testConnection() {
+            const form = document.getElementById('inverter-config-form');
+            const formData = new FormData(form);
+            const statusDiv = document.getElementById('connection-status');
+            
+            statusDiv.className = 'status-message';
+            statusDiv.textContent = 'Testing connection...';
+            statusDiv.style.display = 'block';
+            
+            fetch('/api/test-connection', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    statusDiv.className = 'status-message success';
+                    statusDiv.textContent = 'Connection successful! Inverter detected: ' + data.model;
+                } else {
+                    statusDiv.className = 'status-message error';
+                    statusDiv.textContent = 'Connection failed: ' + data.error;
+                }
+            })
+            .catch(error => {
+                statusDiv.className = 'status-message error';
+                statusDiv.textContent = 'Connection test failed: ' + error;
+            });
+        }
+        
+        // Handle form submissions
+        document.getElementById('inverter-config-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            fetch('/api/config/inverter', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                const statusDiv = document.getElementById('connection-status');
+                if (data.success) {
+                    statusDiv.className = 'status-message success';
+                    statusDiv.textContent = 'Settings saved successfully!';
+                    statusDiv.style.display = 'block';
+                    
+                    // Restart collector to apply new settings
+                    setTimeout(() => {
+                        restartCollector();
+                    }, 1000);
+                } else {
+                    statusDiv.className = 'status-message error';
+                    statusDiv.textContent = 'Failed to save settings: ' + data.error;
+                    statusDiv.style.display = 'block';
+                }
+            });
+        });
+        
+        document.getElementById('mqtt-config-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            fetch('/api/config/mqtt', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.success ? 'MQTT settings saved!' : 'Failed to save MQTT settings');
+            });
+        });
+        
+        // System actions
+        function restartCollector() {
+            if (confirm('Restart the data collector service?')) {
+                fetch('/api/system/restart-collector', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.success ? 'Collector restarted!' : 'Failed to restart collector');
+                    });
+            }
+        }
+        
+        function downloadLogs() {
+            window.open('/api/system/logs', '_blank');
+        }
+        
+        function restartSystem() {
+            if (confirm('Are you sure you want to restart the system?')) {
+                fetch('/api/system/restart', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert('System restart initiated...');
+                    });
+            }
+        }
+        
+        function confirmClearData() {
+            if (confirm('WARNING: This will delete all historical data. Are you sure?')) {
+                if (confirm('This action cannot be undone. Please confirm again.')) {
+                    fetch('/api/data/clear', { method: 'POST' })
+                        .then(response => response.json())
+                        .then(data => {
+                            alert(data.success ? 'All data cleared!' : 'Failed to clear data');
+                        });
+                }
+            }
+        }
+        
+        // Update connection status periodically
+        setInterval(() => {
+            fetch('/api/status')
+                .then(response => response.json())
+                .then(data => {
+                    const connStatus = document.getElementById('conn-status');
+                    const lastColl = document.getElementById('last-collection');
+                    
+                    if (data.connected) {
+                        connStatus.className = 'status-ok';
+                        connStatus.textContent = 'Connected';
+                    } else {
+                        connStatus.className = 'status-error';
+                        connStatus.textContent = 'Disconnected';
+                    }
+                    
+                    lastColl.textContent = data.last_collection || 'Never';
+                });
+        }, 5000);
+    </script>
+</body>
+</html>

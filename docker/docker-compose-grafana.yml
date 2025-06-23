@@ -1,0 +1,125 @@
+version: '3.8'
+
+services:
+  # Solar Assistant Web Interface (Exact Replica)
+  solar-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: solar-web
+    restart: unless-stopped
+    ports:
+      - "8500:5000"
+    volumes:
+      - /tmp:/tmp  # Share data file with collector
+      - ./config:/app/config  # Configuration persistence
+    depends_on:
+      - data-collector
+    networks:
+      - solar-net
+
+  # Nginx for Grafana (separate port)
+  nginx:
+    image: nginx:alpine
+    container_name: solar-nginx
+    restart: unless-stopped
+    ports:
+      - "8501:80"
+    volumes:
+      - ./nginx-grafana.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - grafana
+    networks:
+      - solar-net
+
+  # Grafana - the actual web interface
+  grafana:
+    image: grafana/grafana:9.5.3
+    container_name: solar-grafana
+    restart: unless-stopped
+    environment:
+      - GF_SERVER_HTTP_ADDR=0.0.0.0
+      - GF_SERVER_HTTP_PORT=3000
+      - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s/
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_USERS_DEFAULT_THEME=light
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_SERVER_SERVE_FROM_SUB_PATH=false
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/solar-assistant-main.json
+      - GF_INSTALL_PLUGINS=
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - solar-net
+
+  # InfluxDB - time series database
+  influxdb:
+    image: influxdb:1.8
+    container_name: solar-influxdb
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      - INFLUXDB_DB=solar_assistant
+      - INFLUXDB_ADMIN_USER=admin
+      - INFLUXDB_ADMIN_PASSWORD=admin123
+      - INFLUXDB_USER=solar
+      - INFLUXDB_USER_PASSWORD=solar123
+    volumes:
+      - influxdb-data:/var/lib/influxdb
+    networks:
+      - solar-net
+
+  # MQTT Broker
+  mqtt:
+    image: eclipse-mosquitto:2.0
+    container_name: solar-mqtt
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    command: mosquitto -c /mosquitto-no-auth.conf
+    networks:
+      - solar-net
+
+  # Data collector - feeds data to InfluxDB and MQTT
+  data-collector:
+    build:
+      context: .
+      dockerfile: Dockerfile.collector
+    container_name: solar-collector
+    restart: unless-stopped
+    environment:
+      - INVERTER_IP=172.16.107.129
+      - INVERTER_PORT=8000
+      - INFLUXDB_HOST=influxdb
+      - INFLUXDB_PORT=8086
+      - INFLUXDB_DB=solar_assistant
+      - INFLUXDB_USER=solar
+      - INFLUXDB_PASSWORD=solar123
+      - MQTT_HOST=mqtt
+      - MQTT_PORT=1883
+      - MQTT_PREFIX=solar_assistant
+      - POLL_INTERVAL=5
+    depends_on:
+      - influxdb
+      - mqtt
+    networks:
+      - solar-net
+
+volumes:
+  grafana-data:
+  influxdb-data:
+  mosquitto-data:
+  mosquitto-log:
+
+networks:
+  solar-net:
+    driver: bridge

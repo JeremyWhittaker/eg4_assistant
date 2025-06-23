@@ -1,0 +1,6 @@
+{
+  "inverter_ip": "172.16.107.129",
+  "inverter_port": 8000,
+  "poll_interval": 1,
+  "inverter_type": "eg4_18kpv"
+}

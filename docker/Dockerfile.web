@@ -1,0 +1,21 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+RUN pip install --no-cache-dir \
+    flask==2.3.3 \
+    flask-socketio==5.3.6 \
+    python-socketio==5.9.0 \
+    eventlet==0.33.3
+
+# Copy web application
+COPY solar_assistant_web.py .
+COPY templates/ templates/
+COPY static/ static/
+
+# Expose port
+EXPOSE 5000
+
+# Run the web application
+CMD ["python", "solar_assistant_web.py"]

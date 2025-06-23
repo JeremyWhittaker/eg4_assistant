@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1"/>
+    <title>Solar Assistant - Configuration</title>
+    <link href="https://fonts.googleapis.com/css2?family=Exo:wght@400;500;600&display=swap" rel="stylesheet" type="text/css"/>
+    <link rel="stylesheet" href="/static/css/solar_assistant_style.css">
+    <link rel="stylesheet" href="/static/css/configuration.css">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body class="with-header">
+    <div class="header">
+        <div class="container">
+            <div class="logo"></div>
+            <div class="menu">
+                <a href="/" class="menu-item">
+                    <div class="item-img" style="background-image: url(/static/images/tabs/dashboard.svg);"></div>
+                    <span class="item-caption">Dashboard</span>
+                </a>
+                <a href="/charts" class="menu-item">
+                    <div class="item-img" style="background-image: url(/static/images/tabs/chart.svg);"></div>
+                    <span class="item-caption">Charts</span>
+                </a>
+                <a href="/totals" class="menu-item">
+                    <div class="item-img" style="background-image: url(/static/images/tabs/totals.svg);"></div>
+                    <span class="item-caption">Totals</span>
+                </a>
+                <a href="/power" class="menu-item">
+                    <div class="item-img" style="background-image: url(/static/images/tabs/power.svg);"></div>
+                    <span class="item-caption">Power</span>
+                </a>
+                <a href="/configuration" class="menu-item active">
+                    <div class="item-img" style="background-image: url(/static/images/tabs/config.svg);"></div>
+                    <span class="item-caption">Configuration</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    <main role="main" id="main" class="main">
+        <div class="content">
+            <div class="flex-grid configuration">
+                <!-- Site Information -->
+                <div class="card">
+                    <div class="card-section">
+                        <h3 class="heading">Site information</h3>
+                        <table class="config-table">
+                            <tr>
+                                <td>Site owner:</td>
+                                <td>
+                                    <input type="text" id="site-owner" class="site-name" value="{{ config.site_owner }}" placeholder="Your Name">
+                                    <button onclick="saveSiteName()" class="button thin">Save</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Site ID:</td>
+                                <td>{{ config.site_id }}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="2">
+                                    <div class="padded-top">
+                                        <button class="button" onclick="configureLocalAccess()">Configure local access</button>
+                                        <button class="button">View site on solar-assistant.io</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Inverter Configuration -->
+                <div class="card">
+                    <div class="card-section">
+                        <h3 class="heading">Inverter</h3>
+                        <form id="inverter-form" onsubmit="saveInverterConfig(event)">
+                            <table class="config-table">
+                                <tr>
+                                    <td>Type:</td>
+                                    <td>
+                                        <select name="inverter_type" class="setting-input">
+                                            <option value="eg4_18kpv" {{ 'selected' if config.inverter_type == 'eg4_18kpv' }}>EG4 18kPV</option>
+                                            <option value="eg4_12kpv" {{ 'selected' if config.inverter_type == 'eg4_12kpv' }}>EG4 12kPV</option>
+                                            <option value="eg4_6000ex" {{ 'selected' if config.inverter_type == 'eg4_6000ex' }}>EG4 6000EX-48HV</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Connection:</td>
+                                    <td>
+                                        <select name="connection_type" class="setting-input" onchange="toggleConnectionFields(this.value)">
+                                            <option value="network" {{ 'selected' if config.connection_type == 'network' }}>Network (WiFi/Ethernet)</option>
+                                            <option value="serial" {{ 'selected' if config.connection_type == 'serial' }}>Serial (USB/RS485)</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr class="network-fields">
+                                    <td>IP Address:</td>
+                                    <td>
+                                        <input type="text" name="inverter_ip" value="{{ config.inverter_ip }}" 
+                                               class="setting-input" placeholder="192.168.1.100" required>
+                                    </td>
+                                </tr>
+                                <tr class="network-fields">
+                                    <td>Port:</td>
+                                    <td>
+                                        <input type="number" name="inverter_port" value="{{ config.inverter_port }}" 
+                                               class="setting-input" placeholder="8000" required>
+                                    </td>
+                                </tr>
+                                <tr class="serial-fields" style="display: none;">
+                                    <td>Serial Port:</td>
+                                    <td>
+                                        <select name="serial_port" class="setting-input">
+                                            <option value="/dev/ttyUSB0">/dev/ttyUSB0</option>
+                                            <option value="/dev/ttyUSB1">/dev/ttyUSB1</option>
+                                            <option value="/dev/ttyAMA0">/dev/ttyAMA0</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Poll interval:</td>
+                                    <td>
+                                        <select name="poll_interval" class="setting-input">
+                                            <option value="1" {{ 'selected' if config.poll_interval == 1 }}>1 second</option>
+                                            <option value="2" {{ 'selected' if config.poll_interval == 2 }}>2 seconds</option>
+                                            <option value="5" {{ 'selected' if config.poll_interval == 5 }}>5 seconds</option>
+                                            <option value="10" {{ 'selected' if config.poll_interval == 10 }}>10 seconds</option>
+                                            <option value="30" {{ 'selected' if config.poll_interval == 30 }}>30 seconds</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Status:</td>
+                                    <td>
+                                        <span id="inverter-status" class="{{ 'positive' if config.inverter_connected else 'negative' }}">
+                                            {{ 'Connected' if config.inverter_connected else 'Disconnected' }}
+                                        </span>
+                                        <span id="last-seen" class="font-small grey">
+                                            {% if config.last_data_time %}
+                                                Last data: {{ config.last_data_time }}
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        <div class="padded-top">
+                                            <button type="submit" class="button positive">Save Settings</button>
+                                            <button type="button" class="button" onclick="testInverterConnection()">Test Connection</button>
+                                            <span id="inverter-result" class="setting-result"></span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Network Status -->
+                <div class="card">
+                    <div class="card-section">
+                        <h3 class="heading">Network status</h3>
+                        <div>
+                            <strong>Network interfaces</strong>
+                        </div>
+                        <table class="config-table">
+                            {% for iface in config.network_interfaces %}
+                            <tr>
+                                <td>{{ iface.name }}</td>
+                                <td>{{ iface.ip }}</td>
+                                <td class="{{ 'positive' if iface.status == 'Up' else 'negative' }}">{{ iface.status }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                        <div class="buttons-right padded-top">
+                            <button class="button" onclick="viewNetworkLog()">View log</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data & Storage -->
+                <div class="card">
+                    <div class="card-section">
+                        <h3 class="heading">Data & Storage</h3>
+                        <table class="config-table">
+                            <tr>
+                                <td>Database size:</td>
+                                <td>{{ config.db_size_mb }} MB</td>
+                            </tr>
+                            <tr>
+                                <td>Data retention:</td>
+                                <td>
+                                    <select class="setting-input" id="data-retention" onchange="saveDataRetention(this.value)">
+                                        <option value="7" {{ 'selected' if config.data_retention_days == 7 }}>7 days</option>
+                                        <option value="30" {{ 'selected' if config.data_retention_days == 30 }}>30 days</option>
+                                        <option value="90" {{ 'selected' if config.data_retention_days == 90 }}>90 days</option>
+                                        <option value="365" {{ 'selected' if config.data_retention_days == 365 }}>1 year</option>
+                                        <option value="0" {{ 'selected' if config.data_retention_days == 0 }}>Forever</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2">
+                                    <div class="padded-top">
+                                        <button class="button" onclick="exportData()">Export Data</button>
+                                        <button class="button negative" onclick="clearData()">Clear All Data</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Advanced Settings -->
+                <div class="card">
+                    <div class="card-section">
+                        <h3 class="heading">Advanced settings</h3>
+                        <table class="config-table">
+                            <tr>
+                                <td>MQTT:</td>
+                                <td>
+                                    <span class="{{ 'positive' if config.mqtt_enabled else 'grey' }}">
+                                        {{ 'Enabled' if config.mqtt_enabled else 'Disabled' }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Home Assistant:</td>
+                                <td>
+                                    <input type="checkbox" id="ha-discovery" {{ 'checked' if config.ha_discovery_enabled }}>
+                                    <label for="ha-discovery">Enable discovery</label>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2">
+                                    <div class="padded-top">
+                                        <a href="/advanced" class="button">Advanced Configuration</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- System -->
+                <div class="card">
+                    <div class="card-section">
+                        <h3 class="heading">System</h3>
+                        <table class="config-table">
+                            <tr>
+                                <td>Localization:</td>
+                                <td>{{ config.localization }}</td>
+                            </tr>
+                            <tr>
+                                <td>Time:</td>
+                                <td>{{ config.local_time }}</td>
+                            </tr>
+                            <tr>
+                                <td>Services:</td>
+                                <td>{{ config.services }}</td>
+                            </tr>
+                            <tr>
+                                <td>CPU Temperature:</td>
+                                <td>{{ "%.1f"|format(config.cpu_temp) }} °F</td>
+                            </tr>
+                            <tr>
+                                <td>USB devices:</td>
+                                <td>{{ config.usb_device_count }} - <a href="#">view detail</a></td>
+                            </tr>
+                            <tr>
+                                <td>Storage:</td>
+                                <td>{{ config.storage.text }} - <a href="#">view detail</a></td>
+                            </tr>
+                            <tr>
+                                <td>Device board:</td>
+                                <td>{{ config.device_board }}</td>
+                            </tr>
+                            <tr>
+                                <td>Software version:</td>
+                                <td>{{ config.version }}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="2">
+                                    <div class="padded-top">
+                                        <button class="button" onclick="window.location.href='/configuration/system'">Configure</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Mark inputs as dirty when changed
+        document.querySelectorAll('.setting-input').forEach(input => {
+            input.addEventListener('change', function() {
+                this.classList.add('dirty');
+            });
+        });
+
+        function toggleConnectionFields(type) {
+            document.querySelectorAll('.network-fields').forEach(el => {
+                el.style.display = type === 'network' ? '' : 'none';
+            });
+            document.querySelectorAll('.serial-fields').forEach(el => {
+                el.style.display = type === 'serial' ? '' : 'none';
+            });
+        }
+
+        function saveInverterConfig(event) {
+            event.preventDefault();
+            const form = document.getElementById('inverter-form');
+            const formData = new FormData(form);
+            const resultSpan = document.getElementById('inverter-result');
+            
+            resultSpan.textContent = 'Saving...';
+            resultSpan.className = 'setting-result';
+            
+            fetch('/api/configuration/inverter', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    resultSpan.textContent = '✓ Saved';
+                    resultSpan.className = 'setting-result positive';
+                    // Remove dirty class
+                    form.querySelectorAll('.dirty').forEach(el => el.classList.remove('dirty'));
+                    // Restart collector
+                    setTimeout(() => {
+                        restartCollector();
+                    }, 500);
+                } else {
+                    resultSpan.textContent = '✗ Error: ' + data.error;
+                    resultSpan.className = 'setting-result negative';
+                }
+            });
+        }
+
+        function testInverterConnection() {
+            const form = document.getElementById('inverter-form');
+            const formData = new FormData(form);
+            const resultSpan = document.getElementById('inverter-result');
+            const statusSpan = document.getElementById('inverter-status');
+            
+            resultSpan.textContent = 'Testing connection...';
+            resultSpan.className = 'setting-result';
+            
+            fetch('/api/test-connection', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    resultSpan.textContent = '✓ Connection successful';
+                    resultSpan.className = 'setting-result positive';
+                    statusSpan.textContent = 'Connected';
+                    statusSpan.className = 'positive';
+                } else {
+                    resultSpan.textContent = '✗ Connection failed: ' + data.error;
+                    resultSpan.className = 'setting-result negative';
+                    statusSpan.textContent = 'Disconnected';
+                    statusSpan.className = 'negative';
+                }
+            });
+        }
+
+        function saveSiteName() {
+            const siteOwner = document.getElementById('site-owner').value;
+            fetch('/api/configuration/site', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({site_owner: siteOwner})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Site name saved');
+                }
+            });
+        }
+
+        function saveDataRetention(days) {
+            fetch('/api/configuration/retention', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({retention_days: parseInt(days)})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Data retention updated');
+                }
+            });
+        }
+
+        function restartCollector() {
+            fetch('/api/system/restart-collector', {method: 'POST'})
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Collector restart initiated');
+                });
+        }
+
+        function restartServices() {
+            if (confirm('Restart all Solar Assistant services?')) {
+                fetch('/api/system/restart-services', {method: 'POST'})
+                    .then(response => response.json())
+                    .then(data => {
+                        alert('Services restarting...');
+                    });
+            }
+        }
+
+        function downloadLogs() {
+            window.open('/api/system/logs', '_blank');
+        }
+
+        function exportData() {
+            window.open('/api/data/export', '_blank');
+        }
+
+        function clearData() {
+            if (confirm('This will delete ALL historical data. Are you sure?')) {
+                if (confirm('This action cannot be undone. Please confirm again.')) {
+                    fetch('/api/data/clear', {method: 'POST'})
+                        .then(response => response.json())
+                        .then(data => {
+                            alert(data.success ? 'All data cleared' : 'Failed to clear data');
+                        });
+                }
+            }
+        }
+
+        function rebootSystem() {
+            if (confirm('Are you sure you want to reboot the system?')) {
+                fetch('/api/system/reboot', {method: 'POST'})
+                    .then(response => response.json())
+                    .then(data => {
+                        alert('System rebooting...');
+                    });
+            }
+        }
+
+        function configureLocalAccess() {
+            alert('SSH is already enabled. Connect with:\nssh solar-assistant@' + window.location.hostname + '\nPassword: solar123');
+        }
+
+        // Update status periodically
+        setInterval(() => {
+            fetch('/api/status')
+                .then(response => response.json())
+                .then(data => {
+                    const statusSpan = document.getElementById('inverter-status');
+                    const lastSeenSpan = document.getElementById('last-seen');
+                    
+                    if (data.connected) {
+                        statusSpan.textContent = 'Connected';
+                        statusSpan.className = 'positive';
+                        lastSeenSpan.textContent = 'Last data: ' + data.last_collection;
+                    } else {
+                        statusSpan.textContent = 'Disconnected';
+                        statusSpan.className = 'negative';
+                    }
+                });
+        }, 10000);
+    </script>
+</body>
+</html>

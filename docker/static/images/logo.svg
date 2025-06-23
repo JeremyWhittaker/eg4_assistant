@@ -1,0 +1,5 @@
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="30" cy="30" r="15" fill="#FFC107"/>
+  <path d="M30 10v5m0 30v5m20-20h-5m-30 0h-5m35.36-14.14l-3.54 3.54m-23.31 23.31l-3.54 3.54m0-31.82l3.54 3.54m23.31 23.31l3.54 3.54" stroke="#FFC107" stroke-width="2" stroke-linecap="round"/>
+  <text x="60" y="35" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#333">Solar Assistant</text>
+</svg>

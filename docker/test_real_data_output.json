@@ -1,0 +1,78 @@
+{
+  "battery_power": {
+    "value": 932,
+    "unit": "W"
+  },
+  "battery_voltage": {
+    "value": 52,
+    "unit": "V"
+  },
+  "battery_current": {
+    "value": 17.9,
+    "unit": "A"
+  },
+  "battery_soc": {
+    "value": 29,
+    "unit": "%"
+  },
+  "battery_temp": {
+    "value": 57.2,
+    "unit": "\u00b0C"
+  },
+  "grid_power": {
+    "value": 8836,
+    "unit": "W"
+  },
+  "grid_voltage": {
+    "value": 240.3,
+    "unit": "V"
+  },
+  "grid_frequency": {
+    "value": 59.98,
+    "unit": "Hz"
+  },
+  "pv_power": {
+    "value": 0,
+    "unit": "W"
+  },
+  "pv1_power": {
+    "value": 0,
+    "unit": "W"
+  },
+  "pv2_power": {
+    "value": 0,
+    "unit": "W"
+  },
+  "pv1_voltage": {
+    "value": 0,
+    "unit": "V"
+  },
+  "pv2_voltage": {
+    "value": 0,
+    "unit": "V"
+  },
+  "load_power": {
+    "value": 7857,
+    "unit": "W"
+  },
+  "load_power_essential": {
+    "value": 0,
+    "unit": "W"
+  },
+  "load_power_nonessential": {
+    "value": 7857,
+    "unit": "W"
+  },
+  "ac_output_voltage": {
+    "value": 240.3,
+    "unit": "V"
+  },
+  "inverter_temp": {
+    "value": 118.4,
+    "unit": "\u00b0C"
+  },
+  "battery_status": "discharging",
+  "battery_discharge_power": 932,
+  "system_mode": "Battery",
+  "timestamp": "2025-06-18T23:44:36.821275"
+}

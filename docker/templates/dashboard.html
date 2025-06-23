@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Exo:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <h1>Solar Assistant</h1>
+                </div>
+                <nav class="main-nav">
+                    <a href="/" class="nav-item active">
+                        <span class="icon">📊</span>
+                        Dashboard
+                    </a>
+                    <a href="/charts" class="nav-item">
+                        <span class="icon">📈</span>
+                        Charts
+                    </a>
+                    <a href="/totals" class="nav-item">
+                        <span class="icon">🔢</span>
+                        Totals
+                    </a>
+                    <a href="/power" class="nav-item">
+                        <span class="icon">⚡</span>
+                        Power
+                    </a>
+                    <a href="/configuration" class="nav-item">
+                        <span class="icon">⚙️</span>
+                        Configuration
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="container">
+            <!-- Status Cards Row -->
+            <div class="status-cards">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="status-icon status-ok">✓</span>
+                        <h3>Inverter</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="status-text" id="inverter-status">{{ data.inverter.status }}</div>
+                        <div class="status-detail">Temperature: <span id="inverter-temp">{{ "%.1f"|format(data.inverter.temperature) }}°C</span></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="status-icon">☀️</span>
+                        <h3>Solar PV Forecast</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="forecast-row">
+                            <span>D: {{ "%.1f"|format(data.pv.daily_forecast) }} kWh</span>
+                        </div>
+                        <div class="forecast-row">
+                            <span>W: {{ "%.1f"|format(data.pv.weekly_forecast) }} kWh</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="status-icon status-ok">🔌</span>
+                        <h3>Grid</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="status-text" id="grid-voltage">{{ "%.1f"|format(data.grid.voltage) }} V</div>
+                        <div class="status-detail">Connected</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="status-icon status-charging">🔋</span>
+                        <h3>Battery</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="battery-info">
+                            <div class="battery-soc" id="battery-soc">{{ data.battery.soc }}%</div>
+                            <div class="battery-rate" id="battery-rate">+{{ data.battery.charge_rate }}%/hr</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gauges Row -->
+            <div class="gauges-section">
+                <div class="gauge-container">
+                    <div class="gauge load-gauge">
+                        <div class="gauge-inner">
+                            <div class="gauge-value" id="load-value">{{ data.load.power }}</div>
+                            <div class="gauge-unit">W</div>
+                            <div class="gauge-label">Load</div>
+                        </div>
+                        <div class="gauge-arc">
+                            <div class="gauge-fill" style="transform: rotate({{ (data.load.power / 20000 * 180) }}deg);"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gauge-container">
+                    <div class="gauge pv-gauge">
+                        <div class="gauge-inner">
+                            <div class="gauge-value" id="pv-value">{{ "%.1f"|format(data.pv.power / 1000) }}</div>
+                            <div class="gauge-unit">kW</div>
+                            <div class="gauge-label">Solar PV</div>
+                        </div>
+                        <div class="gauge-arc">
+                            <div class="gauge-fill pv-fill" style="transform: rotate({{ (data.pv.power / 20000 * 180) }}deg);"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gauge-container">
+                    <div class="gauge grid-gauge">
+                        <div class="gauge-inner">
+                            <div class="gauge-value" id="grid-value">{{ data.grid.power }}</div>
+                            <div class="gauge-unit">W</div>
+                            <div class="gauge-label">Grid</div>
+                        </div>
+                        <div class="gauge-arc">
+                            <div class="gauge-fill grid-fill" style="transform: rotate({{ ((data.grid.power|abs) / 20000 * 180) }}deg);"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gauge-container">
+                    <div class="gauge battery-gauge">
+                        <div class="gauge-inner">
+                            <div class="gauge-value" id="battery-value">{{ data.battery.power }}</div>
+                            <div class="gauge-unit">W</div>
+                            <div class="gauge-label">Battery</div>
+                        </div>
+                        <div class="gauge-arc">
+                            <div class="gauge-fill battery-fill" style="transform: rotate({{ (data.battery.power / 20000 * 180) }}deg);"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Embedded Charts -->
+            <div class="charts-section">
+                <div class="chart-container">
+                    <h3>Power Flow Overview</h3>
+                    <iframe src="http://172.16.106.10:8501/d/solar-assistant-main/solar-assistant?orgId=1&refresh=5s&theme=light&kiosk" 
+                            width="100%" height="400" frameborder="0"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Socket.IO connection
+        const socket = io();
+        
+        // Handle real-time data updates
+        socket.on('data_update', function(data) {
+            updateUI(data);
+        });
+        
+        function updateUI(data) {
+            // Update status cards
+            document.getElementById('inverter-status').textContent = data.inverter.status;
+            document.getElementById('inverter-temp').textContent = data.inverter.temperature.toFixed(1) + '°C';
+            document.getElementById('grid-voltage').textContent = data.grid.voltage.toFixed(1) + ' V';
+            document.getElementById('battery-soc').textContent = data.battery.soc + '%';
+            document.getElementById('battery-rate').textContent = '+' + data.battery.charge_rate + '%/hr';
+            
+            // Update gauges
+            document.getElementById('load-value').textContent = data.load.power;
+            document.getElementById('pv-value').textContent = (data.pv.power / 1000).toFixed(1);
+            document.getElementById('grid-value').textContent = data.grid.power;
+            document.getElementById('battery-value').textContent = data.battery.power;
+            
+            // Update gauge arcs
+            const maxPower = 20000;
+            document.querySelector('.load-gauge .gauge-fill').style.transform = 
+                'rotate(' + (data.load.power / maxPower * 180) + 'deg)';
+            document.querySelector('.pv-gauge .gauge-fill').style.transform = 
+                'rotate(' + (data.pv.power / maxPower * 180) + 'deg)';
+            document.querySelector('.grid-gauge .gauge-fill').style.transform = 
+                'rotate(' + (Math.abs(data.grid.power) / maxPower * 180) + 'deg)';
+            document.querySelector('.battery-gauge .gauge-fill').style.transform = 
+                'rotate(' + (data.battery.power / maxPower * 180) + 'deg)';
+        }
+        
+        // Request initial data
+        socket.emit('get_data');
+    </script>
+</body>
+</html>

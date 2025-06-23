@@ -1,0 +1,50 @@
+Based on the SSH connection and system analysis, here are the key findings and manual commands to run:
+
+SYSTEM ARCHITECTURE:
+- Raspberry Pi (aarch64) running Debian GNU/Linux
+- Service name: influx-bridge.service (not solar-assistant.service)
+- Web server: Phoenix/Elixir application using Cowboy server
+- Application runs from memory filesystem: /dev/shm/grafana-sync/
+
+MANUAL SSH COMMANDS TO RUN:
+ssh solar-assistant@172.16.106.13
+Password: solar123
+
+Then run these commands one by one:
+
+1. Get service configuration:
+sudo systemctl cat influx-bridge.service
+
+2. Find configuration directories:
+sudo find /usr/lib -name '*influx*' -o -name '*solar*' 2>/dev/null
+sudo find /etc -name '*influx*' -o -name '*solar*' 2>/dev/null
+
+3. Look for the actual application files:
+sudo ls -la /dev/shm/grafana-sync/ 2>/dev/null
+sudo find /usr/lib -name 'signal.sh' 2>/dev/null
+
+4. Check for database files:
+sudo find /var/lib -name '*.db' -o -name '*.sqlite*' 2>/dev/null
+
+5. Look for configuration files:
+sudo find /etc -name '*.conf' -o -name '*.json' -o -name '*.yml' 2>/dev/null | grep -i -E '(influx|solar|bridge)'
+
+6. Check process details:
+sudo ps aux | grep beam.smp
+sudo lsof -p 583 | head -20
+
+7. Find web interface files:
+sudo find /usr -name 'index.html' 2>/dev/null
+sudo find /usr -path '*/static/*' -type f 2>/dev/null | head -10
+
+8. Look for Elixir/Phoenix configuration:
+sudo find /usr -name '*.exs' 2>/dev/null
+sudo find /usr -name 'config' -type d 2>/dev/null
+
+KEY OBSERVATIONS FROM INITIAL SSH:
+- Main service: influx-bridge.service running on PID 583
+- Service file: /etc/systemd/system/influx-bridge.service
+- Executable path: /dev/shm/grafana-sync/a428f0a4cb59b6365588b45a5373a9a93f6...
+- Post-start script: /usr/lib/influx-bridge/signal.sh --started
+- Web interface redirects to /sign_in (Phoenix application)
+- No traditional /opt/solar_assistant directory found

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Solar Assistant</title>
+    <script type="text/javascript">
+        // Force redirect to dashboard while preserving full URL
+        setTimeout(function() {
+            var protocol = window.location.protocol;
+            var hostname = window.location.hostname;
+            var port = window.location.port;
+            var baseUrl = protocol + '//' + hostname + (port ? ':' + port : '');
+            window.location.href = baseUrl + '/d/solar-assistant-main/solar-assistant';
+        }, 500);
+    </script>
+</head>
+<body style="margin: 40px; font-family: Arial, sans-serif;">
+    <h2>Loading Solar Assistant Dashboard...</h2>
+    <p>If you are not redirected automatically, <a href="/d/solar-assistant-main/solar-assistant">click here</a>.</p>
+    <p><strong>Direct Access:</strong></p>
+    <ul>
+        <li><a href="http://172.16.106.10:8500/d/solar-assistant-main/solar-assistant">Main Dashboard</a></li>
+        <li><a href="http://172.16.106.10:8500/d/solar-assistant-eg4/solar-assistant-eg4-18kpv">EG4 Dashboard</a></li>
+    </ul>
+</body>
+</html>

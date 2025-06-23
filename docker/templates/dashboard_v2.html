@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - EG4 Assistant{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>System Overview</h1>
+        <div class="header-actions">
+            <a href="/inverters/add" class="btn btn-primary">
+                <i class="icon-plus"></i> Add Inverter
+            </a>
+            <a href="/export" class="btn btn-secondary">
+                <i class="icon-download"></i> Export Data
+            </a>
+        </div>
+    </div>
+    
+    {% if not inverters %}
+    <div class="empty-state">
+        <img src="/static/images/solar-panel.svg" alt="No inverters">
+        <h2>No Inverters Configured</h2>
+        <p>Get started by adding your first inverter</p>
+        <a href="/inverters/add" class="btn btn-primary">Add Inverter</a>
+    </div>
+    {% else %}
+    
+    <!-- System Summary -->
+    <div class="system-summary">
+        <div class="summary-card">
+            <div class="summary-icon solar"></div>
+            <div class="summary-content">
+                <div class="summary-value" id="total-pv-power">0</div>
+                <div class="summary-label">Total Solar Power</div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon battery"></div>
+            <div class="summary-content">
+                <div class="summary-value" id="avg-battery-soc">0%</div>
+                <div class="summary-label">Average Battery</div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon grid"></div>
+            <div class="summary-content">
+                <div class="summary-value" id="total-grid-power">0</div>
+                <div class="summary-label">Grid Power</div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon load"></div>
+            <div class="summary-content">
+                <div class="summary-value" id="total-load-power">0</div>
+                <div class="summary-label">Total Load</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Inverter Cards -->
+    <div class="inverters-grid">
+        {% for inverter in inverters %}
+        <div class="inverter-card" data-inverter-id="{{ inverter.id }}">
+            <div class="inverter-header">
+                <h3>{{ inverter.name }}</h3>
+                <span class="inverter-status {{ 'online' if inverter.latest_data else 'offline' }}">
+                    {{ 'Online' if inverter.latest_data else 'Offline' }}
+                </span>
+            </div>
+            
+            <div class="inverter-info">
+                <div class="info-row">
+                    <span class="label">Model:</span>
+                    <span class="value">{{ inverter.model }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">IP:</span>
+                    <span class="value">{{ inverter.ip_address }}</span>
+                </div>
+            </div>
+            
+            {% if inverter.latest_data %}
+            <div class="inverter-metrics">
+                <div class="metric-row">
+                    <div class="metric">
+                        <span class="metric-label">Solar</span>
+                        <span class="metric-value pv-power">{{ inverter.latest_data.pv_power|default(0) }}W</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Battery</span>
+                        <span class="metric-value battery-soc">{{ inverter.latest_data.battery_soc|default(0) }}%</span>
+                    </div>
+                </div>
+                <div class="metric-row">
+                    <div class="metric">
+                        <span class="metric-label">Grid</span>
+                        <span class="metric-value grid-power">{{ inverter.latest_data.grid_power|default(0) }}W</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Load</span>
+                        <span class="metric-value load-power">{{ inverter.latest_data.load_power|default(0) }}W</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mini Power Flow -->
+            <div class="mini-power-flow">
+                <canvas id="power-flow-{{ inverter.id }}" width="300" height="150"></canvas>
+            </div>
+            {% else %}
+            <div class="no-data">
+                <p>No data available</p>
+            </div>
+            {% endif %}
+            
+            <div class="inverter-actions">
+                <a href="/inverters/{{ inverter.id }}" class="btn btn-sm btn-primary">Details</a>
+                <a href="/power?inverter={{ inverter.id }}" class="btn btn-sm btn-secondary">Power Flow</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- System Alerts -->
+    <div class="alerts-section">
+        <h2>System Alerts</h2>
+        <div id="alerts-container" class="alerts-list">
+            <!-- Alerts will be populated here -->
+        </div>
+    </div>
+    
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Store inverter data
+const inverterData = {};
+
+// Update dashboard with real-time data
+function updatePageData(data) {
+    const inverterId = data.inverter_id;
+    
+    // Store data
+    inverterData[inverterId] = data;
+    
+    // Update inverter card
+    const card = document.querySelector(`[data-inverter-id="${inverterId}"]`);
+    if (card) {
+        // Update status
+        const statusEl = card.querySelector('.inverter-status');
+        statusEl.textContent = 'Online';
+        statusEl.className = 'inverter-status online';
+        
+        // Update metrics
+        card.querySelector('.pv-power').textContent = `${data.pv_power || 0}W`;
+        card.querySelector('.battery-soc').textContent = `${data.battery_soc || 0}%`;
+        card.querySelector('.grid-power').textContent = `${data.grid_power || 0}W`;
+        card.querySelector('.load-power').textContent = `${data.load_power || 0}W`;
+        
+        // Update mini power flow
+        updateMiniPowerFlow(inverterId, data);
+    }
+    
+    // Update system summary
+    updateSystemSummary();
+}
+
+// Update system summary
+function updateSystemSummary() {
+    let totalPvPower = 0;
+    let totalBatterySoc = 0;
+    let totalGridPower = 0;
+    let totalLoadPower = 0;
+    let inverterCount = 0;
+    
+    for (const [id, data] of Object.entries(inverterData)) {
+        if (data) {
+            totalPvPower += data.pv_power || 0;
+            totalBatterySoc += data.battery_soc || 0;
+            totalGridPower += data.grid_power || 0;
+            totalLoadPower += data.load_power || 0;
+            inverterCount++;
+        }
+    }
+    
+    document.getElementById('total-pv-power').textContent = `${totalPvPower}W`;
+    document.getElementById('total-grid-power').textContent = `${totalGridPower}W`;
+    document.getElementById('total-load-power').textContent = `${totalLoadPower}W`;
+    
+    if (inverterCount > 0) {
+        document.getElementById('avg-battery-soc').textContent = 
+            `${Math.round(totalBatterySoc / inverterCount)}%`;
+    }
+}
+
+// Update mini power flow visualization
+function updateMiniPowerFlow(inverterId, data) {
+    const canvas = document.getElementById(`power-flow-${inverterId}`);
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+    
+    // Draw simplified power flow
+    // This is a placeholder - implement actual visualization
+    ctx.fillStyle = '#FFC107';
+    ctx.fillRect(10, 10, 50, 30);
+    ctx.fillText('Solar', 15, 55);
+    
+    ctx.fillStyle = '#4CAF50';
+    ctx.fillRect(10, 70, 50, 30);
+    ctx.fillText('Battery', 15, 115);
+    
+    // Draw arrows based on power flow
+    // ... implement arrow drawing logic
+}
+
+// Subscribe to updates for all inverters
+{% for inverter in inverters %}
+socket.emit('subscribe_inverter', {inverter_id: {{ inverter.id }}});
+{% endfor %}
+
+// Load initial data
+window.addEventListener('load', function() {
+    {% for inverter in inverters %}
+    {% if inverter.latest_data %}
+    updatePageData({{ inverter.latest_data | tojson }});
+    {% endif %}
+    {% endfor %}
+});
+</script>
+{% endblock %}

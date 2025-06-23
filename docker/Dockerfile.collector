@@ -1,0 +1,18 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+RUN pip install --no-cache-dir \
+    influxdb==5.3.1 \
+    requests==2.31.0 \
+    python-dotenv==1.0.0 \
+    schedule==1.2.0 \
+    paho-mqtt==2.1.0
+
+# Copy collector script
+COPY solar_assistant_collector_real.py .
+COPY eg4_iotos_client.py .
+
+# Run the collector
+CMD ["python", "solar_assistant_collector_real.py"]

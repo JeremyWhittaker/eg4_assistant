@@ -1,0 +1,71 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+spawn ssh solar-assistant@172.16.106.13
+
+expect {
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "password:" {
+        send "solar123\r"
+    }
+}
+
+expect "$ "
+
+# Command 1: Find Solar Assistant directories
+send "echo '=== 1. Finding Solar Assistant application directories ==='\r"
+expect "$ "
+send "sudo find /opt /var/www /home -name 'solar_assistant*' -type d 2>/dev/null | head -10\r"
+expect {
+    "password" {
+        send "solar123\r"
+        expect "$ "
+    }
+    "$ " {}
+}
+
+# Command 2: Phoenix/Elixir config files
+send "echo '=== 2. Looking for Phoenix/Elixir configuration files ==='\r"
+expect "$ "
+send "sudo find /opt -name '*.exs' -o -name 'config.exs' 2>/dev/null | grep -i solar | head -20\r"
+expect "$ "
+
+# Command 3: Database configuration
+send "echo '=== 3. Checking for database configuration ==='\r"
+expect "$ "
+send "sudo -u postgres psql -l 2>/dev/null | grep -i solar\r"
+expect "$ "
+send "sudo find / -name '*.db' -o -name '*.sqlite*' 2>/dev/null | grep -i solar | head -10\r"
+expect "$ "
+
+# Command 4: Inverter configuration
+send "echo '=== 4. Finding inverter configuration ==='\r"
+expect "$ "
+send "sudo grep -r '172.16.107.129' /opt 2>/dev/null | head -10\r"
+expect "$ "
+send "sudo find /etc /opt /var -name '*inverter*.conf' -o -name '*inverter*.json' 2>/dev/null | head -10\r"
+expect "$ "
+
+# Command 5: Systemd service
+send "echo '=== 5. Checking systemd service configuration ==='\r"
+expect "$ "
+send "sudo systemctl cat solar-assistant | head -50\r"
+expect "$ "
+
+# Command 6: Phoenix configuration endpoints
+send "echo '=== 6. Looking for configuration endpoints in Phoenix app ==='\r"
+expect "$ "
+send "sudo find /opt -name '*.ex' | xargs grep -l 'configuration' 2>/dev/null | head -10\r"
+expect "$ "
+
+# Additional checks
+send "echo '=== Additional checks ==='\r"
+expect "$ "
+send "sudo ls -la /opt/ | grep -i solar\r"
+expect "$ "
+
+send "exit\r"
+expect eof

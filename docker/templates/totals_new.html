@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Assistant - Totals</title>
+    <link rel="stylesheet" href="/static/css/app.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <nav class="header">
+            <a href="/">
+                <img src="/static/images/logo.png" alt="Solar Assistant" style="height: 40px;">
+            </a>
+            <div class="nav-menu">
+                <a href="/">Status</a>
+                <a href="/charts">Charts</a>
+                <a href="/totals" class="active">Totals</a>
+                <a href="/power">Power</a>
+                <a href="/configuration">Config</a>
+            </div>
+        </nav>
+
+        <main class="main">
+            <div class="content">
+                <div class="flex-grid is-wide">
+                    <!-- Daily totals chart -->
+                    <div class="card">
+                        <div class="card-section">
+                            <h3>Last 30 days</h3>
+                            <div id="daily-totals-chart" class="padded-top padded-bottom" style="width: 99%; height: 500px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Daily totals table -->
+                    <div class="card">
+                        <div class="card-section">
+                            <h3>Last 30 days</h3>
+                            <div style="height:500px;overflow-y: scroll">
+                                <table class="padded center border" style="width: 100%">
+                                    <thead>
+                                        <tr>
+                                            <td></td>
+                                            <td class="bold" style="width: 15%">Load</td>
+                                            <td class="bold" style="width: 15%">Solar PV</td>
+                                            <td class="bold" style="width: 15%">Battery charged</td>
+                                            <td class="bold" style="width: 15%">Battery discharged</td>
+                                            <td class="bold" style="width: 15%">Grid used</td>
+                                            <td class="bold" style="width: 15%">Grid exported</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for day in daily_totals %}
+                                        <tr>
+                                            <td class="bold">{{ day.date }}</td>
+                                            <td>{{ day.load }} kWh</td>
+                                            <td>{{ day.solar_pv }} kWh</td>
+                                            <td>{{ day.battery_charged }} kWh</td>
+                                            <td>{{ day.battery_discharged }} kWh</td>
+                                            <td>{{ day.grid_used }} kWh</td>
+                                            <td>{{ day.grid_exported }} kWh</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Weekly totals chart -->
+                    <div class="card">
+                        <div class="card-section">
+                            <h3>Last 52 weeks</h3>
+                            <div id="weekly-totals-chart" class="padded-top padded-bottom" style="width: 99%; height: 500px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Monthly totals table -->
+                    <div class="card">
+                        <div class="card-section">
+                            <h3>Last 12 months</h3>
+                            <table class="padded center border" style="width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <td></td>
+                                        <td class="bold">Load</td>
+                                        <td class="bold" style="width: 15%">Solar PV</td>
+                                        <td class="bold" style="width: 15%">Battery charged</td>
+                                        <td class="bold" style="width: 15%">Battery discharged</td>
+                                        <td class="bold" style="width: 15%">Grid used</td>
+                                        <td class="bold" style="width: 15%">Grid exported</td>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for month in monthly_totals %}
+                                    <tr>
+                                        <td class="bold">{{ month.month }}</td>
+                                        <td>{{ month.load }} kWh</td>
+                                        <td>{{ month.solar_pv }} kWh</td>
+                                        <td>{{ month.battery_charged }} kWh</td>
+                                        <td>{{ month.battery_discharged }} kWh</td>
+                                        <td>{{ month.grid_used }} kWh</td>
+                                        <td>{{ month.grid_exported }} kWh</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Info card -->
+                    <div class="card">
+                        <div class="card-section font-small">
+                            <p>The following affects the numbers you see above:</p>
+                            <ul>
+                                <li>The power used by the inverter(s) themself are not included in the total load, but is supplied from either grid or solar PV.</li>
+                                <li>A battery doesn't discharge the same amount of kWh it took to charge it due to battery efficiency.</li>
+                                <li>Depending on your inverter model, measurements isn't perfectly accurate. Some are far from it.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Initialize daily totals chart
+        var dailyChart = echarts.init(document.getElementById('daily-totals-chart'));
+        
+        // Prepare data for daily chart
+        var dailyDates = [{% for day in daily_totals %}'{{ day.date }}'{% if not loop.last %},{% endif %}{% endfor %}].reverse();
+        var dailyLoad = [{% for day in daily_totals %}{{ day.load }}{% if not loop.last %},{% endif %}{% endfor %}].reverse();
+        var dailySolar = [{% for day in daily_totals %}{{ day.solar_pv }}{% if not loop.last %},{% endif %}{% endfor %}].reverse();
+        var dailyBatteryCharged = [{% for day in daily_totals %}{{ day.battery_charged }}{% if not loop.last %},{% endif %}{% endfor %}].reverse();
+        var dailyBatteryDischarged = [{% for day in daily_totals %}{{ day.battery_discharged }}{% if not loop.last %},{% endif %}{% endfor %}].reverse();
+        var dailyGridUsed = [{% for day in daily_totals %}{{ day.grid_used }}{% if not loop.last %},{% endif %}{% endfor %}].reverse();
+        var dailyGridExported = [{% for day in daily_totals %}{{ day.grid_exported }}{% if not loop.last %},{% endif %}{% endfor %}].reverse();
+        
+        var dailyOption = {
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'cross',
+                    label: {
+                        backgroundColor: '#6a7985'
+                    }
+                }
+            },
+            legend: {
+                data: ['Load', 'Solar PV', 'Battery Charged', 'Battery Discharged', 'Grid Used', 'Grid Exported']
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: dailyDates
+            },
+            yAxis: {
+                type: 'value',
+                name: 'kWh'
+            },
+            series: [
+                {
+                    name: 'Load',
+                    type: 'line',
+                    stack: 'Total',
+                    areaStyle: {},
+                    emphasis: {
+                        focus: 'series'
+                    },
+                    data: dailyLoad,
+                    itemStyle: { color: '#ff6b6b' }
+                },
+                {
+                    name: 'Solar PV',
+                    type: 'line',
+                    stack: 'Total',
+                    areaStyle: {},
+                    emphasis: {
+                        focus: 'series'
+                    },
+                    data: dailySolar,
+                    itemStyle: { color: '#feca57' }
+                },
+                {
+                    name: 'Battery Charged',
+                    type: 'line',
+                    stack: 'Total',
+                    areaStyle: {},
+                    emphasis: {
+                        focus: 'series'
+                    },
+                    data: dailyBatteryCharged,
+                    itemStyle: { color: '#48dbfb' }
+                },
+                {
+                    name: 'Battery Discharged',
+                    type: 'line',
+                    stack: 'Total',
+                    areaStyle: {},
+                    emphasis: {
+                        focus: 'series'
+                    },
+                    data: dailyBatteryDischarged,
+                    itemStyle: { color: '#1dd1a1' }
+                },
+                {
+                    name: 'Grid Used',
+                    type: 'line',
+                    stack: 'Total',
+                    areaStyle: {},
+                    emphasis: {
+                        focus: 'series'
+                    },
+                    data: dailyGridUsed,
+                    itemStyle: { color: '#ff9ff3' }
+                },
+                {
+                    name: 'Grid Exported',
+                    type: 'line',
+                    stack: 'Total',
+                    areaStyle: {},
+                    emphasis: {
+                        focus: 'series'
+                    },
+                    data: dailyGridExported,
+                    itemStyle: { color: '#54a0ff' }
+                }
+            ]
+        };
+        
+        dailyChart.setOption(dailyOption);
+        
+        // Initialize weekly totals chart
+        var weeklyChart = echarts.init(document.getElementById('weekly-totals-chart'));
+        
+        // Generate weekly data (simplified for now)
+        var weeklyOption = {
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'shadow'
+                }
+            },
+            legend: {
+                data: ['Load', 'Solar PV', 'Battery', 'Grid']
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                data: ['Week 1', 'Week 2', 'Week 3', 'Week 4']
+            },
+            yAxis: {
+                type: 'value',
+                name: 'kWh'
+            },
+            series: [
+                {
+                    name: 'Load',
+                    type: 'bar',
+                    data: [800, 850, 900, 880],
+                    itemStyle: { color: '#ff6b6b' }
+                },
+                {
+                    name: 'Solar PV',
+                    type: 'bar',
+                    data: [700, 750, 800, 780],
+                    itemStyle: { color: '#feca57' }
+                },
+                {
+                    name: 'Battery',
+                    type: 'bar',
+                    data: [200, 220, 240, 230],
+                    itemStyle: { color: '#48dbfb' }
+                },
+                {
+                    name: 'Grid',
+                    type: 'bar',
+                    data: [300, 320, 340, 330],
+                    itemStyle: { color: '#ff9ff3' }
+                }
+            ]
+        };
+        
+        weeklyChart.setOption(weeklyOption);
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            dailyChart.resize();
+            weeklyChart.resize();
+        });
+    </script>
+</body>
+</html>

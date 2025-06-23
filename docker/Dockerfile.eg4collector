@@ -1,0 +1,23 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install required packages
+RUN pip install --no-cache-dir \
+    influxdb==5.3.1 \
+    paho-mqtt==1.6.1 \
+    python-dotenv==1.0.0
+
+# Copy the EG4 collector script
+COPY eg4_realtime_collector.py .
+
+# Set environment variables
+ENV INVERTER_IP=172.16.107.129
+ENV INFLUXDB_HOST=influxdb
+ENV INFLUXDB_PORT=8086
+ENV INFLUXDB_DB=solar_assistant
+ENV INFLUXDB_USER=solar
+ENV INFLUXDB_PASSWORD=solar123
+ENV POLL_INTERVAL=5
+
+CMD ["python", "eg4_realtime_collector.py"]

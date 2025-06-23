@@ -1,0 +1,54 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+set host "172.16.106.13"
+set user "solar-assistant"
+set password "solar123"
+
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $user@$host
+
+expect {
+    "password:" {
+        send "$password\r"
+        expect {
+            "Permission denied" {
+                puts "Authentication failed"
+                exit 1
+            }
+            "$user@" {
+                puts "\n=== Checking running processes ==="
+                send "ps aux | grep -E '(modbus|mqtt|influx|solar|eg4|inverter|elixir|beam)' | grep -v grep\r"
+                expect "$user@"
+                
+                puts "\n=== Checking network connections ==="
+                send "sudo netstat -tunlp | grep -E '(502|1883|8086)'\r"
+                expect {
+                    "password" {
+                        send "$password\r"
+                        expect "$user@"
+                    }
+                    "$user@" { }
+                }
+                
+                puts "\n=== Checking systemd services ==="
+                send "sudo systemctl list-units --type=service | grep -E '(solar|modbus|mqtt)'\r"
+                expect "$user@"
+                
+                puts "\n=== Checking Solar Assistant logs ==="
+                send "sudo journalctl -u solar-assistant -n 50 --no-pager\r"
+                expect "$user@"
+                
+                puts "\n=== Checking config files ==="
+                send "sudo find /opt /etc /var -name '*solar*' -o -name '*modbus*' -o -name '*eg4*' 2>/dev/null | head -20\r"
+                expect "$user@"
+                
+                send "exit\r"
+                expect eof
+            }
+        }
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}

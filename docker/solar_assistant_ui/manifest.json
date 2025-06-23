@@ -1,0 +1,72 @@
+{
+  "id": "/",
+  "short_name": "SolarAssistant",
+  "name": "SolarAssistant",
+  "description": "Modern, real-time solar monitoring and control from a Raspberry Pi",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "type": "image/png",
+      "sizes": "180x180",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/favicon/solar-assistant.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/favicon/solar-assistant-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/favicon/solar-assistant.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/favicon/solar-assistant-maskable.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/images/favicon/solar-assistant-512-maskable.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/images/favicon/solar-assistant-maskable.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots" : [
+    {
+      "src": "/images/pwa/screenshot-desktop.png",
+      "sizes": "811x471",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Dashboard of SolarAssistant"
+    },
+    {
+      "src": "/images/pwa/screenshot-mobile.png",
+      "sizes": "502x705",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Dashboard of SolarAssistant"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#000000",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#000000"
+}
+

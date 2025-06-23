@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Assistant - Real Data</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card h2 {
+            margin-top: 0;
+            color: #444;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+        }
+        .metric-label {
+            color: #666;
+        }
+        .metric-value {
+            font-weight: bold;
+            color: #333;
+        }
+        .error {
+            color: #d32f2f;
+            text-align: center;
+            font-size: 18px;
+            padding: 40px;
+        }
+        .timestamp {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+    </style>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Solar Assistant - Real Data</h1>
+        
+        {% if data.connected %}
+            <div class="status connected">
+                Connected to Solar Assistant at 172.16.106.13
+            </div>
+            
+            <div class="grid">
+                <div class="card">
+                    <h2>Battery</h2>
+                    <div class="metric">
+                        <span class="metric-label">State of Charge:</span>
+                        <span class="metric-value">{{ data.battery.soc }}%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Voltage:</span>
+                        <span class="metric-value">{{ data.battery.voltage }}V</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Current:</span>
+                        <span class="metric-value">{{ data.battery.current }}A</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Power:</span>
+                        <span class="metric-value">{{ data.battery.power }}W</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Temperature:</span>
+                        <span class="metric-value">{{ data.battery.temp }}°C</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Status:</span>
+                        <span class="metric-value">{{ data.battery.status }}</span>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>Grid</h2>
+                    <div class="metric">
+                        <span class="metric-label">Voltage:</span>
+                        <span class="metric-value">{{ data.grid.voltage }}V</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Frequency:</span>
+                        <span class="metric-value">{{ data.grid.frequency }}Hz</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Power:</span>
+                        <span class="metric-value">{{ data.grid.power }}W</span>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>Solar PV</h2>
+                    <div class="metric">
+                        <span class="metric-label">Total Power:</span>
+                        <span class="metric-value">{{ data.pv.power }}W</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">PV1 Power:</span>
+                        <span class="metric-value">{{ data.pv.pv1_power }}W</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">PV2 Power:</span>
+                        <span class="metric-value">{{ data.pv.pv2_power }}W</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">PV1 Voltage:</span>
+                        <span class="metric-value">{{ data.pv.pv1_voltage }}V</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">PV2 Voltage:</span>
+                        <span class="metric-value">{{ data.pv.pv2_voltage }}V</span>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>Load</h2>
+                    <div class="metric">
+                        <span class="metric-label">Total Power:</span>
+                        <span class="metric-value">{{ data.load.power }}W</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Essential:</span>
+                        <span class="metric-value">{{ data.load.essential }}W</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Non-Essential:</span>
+                        <span class="metric-value">{{ data.load.nonessential }}W</span>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>Inverter</h2>
+                    <div class="metric">
+                        <span class="metric-label">Mode:</span>
+                        <span class="metric-value">{{ data.inverter.mode }}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Temperature:</span>
+                        <span class="metric-value">{{ data.inverter.temp }}°C</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">AC Output:</span>
+                        <span class="metric-value">{{ data.inverter.ac_output_voltage }}V</span>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="status disconnected">
+                Disconnected
+            </div>
+            <div class="error">
+                {{ data.error }}
+            </div>
+        {% endif %}
+        
+        <div class="timestamp">
+            Last updated: <span id="timestamp">{{ data.timestamp }}</span>
+        </div>
+    </div>
+    
+    <script>
+        // Connect to WebSocket
+        const socket = io();
+        
+        socket.on('connect', function() {
+            console.log('Connected to server');
+        });
+        
+        socket.on('data_update', function(data) {
+            // Reload page to show new data
+            location.reload();
+        });
+        
+        // Format timestamp
+        function formatTimestamp() {
+            const timestampEl = document.getElementById('timestamp');
+            if (timestampEl) {
+                const timestamp = new Date(timestampEl.textContent);
+                timestampEl.textContent = timestamp.toLocaleString();
+            }
+        }
+        
+        formatTimestamp();
+    </script>
+</body>
+</html>

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1"/>
+    <title>Solar Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Exo:wght@400;500;600&display=swap" rel="stylesheet" type="text/css"/>
+    <link rel="stylesheet" href="/static/css/solar_assistant_style.css">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body class="with-header">
+    <div class="header">
+        <div class="container">
+            <div class="logo"></div>
+            <div class="menu">
+                <a href="/" class="menu-item active">
+                    <div class="item-img" style="background-image: url(/static/images/tabs/dashboard.svg);"></div>
+                    <span class="item-caption">Dashboard</span>
+                </a>
+                <a href="/charts" class="menu-item">
+                    <div class="item-img" style="background-image: url(/static/images/tabs/chart.svg);"></div>
+                    <span class="item-caption">Charts</span>
+                </a>
+                <a href="/totals" class="menu-item">
+                    <div class="item-img" style="background-image: url(/static/images/tabs/totals.svg);"></div>
+                    <span class="item-caption">Totals</span>
+                </a>
+                <a href="/power" class="menu-item">
+                    <div class="item-img" style="background-image: url(/static/images/tabs/power.svg);"></div>
+                    <span class="item-caption">Power</span>
+                </a>
+                <a href="/configuration" class="menu-item">
+                    <div class="item-img" style="background-image: url(/static/images/tabs/config.svg);"></div>
+                    <span class="item-caption">Configuration</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    <main role="main" id="main" class="main">
+        <div class="content">
+            <div class="flex-grid dashboard">
+                <!-- Status Card -->
+                <div class="card">
+                    <div class="card-section dashboard-info flex">
+                        <div class="half">
+                            <a href="/inverter/status" class="status">
+                                <img src="/static/images/inverter/ok.svg">
+                                <div>
+                                    <div class="label">Inverter</div>
+                                    <div class="value" id="inverter-status">{% if data.connection_status == 'disconnected' %}Cannot connect{% else %}{{ data.inverter.status }}{% endif %}</div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="half">
+                            <div class="status">
+                                <img src="/static/images/forecast/3.svg">
+                                <div>
+                                    <div class="label">Solar PV</div>
+                                    <div class="value small">D: {{ data.totals.daily_pv_kwh }} kWh</div>
+                                    <div class="value small">W: {{ data.totals.weekly_pv_kwh }} kWh</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="half">
+                            <a href="/grid/status" class="status">
+                                <img src="/static/images/grid/ok.svg">
+                                <div>
+                                    <div class="label">Grid</div>
+                                    <div class="value" id="grid-voltage">{{ data.grid.voltage }} V</div>
+                                    <div class="value font-small">
+                                        <span class="{{ 'positive' if data.grid.power < 0 else 'negative' }}" id="grid-power">
+                                            {{ (data.grid.power|abs) }} W
+                                        </span>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="half">
+                            <a href="/battery/status" class="status">
+                                <img src="/static/images/battery/{{ data.battery.status }}.svg">
+                                <div>
+                                    <div class="label">Battery</div>
+                                    <div class="value">
+                                        <span id="battery-soc">{{ data.battery.soc }}%</span>
+                                        <span class="battery-change {{ 'positive' if data.battery.power < 0 else 'negative' }}" id="battery-rate">
+                                            {{ data.battery.charge_rate }}%/hr
+                                        </span>
+                                    </div>
+                                    <div class="value font-small">
+                                        <span id="battery-voltage">{{ data.battery.voltage }} V</span>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Gauges Section -->
+                    <div class="card-section dashboard-gauges flex">
+                        <div class="half">
+                            <div class="gauge">
+                                <div class="mask">
+                                    <div class="semi-circle blue"></div>
+                                    <div class="semi-circle--mask" id="load-gauge"
+                                          style="transform: rotate({{ (data.load.power / 18000 * 180) }}deg)"></div>
+                                </div>
+                                <div class="value" id="load-value">
+                                    {{ data.load.power }} W
+                                </div>
+                                <div class="label">
+                                    Load
+                                </div>
+                            </div>
+                        </div>
+                        <div class="half">
+                            <div class="gauge">
+                                <div class="mask">
+                                    <div class="semi-circle yellow"></div>
+                                    <div class="semi-circle--mask" id="pv-gauge"
+                                          style="transform: rotate({{ (data.pv.power / 18000 * 180) }}deg)"></div>
+                                </div>
+                                <div class="value" id="pv-value">
+                                    {{ data.pv.power }} W
+                                </div>
+                                <div class="label">
+                                    Solar PV
+                                </div>
+                            </div>
+                        </div>
+                        <div class="half">
+                            <div class="gauge">
+                                <div class="mask">
+                                    <div class="semi-circle red"></div>
+                                    <div class="semi-circle--mask" id="grid-gauge"
+                                          style="transform: rotate({{ ((data.grid.power|abs) / 18000 * 180) }}deg)"></div>
+                                </div>
+                                <div class="value" id="grid-value">
+                                    {{ data.grid.power }} W
+                                </div>
+                                <div class="label">
+                                    Grid
+                                </div>
+                            </div>
+                        </div>
+                        <div class="half">
+                            <div class="gauge">
+                                <div class="mask">
+                                    <div class="semi-circle green"></div>
+                                    <div class="semi-circle--mask" id="battery-gauge"
+                                          style="transform: rotate({{ ((data.battery.power|abs) / 12000 * 180) }}deg)"></div>
+                                </div>
+                                <div class="value" id="battery-value">
+                                    {{ data.battery.power }} W
+                                </div>
+                                <div class="label">
+                                    Battery
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Grafana Charts -->
+                <div class="card">
+                    <iframe src="/grafana/d/solar-assistant-overview?kiosk=tv" 
+                            class="iframe-overview"></iframe>
+                </div>
+                
+                <div class="card">
+                    <iframe src="/grafana/d/solar-assistant-battery-power?kiosk=tv" 
+                            class="iframe-battery-power"></iframe>
+                </div>
+                
+                <div class="card">
+                    <iframe src="/grafana/d/solar-assistant-battery-soc?kiosk=tv" 
+                            class="iframe-battery-soc"></iframe>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Connect to Socket.IO for real-time updates
+        const socket = io();
+        
+        socket.on('data_update', function(data) {
+            // Update status values
+            if (data.connection_status === 'disconnected') {
+                document.getElementById('inverter-status').textContent = 'Cannot connect';
+                // Show zeros or "N/A" for disconnected state
+                document.getElementById('load-value').textContent = '0 W';
+                document.getElementById('pv-value').textContent = '0 W';
+                document.getElementById('grid-value').textContent = '0 W';
+                document.getElementById('battery-value').textContent = '0 W';
+                return;
+            }
+            
+            document.getElementById('inverter-status').textContent = data.inverter.status;
+            document.getElementById('grid-voltage').textContent = data.grid.voltage + ' V';
+            document.getElementById('battery-soc').textContent = data.battery.soc + '%';
+            document.getElementById('battery-voltage').textContent = data.battery.voltage + ' V';
+            
+            // Update gauge values
+            document.getElementById('load-value').textContent = data.load.power + ' W';
+            document.getElementById('pv-value').textContent = data.pv.power + ' W';
+            document.getElementById('grid-value').textContent = data.grid.power + ' W';
+            document.getElementById('battery-value').textContent = data.battery.power + ' W';
+            
+            // Update gauge positions
+            document.getElementById('load-gauge').style.transform = 
+                'rotate(' + (data.load.power / 18000 * 180) + 'deg)';
+            document.getElementById('pv-gauge').style.transform = 
+                'rotate(' + (data.pv.power / 18000 * 180) + 'deg)';
+            document.getElementById('grid-gauge').style.transform = 
+                'rotate(' + (Math.abs(data.grid.power) / 18000 * 180) + 'deg)';
+            document.getElementById('battery-gauge').style.transform = 
+                'rotate(' + (Math.abs(data.battery.power) / 12000 * 180) + 'deg)';
+            
+            // Update grid power class
+            const gridPower = document.getElementById('grid-power');
+            gridPower.textContent = Math.abs(data.grid.power) + ' W';
+            gridPower.className = data.grid.power < 0 ? 'positive' : 'negative';
+            
+            // Update battery rate
+            const batteryRate = document.getElementById('battery-rate');
+            batteryRate.textContent = data.battery.charge_rate + '%/hr';
+            batteryRate.className = 'battery-change ' + (data.battery.power < 0 ? 'positive' : 'negative');
+        });
+    </script>
+</body>
+</html>
