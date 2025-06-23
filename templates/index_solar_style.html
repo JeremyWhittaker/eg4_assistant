@@ -1186,8 +1186,13 @@
                     if (data.cached && data.cache_timestamp) {
                         const cacheTime = new Date(data.cache_timestamp);
                         const timeAgo = getTimeAgo(cacheTime);
-                        document.getElementById('cache-info').textContent = 
-                            `Data cached ${timeAgo} • Updates daily`;
+                        if (data.stale_demand) {
+                            document.getElementById('cache-info').textContent = 
+                                `Old demand data • Checking hourly for updates • Last check ${timeAgo}`;
+                        } else {
+                            document.getElementById('cache-info').textContent = 
+                                `Data cached ${timeAgo} • Updates daily`;
+                        }
                     } else {
                         document.getElementById('cache-info').textContent = 'Live data • Updates daily';
                     }

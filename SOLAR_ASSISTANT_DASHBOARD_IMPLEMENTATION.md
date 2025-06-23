@@ -94,17 +94,22 @@ The SRP integration uses Playwright to:
 4. Extract peak demand data from the `.srp-red-text strong` element
 5. Extract the demand date from the page (defaults to today if not found)
 6. Return formatted JSON with demand value, date, and billing cycle
-7. Cache the data for 24 hours since peak demand only updates daily
+7. Use intelligent caching based on the demand date
+
+#### Smart Caching Logic:
+- If the demand date is today or yesterday: Cache is valid indefinitely (until force refresh)
+- If the demand date is older than yesterday: Cache is only valid for 1 hour
+- This ensures fresh data is fetched when SRP updates their peak demand (usually overnight)
+- Users can always force a fresh fetch using the "Force Refresh" button
 
 #### Important Notes:
 - Credentials are saved without quotes to the `.env` file
 - On startup, credentials are automatically loaded and verified
 - The system navigates to the usage page specifically to get accurate peak demand data
 - No re-login is required after container restarts
-- Peak demand data is cached for 24 hours to reduce load on SRP servers
-- Users can force a fresh fetch using the "Force Refresh" button
 - The UI displays "Peak demand as of [date]" showing when the data was recorded
 - Cache information is displayed (e.g., "Data cached 2 hours ago • Updates daily")
+- For old demand data, the UI shows "Old demand data • Checking hourly for updates"
 
 ## File Structure
 ```

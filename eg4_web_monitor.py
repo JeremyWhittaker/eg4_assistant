@@ -7,7 +7,7 @@ from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO, emit
 import asyncio
 from playwright.async_api import async_playwright
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 import os
 from dotenv import load_dotenv, set_key
 import json
@@ -37,8 +37,7 @@ credentials_verified = False
 # SRP data cache
 srp_cache = {
     'data': None,
-    'timestamp': None,
-    'cache_duration': 3600 * 24  # 24 hours in seconds
+    'timestamp': None
 }
 
 alert_config = {
@@ -718,15 +717,46 @@ def get_srp_demand():
     force_refresh = request.args.get('force_refresh', 'false').lower() == 'true'
     
     if not force_refresh and srp_cache['data'] and srp_cache['timestamp']:
-        # Check if cache is still valid (less than 24 hours old)
+        # Check if we should use cached data based on the demand date
         cache_age = datetime.now() - srp_cache['timestamp']
-        if cache_age.total_seconds() < srp_cache['cache_duration']:
-            print(f"Returning cached SRP data from {srp_cache['timestamp']}")
-            # Add cache info to response
+        demand_date_str = srp_cache['data'].get('demandDate', '')
+        
+        # Parse the demand date
+        if demand_date_str:
+            try:
+                # Handle YYYY-MM-DD format
+                if '-' in demand_date_str and len(demand_date_str) == 10:
+                    demand_date = datetime.strptime(demand_date_str, '%Y-%m-%d').date()
+                else:
+                    # Handle other formats - assume current year
+                    demand_date = datetime.strptime(f"{demand_date_str} {datetime.now().year}", '%b %d %Y').date()
+            except:
+                demand_date = datetime.now().date()
+        else:
+            demand_date = datetime.now().date()
+        
+        today = datetime.now().date()
+        yesterday = today - timedelta(days=1)
+        
+        # If demand date is yesterday or today, cache is valid
+        if demand_date >= yesterday:
+            print(f"Returning cached SRP data from {srp_cache['timestamp']} (demand date: {demand_date})")
             cached_data = srp_cache['data'].copy()
             cached_data['cached'] = True
             cached_data['cache_timestamp'] = srp_cache['timestamp'].isoformat()
+            cached_data['cache_age_seconds'] = int(cache_age.total_seconds())
             return jsonify(cached_data)
+        # If demand date is older, only use cache if less than 1 hour old
+        elif cache_age.total_seconds() < 3600:  # 1 hour
+            print(f"Returning cached SRP data (old demand date {demand_date}, but cache is fresh)")
+            cached_data = srp_cache['data'].copy()
+            cached_data['cached'] = True
+            cached_data['cache_timestamp'] = srp_cache['timestamp'].isoformat()
+            cached_data['cache_age_seconds'] = int(cache_age.total_seconds())
+            cached_data['stale_demand'] = True
+            return jsonify(cached_data)
+        else:
+            print(f"Cache expired - demand date {demand_date} is old and cache is > 1 hour")
     
     # Check if credentials exist
     username = os.getenv('SRP_USERNAME', '').strip().strip("'\"")
