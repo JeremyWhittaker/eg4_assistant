@@ -40,6 +40,12 @@ srp_cache = {
     'timestamp': None
 }
 
+# SRP chart data cache
+srp_chart_cache = {
+    'data': None,
+    'timestamp': None
+}
+
 alert_config = {
     'battery_soc': {
         'enabled': False,
@@ -286,7 +292,7 @@ class SRPMonitor:
             # Look for the login form
             try:
                 # Try desktop username field first
-                username_field = await self.page.wait_for_selector('input[name="username"], input#username_desktop', timeout=10000)
+                username_field = await self.page.wait_for_selector('input[name="username"], input#username_desktop', timeout=30000)
                 await username_field.fill(self.username)
                 print("Filled username")
                 app.logger.info("SRP username filled")
@@ -423,144 +429,571 @@ class SRPMonitor:
                 await self.page.goto(f"{self.base_url}/power/myaccount/usage", wait_until='networkidle')
                 await asyncio.sleep(3)
             
-            # Extract chart data from the page
-            chart_data = await self.page.evaluate(r"""
+            # Click on the Daily tab to show the daily usage view
+            daily_tab = await self.page.query_selector('button:has-text("Daily")')
+            if not daily_tab:
+                # Try alternative selectors
+                daily_tab = await self.page.query_selector('.MuiTab-root:has-text("Daily")')
+            
+            if daily_tab:
+                await daily_tab.click()
+                await asyncio.sleep(2)
+                app.logger.info("Clicked Daily tab")
+            else:
+                app.logger.warning("Daily tab not found")
+            
+            # Debug: Take screenshot after clicking Daily tab
+            await self.page.screenshot(path='/tmp/srp_usage_page_daily.png')
+            app.logger.info("Screenshot saved to /tmp/srp_usage_page_daily.png")
+            
+            # Wait for page to fully load with longer timeout
+            await self.page.wait_for_load_state('networkidle')
+            await asyncio.sleep(2)
+            
+            # Click Submit button to load the daily data
+            submit_button = await self.page.query_selector('button.btn.srp-btn.btn-green:has-text("Submit")')
+            if submit_button:
+                await submit_button.click()
+                await asyncio.sleep(3)
+                app.logger.info("Clicked Submit button to load daily data")
+                
+                # Wait for chart to load
+                await self.page.wait_for_load_state('networkidle')
+                
+                # Scroll down to see the chart area
+                await self.page.evaluate('window.scrollBy(0, 500)')
+                await asyncio.sleep(1)
+                
+                # Take screenshot after submitting
+                await self.page.screenshot(path='/tmp/srp_usage_page_after_submit.png')
+                app.logger.info("Screenshot saved to /tmp/srp_usage_page_after_submit.png")
+            else:
+                app.logger.warning("Submit button not found")
+            
+            # First, try to extract chart data directly without clicking button
+            # The chart might already be visible after Submit
+            chart_visible = await self.page.evaluate("""
                 () => {
-                    // Look for the SVG chart
-                    const chart = document.querySelector('#usagePageChart');
-                    if (!chart) {
-                        return { error: 'Chart not found' };
-                    }
+                    // Look for chart elements
+                    const chartButtons = document.querySelectorAll('.chart-type-btn');
+                    const hasChart = chartButtons.length > 0;
                     
-                    // Extract data from the bar elements
-                    const data = {
-                        dates: [],
-                        usage: [],
-                        generation: [],
-                        netEnergy: [],
-                        demand: [],
-                        temperatures: { high: [], low: [] },
-                        dateRange: '',
-                        chartAvailable: true
+                    // Check if any chart SVG or canvas is visible
+                    const svgChart = document.querySelector('svg.recharts-surface');
+                    const canvasChart = document.querySelector('canvas#chart');
+                    
+                    return {
+                        hasChartButtons: hasChart,
+                        buttonCount: chartButtons.length,
+                        hasSvgChart: !!svgChart,
+                        hasCanvasChart: !!canvasChart
                     };
-                    
-                    // Get date labels from x-axis
-                    const dateLabels = chart.querySelectorAll('.usage-date-axis .tick text');
-                    dateLabels.forEach(label => {
-                        if (label.textContent) {
-                            data.dates.push(label.textContent.trim());
-                        }
-                    });
-                    
-                    // Find which chart group is visible (daily or monthly)
-                    const dailyChartGroups = chart.querySelectorAll('#dailyChartMainGroup');
-                    let activeGroup = null;
-                    
-                    for (const group of dailyChartGroups) {
-                        const parent = group.parentElement;
-                        if (parent && parent.getAttribute('transform') && !parent.getAttribute('transform').includes('translate(0,0)')) {
-                            activeGroup = group;
-                            break;
-                        }
-                    }
-                    
-                    if (!activeGroup && dailyChartGroups.length > 0) {
-                        activeGroup = dailyChartGroups[0];
-                    }
-                    
-                    if (activeGroup) {
-                        // Extract bar data from visible chart
-                        const extractBarHeights = (group, className) => {
-                            const bars = group.querySelectorAll(`.${className} g path`);
-                            const heights = [];
-                            
-                            bars.forEach(bar => {
-                                const d = bar.getAttribute('d');
-                                if (d && d.includes('v')) {
-                                    // Extract height from path
-                                    const heightMatch = d.match(/v([\d.]+)/);
-                                    if (heightMatch) {
-                                        heights.push(Math.round(parseFloat(heightMatch[1])));
-                                    } else {
-                                        heights.push(0);
-                                    }
-                                } else {
-                                    heights.push(0);
-                                }
-                            });
-                            
-                            return heights;
-                        };
-                        
-                        // Extract different data series
-                        const offPeakData = extractBarHeights(activeGroup, 'viz-offPeak');
-                        const onPeakData = extractBarHeights(activeGroup, 'viz-onPeak');
-                        const superOffPeakData = extractBarHeights(activeGroup, 'viz-superOffPeak');
-                        
-                        // Combine into usage data (sum of all rate periods)
-                        for (let i = 0; i < data.dates.length; i++) {
-                            const usage = (offPeakData[i] || 0) + (onPeakData[i] || 0) + (superOffPeakData[i] || 0);
-                            data.usage.push(usage);
-                            data.generation.push(0); // Placeholder
-                            data.netEnergy.push(usage); // Placeholder
-                            data.demand.push(0); // Placeholder
-                        }
-                        
-                        // Store rate period breakdown
-                        data.rateBreakdown = {
-                            offPeak: offPeakData,
-                            onPeak: onPeakData,
-                            superOffPeak: superOffPeakData
-                        };
-                    }
-                    
-                    // Extract temperature data
-                    const tempPaths = chart.querySelectorAll('.viz-high-temp, .viz-low-temp');
-                    tempPaths.forEach(path => {
-                        const d = path.getAttribute('d');
-                        const isHigh = path.classList.contains('viz-high-temp');
-                        
-                        if (d) {
-                            // Extract coordinates from path
-                            const points = d.match(/L[\d.]+,([\d.]+)/g);
-                            if (points) {
-                                const temps = points.map(p => {
-                                    const y = parseFloat(p.split(',')[1]);
-                                    // Convert y-coordinate to temperature (approximate)
-                                    return Math.round(120 - (y / 2));
-                                });
-                                
-                                if (isHigh) {
-                                    data.temperatures.high = temps;
-                                } else {
-                                    data.temperatures.low = temps;
-                                }
-                            }
-                        }
-                    });
-                    
-                    // Find date range in page
-                    const headings = document.querySelectorAll('h2, h3, .date-range');
-                    for (const heading of headings) {
-                        const text = heading.textContent || '';
-                        if (text.match(/\w+\s+\d+.*through.*\w+\s+\d+/)) {
-                            data.dateRange = text.trim();
-                            break;
-                        }
-                    }
-                    
-                    // If no date range found, create one from dates
-                    if (!data.dateRange && data.dates.length > 0) {
-                        data.dateRange = `${data.dates[0]} through ${data.dates[data.dates.length - 1]}`;
-                    }
-                    
-                    return data;
                 }
             """)
             
-            if chart_data:
-                print(f"SRP daily usage chart extracted: {len(chart_data.get('dates', []))} days")
+            app.logger.info(f"Chart visibility check: {chart_visible}")
+            
+            # If chart buttons are already visible, skip clicking "View data table"
+            if chart_visible.get('hasChartButtons', 0) > 0:
+                app.logger.info("Chart already visible, skipping 'View data table' button")
+                view_chart_button = None
+            else:
+                # Try to find and click "View data table" button
+                view_chart_button = None
+                
+                # First scroll to make sure button is in view
+                await self.page.evaluate("""
+                    () => {
+                        const buttons = Array.from(document.querySelectorAll('button'));
+                        const viewButton = buttons.find(btn => 
+                            btn.textContent.includes('View data table') || 
+                            btn.textContent.includes('View as data table')
+                        );
+                        if (viewButton) {
+                            viewButton.scrollIntoView({block: 'center', behavior: 'smooth'});
+                        }
+                    }
+                """)
+                await asyncio.sleep(1)
+                
+                # Now try to find the button
+                button_selectors = [
+                    'button:has-text("View data table")',
+                    'button:has-text("View as data table")'
+                ]
+                
+                for selector in button_selectors:
+                    try:
+                        view_chart_button = await self.page.query_selector(selector)
+                        if view_chart_button:
+                            app.logger.info(f"Found button with selector: {selector}")
+                            break
+                    except:
+                        continue
+            
+            # Initialize data structure first
+            chart_data = {
+                'dates': [],
+                'netEnergy': [],
+                'generation': [],
+                'usage': [],
+                'demand': [],
+                'offPeak': [],
+                'onPeak': [],
+                'temperatures': {
+                    'high': [],
+                    'low': []
+                },
+                'dateRange': '',
+                'chartAvailable': True
+            }
+            
+            # At this point, the chart should be visible
+            # Try to extract data directly from the chart visualization
+            chart_info = await self.page.evaluate("""
+                () => {
+                    // Look for chart data
+                    const result = {
+                        dates: [],
+                        values: [],
+                        chartType: 'unknown'
+                    };
+                    
+                    // Try to find x-axis labels (dates)
+                    const xAxisTexts = document.querySelectorAll('text');
+                    const datePattern = /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{1,2}$/;
+                    
+                    xAxisTexts.forEach(text => {
+                        const content = text.textContent.trim();
+                        if (datePattern.test(content)) {
+                            result.dates.push(content);
+                        }
+                    });
+                    
+                    // Try to find the bars/data points
+                    const bars = document.querySelectorAll('rect[fill], .recharts-bar rect, .bar-chart rect');
+                    const barData = [];
+                    bars.forEach(bar => {
+                        const height = parseFloat(bar.getAttribute('height') || '0');
+                        const y = parseFloat(bar.getAttribute('y') || '0');
+                        const fill = bar.getAttribute('fill') || '';
+                        if (height > 0) {
+                            barData.push({ height, y, fill });
+                        }
+                    });
+                    
+                    // Check which chart type is selected
+                    const selectedButton = document.querySelector('.chart-type-btn-selected');
+                    if (selectedButton) {
+                        result.chartType = selectedButton.textContent.trim().toLowerCase();
+                    }
+                    
+                    result.barCount = barData.length;
+                    result.dateCount = result.dates.length;
+                    
+                    return result;
+                }
+            """)
+            
+            app.logger.info(f"Chart info extraction: {chart_info}")
+            
+            if chart_info.get('dates'):
+                chart_data['dates'] = chart_info['dates']
+            
+            # Define the chart types to extract
+            chart_types = [
+                ('Net energy', 'netEnergy'),
+                ('Generation', 'generation'),
+                ('Usage', 'usage'),
+                ('Demand', 'demand')
+            ]
+            
+            # Now click "View as data table" to get the table view
+            view_table_button = await self.page.query_selector('button:has-text("View as data table")')
+            if not view_table_button:
+                view_table_button = await self.page.query_selector('button:has-text("View data table")')
+            
+            if view_table_button:
+                await view_table_button.click()
+                await asyncio.sleep(2)
+                app.logger.info("Clicked 'View as data table' button")
+                
+                # Extract table data
+                table_data = await self.page.evaluate("""
+                    () => {
+                        const result = {
+                            headers: [],
+                            rows: [],
+                            tableFound: false,
+                            tableId: null,
+                            tableClass: null
+                        };
+                        
+                        // Find the data table - try multiple selectors
+                        let table = document.querySelector('table#usageDataTable');
+                        if (!table) table = document.querySelector('table[aria-label*="usage"]');
+                        if (!table) table = document.querySelector('table.data-table');
+                        if (!table) table = document.querySelector('table');
+                        
+                        if (!table) return result;
+                        
+                        result.tableFound = true;
+                        result.tableId = table.id || 'none';
+                        result.tableClass = table.className || 'none';
+                        
+                        // Get headers
+                        const headerCells = table.querySelectorAll('thead th, thead td');
+                        headerCells.forEach(cell => {
+                            result.headers.push(cell.textContent.trim());
+                        });
+                        
+                        // Get rows
+                        const rows = table.querySelectorAll('tbody tr');
+                        rows.forEach((row, idx) => {
+                            const rowData = [];
+                            const cells = row.querySelectorAll('td');
+                            cells.forEach(cell => {
+                                // Get the text content and clean it up
+                                let text = cell.textContent.trim();
+                                // Also check for any input elements
+                                const input = cell.querySelector('input');
+                                if (input && input.value) {
+                                    text = input.value.trim();
+                                }
+                                rowData.push(text);
+                            });
+                            if (rowData.length > 0) {
+                                result.rows.push(rowData);
+                            }
+                        });
+                        
+                        return result;
+                    }
+                """)
+                
+                app.logger.info(f"Table data extracted: {len(table_data.get('rows', []))} rows, headers: {table_data.get('headers', [])}")
+                app.logger.info(f"Table info: found={table_data.get('tableFound')}, id={table_data.get('tableId')}, class={table_data.get('tableClass')}")
+                
+                # Log first few rows for debugging
+                if table_data.get('rows'):
+                    for i, row in enumerate(table_data['rows'][:3]):
+                        app.logger.info(f"Row {i}: {row}")
+                
+                # Parse the table data
+                if table_data.get('rows'):
+                    # Determine which columns contain what based on headers
+                    headers = table_data.get('headers', [])
+                    date_col = 0  # Usually first column
+                    value_cols = []
+                    
+                    # Find value columns based on header names
+                    for i, header in enumerate(headers):
+                        header_lower = header.lower()
+                        # Skip date columns
+                        if 'date' in header_lower:
+                            continue
+                        # Look for kWh columns
+                        if 'kwh' in header_lower:
+                            value_cols.append(i)
+                    
+                    # If no value columns found, look for numeric columns
+                    if not value_cols:
+                        # For the net energy table, we're looking for the Total kWh column
+                        for i, header in enumerate(headers):
+                            if 'total' in header.lower():
+                                value_cols = [i]
+                                break
+                    
+                    app.logger.info(f"Value columns: {value_cols}")
+                    
+                    # Find which column has the usage date (not meter read date)
+                    usage_date_col = 1  # Default to column 1
+                    for i, header in enumerate(headers):
+                        if 'usage date' in header.lower():
+                            usage_date_col = i
+                            break
+                    
+                    for row in table_data['rows']:
+                        if len(row) > usage_date_col:
+                            # Extract date from usage date column
+                            date = row[usage_date_col]
+                            if date and date not in chart_data['dates']:
+                                chart_data['dates'].append(date)
+                            
+                            # For Net Energy view, we want the Total kWh
+                            if 'total' in headers[value_cols[0]].lower() if value_cols else False:
+                                try:
+                                    # The total column shows the net energy value
+                                    value_text = row[value_cols[0]]
+                                    # Handle negative values with parentheses
+                                    if '(' in value_text and ')' in value_text:
+                                        value_text = '-' + value_text.replace('(', '').replace(')', '')
+                                    value = float(value_text.replace(',', '').replace(' kWh', '').replace('kWh', ''))
+                                    chart_data['netEnergy'].append(value)
+                                except Exception as e:
+                                    app.logger.warning(f"Error parsing net energy value: {e}, row: {row}")
+                            else:
+                                # For other views, extract all kWh columns
+                                try:
+                                    # Extract temperature values
+                                    if len(row) >= 9:  # Has temperature columns
+                                        high_temp = float(row[7])
+                                        low_temp = float(row[8])
+                                        if len(chart_data['temperatures']['high']) < len(chart_data['dates']):
+                                            chart_data['temperatures']['high'].append(high_temp)
+                                            chart_data['temperatures']['low'].append(low_temp)
+                                    
+                                    # Extract energy values based on available columns
+                                    if len(row) >= 7:  # Has all energy columns
+                                        super_off_peak = float(row[2])
+                                        off_peak = float(row[3])
+                                        shoulder = float(row[4])
+                                        on_peak = float(row[5])
+                                        total = float(row[6])
+                                        
+                                        # Store off-peak (includes super off-peak) and on-peak
+                                        chart_data['offPeak'].append(super_off_peak + off_peak + shoulder)
+                                        chart_data['onPeak'].append(on_peak)
+                                        chart_data['usage'].append(total)
+                                except Exception as e:
+                                    app.logger.warning(f"Error parsing row values: {e}, row: {row}")
+                
+                # Click back to chart view
+                view_chart_button = await self.page.query_selector('button:has-text("View as chart")')
+                if view_chart_button:
+                    await view_chart_button.click()
+                    await asyncio.sleep(1)
+            else:
+                app.logger.warning("'View as data table' button not found")
+            
+            # Skip clicking through chart types if we already have the data
+            if chart_data['offPeak'] and chart_data['onPeak'] and len(chart_data['offPeak']) > 0:
+                app.logger.info("Data already extracted from initial table, skipping chart type buttons")
+            else:
+                # Now extract data for each chart type by clicking buttons
+                app.logger.info(f"Starting to extract data for chart types: {[ct[0] for ct in chart_types]}")
+                
+                for button_text, data_key in chart_types:
+                    try:
+                        app.logger.info(f"Looking for '{button_text}' button...")
+                        
+                        # Click the chart type button - try multiple selectors
+                        chart_button = await self.page.query_selector(f'button.chart-type-btn:has-text("{button_text}")')
+                        if not chart_button:
+                            chart_button = await self.page.query_selector(f'button:has-text("{button_text}")')
+                        if not chart_button:
+                            # Try case-insensitive search
+                            chart_button = await self.page.query_selector(f'button:has-text("{button_text.lower()}")')
+                        
+                        if chart_button:
+                            await chart_button.click()
+                            await asyncio.sleep(2)
+                            app.logger.info(f"Clicked '{button_text}' button")
+                        
+                        # Click "View as data table" for this chart type
+                        view_table_btn = await self.page.query_selector('button:has-text("View as data table")')
+                        if not view_table_btn:
+                            view_table_btn = await self.page.query_selector('button:has-text("View data table")')
+                        
+                        if view_table_btn:
+                            await view_table_btn.click()
+                            await asyncio.sleep(2)
+                            
+                            # Extract table data for this specific chart type
+                            table_data = await self.page.evaluate("""
+                                () => {
+                                    const result = {
+                                        headers: [],
+                                        rows: []
+                                    };
+                                    
+                                    // Find the table
+                                    const table = document.querySelector('table');
+                                    if (!table) return result;
+                                    
+                                    // Get headers
+                                    const headerCells = table.querySelectorAll('thead th, thead td');
+                                    headerCells.forEach(cell => {
+                                        result.headers.push(cell.textContent.trim());
+                                    });
+                                    
+                                    // Get rows
+                                    const rows = table.querySelectorAll('tbody tr');
+                                    rows.forEach(row => {
+                                        const rowData = [];
+                                        const cells = row.querySelectorAll('td');
+                                        cells.forEach(cell => {
+                                            rowData.push(cell.textContent.trim());
+                                        });
+                                        if (rowData.length > 0) {
+                                            result.rows.push(rowData);
+                                        }
+                                    });
+                                    
+                                    return result;
+                                }
+                            """)
+                            
+                            app.logger.info(f"Table for {button_text}: {len(table_data.get('rows', []))} rows")
+                            app.logger.info(f"Headers for {button_text}: {table_data.get('headers', [])}")
+                            if table_data.get('rows'):
+                                app.logger.info(f"First row for {button_text}: {table_data['rows'][0]}")
+                            
+                            # Parse the data based on chart type
+                            if table_data.get('rows'):
+                                if data_key == 'netEnergy':
+                                    # Net energy table - look for the net/total column
+                                    headers = table_data.get('headers', [])
+                                    # Find the column with net or total kWh
+                                    net_col = None
+                                    for i, header in enumerate(headers):
+                                        if 'net' in header.lower() or 'total' in header.lower():
+                                            net_col = i
+                                            break
+                                    
+                                    if net_col is None and len(headers) > 2:
+                                        # Default to column 2 if no net/total column found
+                                        net_col = 2
+                                    
+                                    for row in table_data['rows']:
+                                        if len(row) > net_col:
+                                            try:
+                                                value_text = row[net_col]
+                                                # Handle negative values in parentheses
+                                                if '(' in value_text and ')' in value_text:
+                                                    value_text = '-' + value_text.replace('(', '').replace(')', '')
+                                                value = float(value_text.replace(',', '').replace(' kWh', '').replace('kWh', '').strip())
+                                                chart_data['netEnergy'].append(value)
+                                            except Exception as e:
+                                                app.logger.warning(f"Error parsing net energy value: {e}, value_text: '{value_text}'")
+                                
+                                elif data_key == 'generation':
+                                    # Generation data - look for generation or export column
+                                    headers = table_data.get('headers', [])
+                                    gen_col = None
+                                    for i, header in enumerate(headers):
+                                        if 'generation' in header.lower() or 'export' in header.lower() or 'total' in header.lower():
+                                            gen_col = i
+                                            break
+                                    
+                                    if gen_col is None and len(headers) > 2:
+                                        gen_col = 2
+                                    
+                                    for row in table_data['rows']:
+                                        if len(row) > gen_col:
+                                            try:
+                                                value_text = row[gen_col]
+                                                if '(' in value_text and ')' in value_text:
+                                                    value_text = '-' + value_text.replace('(', '').replace(')', '')
+                                                value = float(value_text.replace(',', '').replace(' kWh', '').replace('kWh', '').strip())
+                                                chart_data['generation'].append(value)
+                                            except Exception as e:
+                                                app.logger.warning(f"Error parsing generation value: {e}, value_text: '{value_text}'")
+                                
+                                elif data_key == 'usage':
+                                    # Usage data - look for usage or consumption column
+                                    headers = table_data.get('headers', [])
+                                    usage_col = None
+                                    for i, header in enumerate(headers):
+                                        header_lower = header.lower()
+                                        # Skip date columns
+                                        if 'date' in header_lower:
+                                            continue
+                                        if 'total' in header_lower and 'kwh' in header_lower:
+                                            usage_col = i
+                                            break
+                                        elif 'usage' in header_lower and 'kwh' in header_lower:
+                                            usage_col = i
+                                            break
+                                    
+                                    if usage_col is None and len(headers) > 2:
+                                        usage_col = 2
+                                    
+                                    for row in table_data['rows']:
+                                        if len(row) > usage_col:
+                                            try:
+                                                value_text = row[usage_col]
+                                                if '(' in value_text and ')' in value_text:
+                                                    value_text = '-' + value_text.replace('(', '').replace(')', '')
+                                                value = float(value_text.replace(',', '').replace(' kWh', '').replace('kWh', '').strip())
+                                                chart_data['usage'].append(value)
+                                            except Exception as e:
+                                                app.logger.warning(f"Error parsing usage value: {e}, value_text: '{value_text}'")
+                                
+                                elif data_key == 'demand':
+                                    # Demand data in kW
+                                    headers = table_data.get('headers', [])
+                                    demand_col = None
+                                    for i, header in enumerate(headers):
+                                        if 'demand' in header.lower() or 'peak' in header.lower() or 'max' in header.lower():
+                                            demand_col = i
+                                            break
+                                    
+                                    if demand_col is None and len(headers) > 2:
+                                        demand_col = 2
+                                    
+                                    for row in table_data['rows']:
+                                        if len(row) > demand_col:
+                                            try:
+                                                value_text = row[demand_col]
+                                                if '(' in value_text and ')' in value_text:
+                                                    value_text = '-' + value_text.replace('(', '').replace(')', '')
+                                                value = float(value_text.replace(',', '').replace(' kW', '').replace('kW', '').strip())
+                                                chart_data['demand'].append(value)
+                                            except Exception as e:
+                                                app.logger.warning(f"Error parsing demand value: {e}, value_text: '{value_text}'")
+                            
+                            # Click back to chart view
+                            view_chart_btn = await self.page.query_selector('button:has-text("View as chart")')
+                            if view_chart_btn:
+                                await view_chart_btn.click()
+                                await asyncio.sleep(1)
+                        else:
+                            app.logger.warning(f"'{button_text}' button not found")
+                            # Take a screenshot for debugging
+                            await self.page.screenshot(path=f'/tmp/srp_no_button_{data_key}.png')
+                    
+                    except Exception as e:
+                        app.logger.error(f"Error processing chart type {button_text}: {e}")
+            
+            # If we didn't find a date range, create one from the dates
+            if not chart_data['dateRange'] and chart_data['dates']:
+                chart_data['dateRange'] = f"{chart_data['dates'][0]} through {chart_data['dates'][-1]}"
+            
+            # Calculate missing data from off-peak and on-peak if needed
+            if chart_data['offPeak'] and chart_data['onPeak']:
+                # Calculate usage if not already populated
+                if not chart_data['usage'] or all(v == 0 for v in chart_data['usage']):
+                    chart_data['usage'] = []
+                    for i in range(len(chart_data['offPeak'])):
+                        # Usage is the sum of off-peak and on-peak (absolute values)
+                        usage = abs(chart_data['offPeak'][i]) + abs(chart_data['onPeak'][i])
+                        chart_data['usage'].append(usage)
+                
+                # Calculate net energy if not already populated
+                if not chart_data['netEnergy'] or all(v == 0 for v in chart_data['netEnergy']):
+                    chart_data['netEnergy'] = []
+                    for i in range(len(chart_data['offPeak'])):
+                        # Net energy is the sum (negative means net generation)
+                        net = chart_data['offPeak'][i] + chart_data['onPeak'][i]
+                        chart_data['netEnergy'].append(net)
+                
+                # Calculate generation if not already populated
+                if not chart_data['generation'] or all(v == 0 for v in chart_data['generation']):
+                    chart_data['generation'] = []
+                    for i in range(len(chart_data['offPeak'])):
+                        # Generation is the negative portion
+                        off_gen = min(0, chart_data['offPeak'][i])
+                        on_gen = min(0, chart_data['onPeak'][i])
+                        generation = abs(off_gen + on_gen)
+                        chart_data['generation'].append(generation)
+            
+            app.logger.info(f"SRP daily usage chart extracted: {len(chart_data.get('dates', []))} days")
+            if chart_data.get('dates'):
                 app.logger.info(f"SRP chart data extracted successfully")
+                app.logger.info(f"Data counts - usage: {len(chart_data.get('usage', []))}, netEnergy: {len(chart_data.get('netEnergy', []))}, generation: {len(chart_data.get('generation', []))}")
+            else:
+                app.logger.warning("SRP chart data extraction returned empty data")
             
             return chart_data
             
@@ -949,7 +1382,9 @@ def get_srp_demand():
 
 @app.route('/api/srp/chart', methods=['GET'])
 def get_srp_chart():
-    """Get SRP daily usage chart data"""
+    """Get SRP daily usage chart data with caching"""
+    global srp_chart_cache
+    
     # Check if credentials exist
     username = os.getenv('SRP_USERNAME', '').strip().strip("'\"")
     password = os.getenv('SRP_PASSWORD', '').strip().strip("'\"")
@@ -957,16 +1392,51 @@ def get_srp_chart():
     if not username or not password:
         return jsonify({'error': 'no_credentials', 'message': 'SRP credentials not configured'}), 401
     
+    # Check if we have valid cached data
+    force_refresh = request.args.get('force_refresh', 'false').lower() == 'true'
+    
+    if not force_refresh and srp_chart_cache['data'] and srp_chart_cache['timestamp']:
+        cache_age = datetime.now() - srp_chart_cache['timestamp']
+        # Cache chart data for 6 hours
+        if cache_age.total_seconds() < 21600:
+            print(f"Returning cached SRP chart data from {srp_chart_cache['timestamp']}")
+            cached_data = srp_chart_cache['data'].copy()
+            cached_data['cached'] = True
+            cached_data['cache_age_seconds'] = int(cache_age.total_seconds())
+            cached_data['cache_timestamp'] = srp_chart_cache['timestamp'].isoformat()
+            return jsonify(cached_data)
+    
     # Fetch chart data
     async def fetch_chart_data():
+        # Add a small delay to avoid conflicts with other SRP requests
+        await asyncio.sleep(2)
+        
         srp = SRPMonitor()
         try:
             await srp.start()
-            if await srp.login():
+            # Add retry logic for login
+            login_attempts = 0
+            login_success = False
+            
+            while login_attempts < 3 and not login_success:
+                login_attempts += 1
+                print(f"SRP chart login attempt {login_attempts}/3")
+                
+                try:
+                    login_success = await srp.login()
+                    if not login_success and login_attempts < 3:
+                        print(f"Login attempt {login_attempts} failed, retrying...")
+                        await asyncio.sleep(5)
+                except Exception as e:
+                    print(f"Login attempt {login_attempts} error: {e}")
+                    if login_attempts < 3:
+                        await asyncio.sleep(5)
+            
+            if login_success:
                 chart_data = await srp.get_daily_usage_chart()
                 return chart_data
             else:
-                return {'error': 'Failed to login to SRP'}
+                return {'error': 'Failed to login to SRP after 3 attempts'}
         except Exception as e:
             return {'error': str(e)}
         finally:
@@ -991,6 +1461,11 @@ def get_srp_chart():
                 usage.append(daily_usage)
             
             result['usage'] = usage
+        
+        # Cache successful result
+        srp_chart_cache['data'] = result
+        srp_chart_cache['timestamp'] = datetime.now()
+        print(f"SRP chart data cached at {srp_chart_cache['timestamp']}")
     
     return jsonify(result)
 

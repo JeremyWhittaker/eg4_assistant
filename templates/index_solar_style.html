@@ -854,10 +854,10 @@
                         <!-- Chart controls -->
                         <div style="margin-bottom: 2rem;">
                             <span style="margin-right: 1rem;">View my</span>
-                            <button class="btn chart-type-btn active" onclick="switchChartType('usage')">Usage</button>
+                            <button class="btn chart-type-btn active" onclick="switchChartType('netEnergy')">Net Energy</button>
                             <button class="btn chart-type-btn" onclick="switchChartType('generation')">Generation</button>
+                            <button class="btn chart-type-btn" onclick="switchChartType('usage')">Usage</button>
                             <button class="btn chart-type-btn" onclick="switchChartType('demand')">Demand</button>
-                            <button class="btn chart-type-btn" onclick="switchChartType('netEnergy')">Net Energy</button>
                         </div>
                         
                         <!-- Chart will be rendered here -->
@@ -892,12 +892,8 @@
                         </div>
                     </div>
                     
-                    <div id="srp-usage-no-data" style="display: none; text-align: center; padding: 3rem;">
-                        <p style="color: #94a3b8;">Configure SRP credentials to view usage chart</p>
-                    </div>
-                    
                     <div id="srp-usage-no-data" style="display: none; text-align: center; padding: 3rem; color: #64748b;">
-                        <p style="margin-bottom: 1rem;">Configure SRP credentials to view usage data</p>
+                        <p style="margin-bottom: 1rem;">Configure SRP credentials to view usage chart</p>
                         <button class="btn" onclick="document.querySelector('.tab:nth-child(2)').click()">
                             Go to Configuration
                         </button>
@@ -1393,7 +1389,7 @@
         }
         
         // SRP Usage Chart Functions
-        let currentChartType = 'usage';
+        let currentChartType = 'netEnergy';
         let srpChartData = null;
         
         function switchChartType(type) {
@@ -1465,11 +1461,29 @@
                 chartData = data.demand || [];
             }
             
-            // Calculate max value for scaling
+            // Calculate max and min values for scaling
             const maxValue = Math.max(...chartData, 1) * 1.1; // Add 10% padding
+            const minValue = Math.min(...chartData, 0) * 1.1; // Add 10% padding for negative values
+            const range = maxValue - minValue;
+            const hasNegative = minValue < 0;
             
             // Create scales
             const barWidth = width / (data.dates ? data.dates.length : 30);
+            
+            // Calculate zero line position
+            const zeroY = hasNegative ? height - (Math.abs(minValue) / range) * height : height;
+            
+            // Draw zero line if there are negative values
+            if (hasNegative) {
+                const zeroLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                zeroLine.setAttribute('x1', 0);
+                zeroLine.setAttribute('y1', zeroY);
+                zeroLine.setAttribute('x2', width);
+                zeroLine.setAttribute('y2', zeroY);
+                zeroLine.setAttribute('stroke', '#64748b');
+                zeroLine.setAttribute('stroke-width', '2');
+                g.appendChild(zeroLine);
+            }
             
             // Draw bars based on chart type
             if (data.dates && chartData.length > 0) {
@@ -1477,18 +1491,46 @@
                     const x = i * barWidth;
                     const value = chartData[i] || 0;
                     
-                    if (value > 0) {
+                    if (value !== 0) {
                         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
                         rect.setAttribute('x', x + 2);
-                        rect.setAttribute('y', height - (value / maxValue) * height);
-                        rect.setAttribute('width', barWidth - 4);
-                        rect.setAttribute('height', (value / maxValue) * height);
                         
-                        // Color based on chart type
+                        if (hasNegative) {
+                            // Handle negative values
+                            const barHeight = Math.abs(value / range) * height;
+                            if (value > 0) {
+                                rect.setAttribute('y', zeroY - barHeight);
+                            } else {
+                                rect.setAttribute('y', zeroY);
+                            }
+                            rect.setAttribute('height', barHeight);
+                        } else {
+                            // Original logic for positive-only values
+                            rect.setAttribute('y', height - (value / maxValue) * height);
+                            rect.setAttribute('height', (value / maxValue) * height);
+                        }
+                        
+                        rect.setAttribute('width', barWidth - 4);
+                        
+                        // Color based on chart type and value
                         let color = '#3b82f6'; // blue for usage
-                        if (currentChartType === 'generation') color = '#22c55e'; // green
-                        else if (currentChartType === 'demand') color = '#ef4444'; // red
-                        else if (currentChartType === 'netEnergy') color = '#8b5cf6'; // purple
+                        if (currentChartType === 'generation') {
+                            color = value < 0 ? '#22c55e' : '#ef4444'; // green for negative (generation), red for positive
+                        } else if (currentChartType === 'demand') {
+                            color = '#ef4444'; // red
+                        } else if (currentChartType === 'netEnergy') {
+                            // For net energy: green for negative (net generation), red for positive (net usage)
+                            if (data.offPeak && data.onPeak && i < data.offPeak.length) {
+                                // Check if it's on-peak time (positive onPeak value)
+                                if (data.onPeak[i] > 0) {
+                                    color = value < 0 ? '#22c55e' : '#ef4444'; // green for generation, red for usage
+                                } else {
+                                    color = value < 0 ? '#22c55e' : '#3b82f6'; // green for generation, blue for off-peak usage
+                                }
+                            } else {
+                                color = value < 0 ? '#22c55e' : '#ef4444';
+                            }
+                        }
                         
                         rect.setAttribute('fill', color);
                         rect.setAttribute('rx', '3');
@@ -1523,7 +1565,13 @@
             const yLabels = 5;
             for (let i = 0; i <= yLabels; i++) {
                 const y = height - (i / yLabels) * height;
-                const value = Math.round((i / yLabels) * maxValue);
+                let value;
+                if (hasNegative) {
+                    // Scale from minValue to maxValue
+                    value = Math.round(minValue + (i / yLabels) * range);
+                } else {
+                    value = Math.round((i / yLabels) * maxValue);
+                }
                 
                 // Grid line
                 const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
