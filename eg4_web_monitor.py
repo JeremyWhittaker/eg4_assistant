@@ -597,8 +597,9 @@ class SRPMonitor:
             
             app.logger.info(f"Chart info extraction: {chart_info}")
             
-            if chart_info.get('dates'):
-                chart_data['dates'] = chart_info['dates']
+            # Don't use chart x-axis labels as dates - they'll be replaced with actual dates from table
+            # if chart_info.get('dates'):
+            #     chart_data['dates'] = chart_info['dates']
             
             # Define the chart types to extract
             chart_types = [
@@ -754,7 +755,9 @@ class SRPMonitor:
                                         # Store off-peak (includes super off-peak) and on-peak
                                         chart_data['offPeak'].append(super_off_peak + off_peak + shoulder)
                                         chart_data['onPeak'].append(on_peak)
-                                        chart_data['usage'].append(total)
+                                        # Calculate usage as sum of all rate periods since total column is often 0
+                                        calculated_usage = abs(super_off_peak) + abs(off_peak) + abs(shoulder) + abs(on_peak)
+                                        chart_data['usage'].append(calculated_usage if total == 0 else total)
                                 except Exception as e:
                                     app.logger.warning(f"Error parsing row values: {e}, row: {row}")
                 
