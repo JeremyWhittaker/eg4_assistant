@@ -1530,14 +1530,42 @@
             
             // Get data based on chart type
             let chartData = [];
+            let chartLabel = '';
+            let chartUnit = 'kWh';
+            let chartColor = '#3b82f6'; // Default blue
+            
             if (currentChartType === 'netEnergy') {
                 chartData = data.netEnergy || [];
+                chartLabel = 'Net Energy';
+                chartColor = '#3b82f6'; // Blue
             } else if (currentChartType === 'generation') {
                 chartData = data.generation || [];
+                chartLabel = 'Solar Generation';
+                chartColor = '#22c55e'; // Green
             } else if (currentChartType === 'usage') {
                 chartData = data.usage || [];
+                chartLabel = 'Energy Usage';
+                chartColor = '#ef4444'; // Red
             } else if (currentChartType === 'demand') {
                 chartData = data.demand || [];
+                chartLabel = 'Peak Demand';
+                chartUnit = 'kW';
+                chartColor = '#f59e0b'; // Orange
+                
+                // If demand data is empty, show a message
+                if (!chartData || chartData.length === 0) {
+                    // Clear the chart and show a message
+                    svg.innerHTML = '';
+                    const message = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    message.setAttribute('x', '400');
+                    message.setAttribute('y', '200');
+                    message.setAttribute('text-anchor', 'middle');
+                    message.setAttribute('font-size', '16');
+                    message.setAttribute('fill', '#94a3b8');
+                    message.textContent = 'Demand data not available for daily view';
+                    svg.appendChild(message);
+                    return;
+                }
             }
             
             // Calculate max and min values for scaling
@@ -1592,23 +1620,11 @@
                         rect.setAttribute('width', barWidth - 4);
                         
                         // Color based on chart type and value
-                        let color = '#3b82f6'; // blue for usage
-                        if (currentChartType === 'generation') {
-                            color = value < 0 ? '#22c55e' : '#ef4444'; // green for negative (generation), red for positive
-                        } else if (currentChartType === 'demand') {
-                            color = '#ef4444'; // red
-                        } else if (currentChartType === 'netEnergy') {
-                            // For net energy: green for negative (net generation), red for positive (net usage)
-                            if (data.offPeak && data.onPeak && i < data.offPeak.length) {
-                                // Check if it's on-peak time (positive onPeak value)
-                                if (data.onPeak[i] > 0) {
-                                    color = value < 0 ? '#22c55e' : '#ef4444'; // green for generation, red for usage
-                                } else {
-                                    color = value < 0 ? '#22c55e' : '#3b82f6'; // green for generation, blue for off-peak usage
-                                }
-                            } else {
-                                color = value < 0 ? '#22c55e' : '#ef4444';
-                            }
+                        let color = chartColor;
+                        
+                        // Special coloring for net energy based on positive/negative
+                        if (currentChartType === 'netEnergy') {
+                            color = value < 0 ? '#22c55e' : '#ef4444'; // green for net generation, red for net usage
                         }
                         
                         rect.setAttribute('fill', color);
@@ -1619,7 +1635,7 @@
                         
                         // Add hover effect
                         rect.addEventListener('mouseenter', function(e) {
-                            showChartTooltip(e, date, value, currentChartType);
+                            showChartTooltip(e, date, value, chartUnit);
                         });
                         rect.addEventListener('mouseleave', hideChartTooltip);
                         
@@ -1675,7 +1691,7 @@
                 label.setAttribute('text-anchor', 'end');
                 label.setAttribute('fill', '#94a3b8');
                 label.setAttribute('font-size', '12');
-                label.textContent = value + (currentChartType === 'demand' ? ' kW' : ' kWh');
+                label.textContent = value + ' ' + chartUnit;
                 g.appendChild(label);
             }
             
@@ -1706,7 +1722,7 @@
             title.setAttribute('fill', '#e2e8f0');
             title.setAttribute('font-size', '16');
             title.setAttribute('font-weight', '600');
-            title.textContent = `Daily ${currentChartType.charAt(0).toUpperCase() + currentChartType.slice(1)} (${currentChartType === 'demand' ? 'kW' : 'kWh'})`;
+            title.textContent = `Daily ${chartLabel} (${chartUnit})`;
             g.appendChild(title);
             
             // Update date range
@@ -1715,12 +1731,12 @@
             }
         }
         
-        function showChartTooltip(event, date, value, type) {
+        function showChartTooltip(event, date, value, unit) {
             const tooltip = document.createElement('div');
             tooltip.className = 'chart-tooltip';
             tooltip.innerHTML = `
                 <div><strong>${date}</strong></div>
-                <div>${value} ${type === 'demand' ? 'kW' : 'kWh'}</div>
+                <div>${value} ${unit}</div>
             `;
             
             document.body.appendChild(tooltip);
