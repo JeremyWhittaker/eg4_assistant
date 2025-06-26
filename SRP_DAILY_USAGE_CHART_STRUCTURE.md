@@ -431,6 +431,12 @@ The API returns data with mismatched array lengths:
 
 ## Recent Updates
 
+### Data Extraction Fixes (June 2025)
+- Fixed date alignment issue where chart x-axis labels were mixed with actual dates
+- Fixed usage calculation when SRP's Total column shows zeros
+- Improved data extraction to properly align dates with their corresponding values
+- Data now correctly matches what users see on SRP website
+
 ### Chart Type Switching (June 2025)
 - Implemented proper color coding for each chart type
 - Fixed chart labels and units (kWh vs kW)
@@ -440,6 +446,6 @@ The API returns data with mismatched array lengths:
 ### Known Limitations
 - **Demand Data**: SRP doesn't provide daily demand data in the daily view, only current billing cycle peak demand
 - **Date Formats**: Handles mixed date formats ("Sun, May 25" and "5/25/2025")
-- **Data Array Lengths**: API returns 37 dates but only 31 data points (handled gracefully)
+- **Total Column**: SRP sometimes shows 0 in the Total column; the system calculates usage from individual rate periods when this occurs
 
 This implementation provides a complete, production-ready SRP daily usage chart with real data extraction, robust error handling, comprehensive debugging capabilities, and proper visualization for all chart types.
