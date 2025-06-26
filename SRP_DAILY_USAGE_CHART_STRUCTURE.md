@@ -14,6 +14,11 @@ The SRP daily usage chart is a fully implemented interactive SVG-based visualiza
 - ✅ Caching system (6-hour cache) to avoid repeated logins
 - ✅ Error handling and retry logic for robust operation
 - ✅ Solar Assistant-style dashboard integration
+- ✅ Color-coded charts for each data type:
+  - **Net Energy**: Blue/Red (positive/negative)
+  - **Generation**: Green
+  - **Usage**: Red
+  - **Demand**: Orange (with message for daily view)
 
 ### API Endpoints:
 - `GET /api/srp/chart` - Returns chart data (cached)
@@ -24,10 +29,10 @@ The SRP daily usage chart is a fully implemented interactive SVG-based visualiza
 
 ### 1. Chart Type Controls
 The chart includes button controls to switch between different data views:
-- **Net Energy**: Shows net usage/generation (positive = usage, negative = generation)
-- **Generation**: Shows solar generation values (calculated from negative on-peak values)
-- **Usage**: Shows total energy consumption (sum of off-peak and on-peak absolute values)
-- **Demand**: Shows peak demand values in kW
+- **Net Energy**: Shows net usage/generation (positive = usage, negative = generation) - Blue/Red color coding
+- **Generation**: Shows solar generation values (calculated from negative on-peak values) - Green bars
+- **Usage**: Shows total energy consumption (sum of off-peak and on-peak absolute values) - Red bars
+- **Demand**: Shows peak demand values in kW - Orange bars (Note: Daily view shows message as SRP doesn't provide daily demand data)
 
 ### 2. SVG Structure
 
@@ -424,4 +429,17 @@ The API returns data with mismatched array lengths:
 - Screenshot capture at `/tmp/srp_*.png` for debugging
 - Debug tab provides real-time troubleshooting
 
-This implementation provides a complete, production-ready SRP daily usage chart with real data extraction, robust error handling, and comprehensive debugging capabilities.
+## Recent Updates
+
+### Chart Type Switching (June 2025)
+- Implemented proper color coding for each chart type
+- Fixed chart labels and units (kWh vs kW)
+- Added graceful handling for empty demand data
+- Improved tooltips to show correct units based on chart type
+
+### Known Limitations
+- **Demand Data**: SRP doesn't provide daily demand data in the daily view, only current billing cycle peak demand
+- **Date Formats**: Handles mixed date formats ("Sun, May 25" and "5/25/2025")
+- **Data Array Lengths**: API returns 37 dates but only 31 data points (handled gracefully)
+
+This implementation provides a complete, production-ready SRP daily usage chart with real data extraction, robust error handling, comprehensive debugging capabilities, and proper visualization for all chart types.
