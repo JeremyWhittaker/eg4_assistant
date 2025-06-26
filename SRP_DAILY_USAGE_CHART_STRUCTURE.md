@@ -360,24 +360,68 @@ class SRPUsageChart {
 
 ## Troubleshooting
 
-### Common Issues
+### Common Issues and Fixes
 1. **"Configure SRP credentials" error**: 
    - Verify SRP_USERNAME and SRP_PASSWORD environment variables
    - Hard refresh browser cache (Ctrl+Shift+R)
+   - Check frontend caching issues
    
 2. **Login timeout errors**:
    - Check SRP website availability
    - Verify credentials are correct
-   - Wait for retry logic to attempt multiple times
+   - Wait for retry logic to attempt multiple times (up to 3)
+   - Timeout increased to 30 seconds for slow page loads
 
 3. **Empty chart data**:
    - Force refresh with `?force_refresh=true` parameter
    - Check browser console for JavaScript errors
    - Verify API endpoint returns data: `/api/srp/chart`
 
+4. **"Cannot read properties of undefined (reading 'trim')" error** [FIXED]:
+   - Issue: Mixed date formats in data array
+   - Solution: Added safe date format handling in chart rendering
+   - Handles both "Sun, May 25" and "5/25/2025" formats
+
+5. **"Assignment to constant variable" error** [FIXED]:
+   - Issue: JavaScript function reassignment conflicts
+   - Solution: Removed problematic debug logging function reassignments
+
+### Debug Features Added
+
+A comprehensive debug tab was implemented to help troubleshoot chart issues:
+
+1. **API Status Testing**:
+   - Direct endpoint testing with response time measurement
+   - Shows HTTP status and error messages
+   - Loads and displays raw JSON response
+
+2. **Raw Data Display**:
+   - Shows complete API response for verification
+   - Validates data structure and values
+   - Confirms data extraction is working correctly
+
+3. **Chart Rendering Test**:
+   - Validates DOM elements (container, SVG)
+   - Tests data availability
+   - Attempts to render chart with debug data
+   - Shows specific rendering errors
+
+4. **Error Logging**:
+   - Captures JavaScript errors
+   - Displays error timestamps and details
+   - Helps identify frontend issues
+
+### Data Format Notes
+
+The API returns data with mismatched array lengths:
+- **dates**: 37 items (includes both formatted dates and raw dates)
+- **usage/generation/netEnergy**: 31 items (actual data points)
+- Chart handles this gracefully by defaulting missing values to 0
+
 ### Monitoring
 - Check logs at `/tmp/eg4_monitor_*.log`
 - API response times tracked in logs
 - Screenshot capture at `/tmp/srp_*.png` for debugging
+- Debug tab provides real-time troubleshooting
 
-This implementation provides a complete, production-ready SRP daily usage chart with real data extraction and robust error handling.
+This implementation provides a complete, production-ready SRP daily usage chart with real data extraction, robust error handling, and comprehensive debugging capabilities.

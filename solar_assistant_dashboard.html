@@ -1,0 +1,108 @@
+<!-- Solar Assistant Dashboard HTML Structure -->
+<div class="flex-grid dashboard">
+    <div class="card">
+        <div class="card-section dashboard-info flex">
+            <div class="half">
+                <a href="/inverter/status" class="status" data-phx-link="redirect" data-phx-link-state="push">
+                    <img src="/images/inverter/ok-fe2f1b85ef70c1dfaa2faf139b94b233.svg?vsn=d">
+                    <div>
+                        <div class="label">Inverter</div>
+                        <div class="value">Solar/Grid mode</div>
+                    </div>
+                </a>
+            </div>
+            <div class="half">
+                <div class="status">
+                    <img src="/images/forecast/3-9418d74806ffd07e6c45f53919408ecb.svg?vsn=d">
+                    <div>
+                        <div class="label">Solar PV</div>
+                        <div class="value small">D:  kWh</div>
+                        <div class="value small">W:  kWh</div>
+                    </div>
+                </div>
+            </div>
+            <div class="half">
+                <a href="/grid/status" class="status" data-phx-link="redirect" data-phx-link-state="push">
+                    <img src="/images/grid/ok-1df0795fc70704d18afc2143eea5d7b6.svg?vsn=d">
+                    <div>
+                        <div class="label">Grid</div>
+                        <div class="value">241.8 V</div>
+                        <div class="value font-small">
+                            <span class=""></span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="half">
+                <a href="/battery/status" class="status" data-phx-link="redirect" data-phx-link-state="push">
+                    <img src="/images/battery/mid-charging-a6f9c3a779589c2a1e64f2ba99bab1a5.svg?vsn=d">
+                    <div>
+                        <div class="label">Battery</div>
+                        <div class="value">56 %</div>
+                        <div class="value battery-change">
+                            <span class="positive">25 %/hr</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div class="card-section dashboard-gauges flex">
+            <div class="half">
+                <div class="gauge">
+                    <div class="mask">
+                        <div class="semi-circle blue"></div>
+                        <div class="semi-circle--mask" style="transform: rotate(162.0deg)"></div>
+                    </div>
+                    <div class="value">4480 W</div>
+                    <div class="label">Load</div>
+                </div>
+            </div>
+            <div class="half">
+                <div class="gauge">
+                    <div class="mask">
+                        <div class="semi-circle yellow"></div>
+                        <div class="semi-circle--mask" style="transform: rotate(180.0deg)"></div>
+                    </div>
+                    <div class="value">12.4 kW</div>
+                    <div class="label">Solar PV</div>
+                </div>
+            </div>
+            <div class="half">
+                <div class="gauge">
+                    <div class="mask">
+                        <div class="semi-circle red"></div>
+                        <div class="semi-circle--mask" style="transform: rotate(0.0deg)"></div>
+                    </div>
+                    <div class="value">0 W</div>
+                    <div class="label">Grid</div>
+                </div>
+            </div>
+            <div class="half">
+                <div class="gauge">
+                    <div class="mask">
+                        <div class="semi-circle green"></div>
+                        <div class="semi-circle--mask" style="transform: rotate(180.0deg)"></div>
+                    </div>
+                    <div class="value">7586 W</div>
+                    <div class="label">Battery</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <iframe src="/grafana/d-solo/sa-charts?orgId=1&refresh=1m&panelId=1" class="iframe-overview" scrolling="no"
+                frameborder="0">
+        </iframe>
+    </div>
+
+    <div class="card">
+        <iframe src="/grafana/d-solo/sa-charts?orgId=1&refresh=1m&panelId=2" class="iframe-battery-power"
+                scrolling="no" frameborder="0">
+        </iframe>
+        <iframe src="/grafana/d-solo/sa-charts?orgId=1&refresh=1m&panelId=3" class="iframe-battery-soc"
+                scrolling="no" frameborder="0">
+        </iframe>
+    </div>
+</div>

@@ -517,6 +517,7 @@
             <div class="tab" onclick="switchTab('alerts')">Alerts</div>
             <div class="tab" onclick="switchTab('srp')">SRP Demand</div>
             <div class="tab" onclick="switchTab('srp-usage')">SRP Usage</div>
+            <div class="tab" onclick="switchTab('debug')">Debug</div>
         </div>
         
         <!-- Monitoring Tab -->
@@ -896,6 +897,84 @@
                         <p style="margin-bottom: 1rem;">Configure SRP credentials to view usage chart</p>
                         <button class="btn" onclick="document.querySelector('.tab:nth-child(2)').click()">
                             Go to Configuration
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Debug Tab -->
+        <div id="debug-tab" class="tab-content">
+            <div class="card">
+                <div class="card-section">
+                    <h2 style="margin-bottom: 1.5rem;">SRP Chart Debug Information</h2>
+                    
+                    <!-- API Status -->
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: #f1f5f9; margin-bottom: 1rem;">🔗 API Status</h3>
+                        <div id="debug-api-status" style="background: #1e293b; padding: 1rem; border-radius: 0.5rem; border: 1px solid #334155;">
+                            <div style="margin-bottom: 0.5rem;">
+                                <strong>Endpoint:</strong> <span id="debug-api-endpoint">/api/srp/chart</span>
+                            </div>
+                            <div style="margin-bottom: 0.5rem;">
+                                <strong>Status:</strong> <span id="debug-api-response-status">Not tested</span>
+                            </div>
+                            <div style="margin-bottom: 0.5rem;">
+                                <strong>Response Time:</strong> <span id="debug-api-response-time">--</span>
+                            </div>
+                            <div>
+                                <strong>Last Test:</strong> <span id="debug-api-last-test">Never</span>
+                            </div>
+                        </div>
+                        <button class="btn" onclick="testSRPAPI()" style="margin-top: 1rem;">
+                            Test API Endpoint
+                            <span id="debug-api-loading" class="loading" style="display: none;"></span>
+                        </button>
+                    </div>
+                    
+                    <!-- Raw Data Display -->
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: #f1f5f9; margin-bottom: 1rem;">📊 Raw Data</h3>
+                        <div style="background: #0f172a; padding: 1rem; border-radius: 0.5rem; border: 1px solid #334155; max-height: 400px; overflow-y: auto;">
+                            <pre id="debug-raw-data" style="color: #e2e8f0; font-family: 'Courier New', monospace; font-size: 0.875rem; white-space: pre-wrap; margin: 0;">No data loaded</pre>
+                        </div>
+                        <button class="btn" onclick="loadDebugData()" style="margin-top: 1rem;">
+                            Refresh Raw Data
+                            <span id="debug-data-loading" class="loading" style="display: none;"></span>
+                        </button>
+                    </div>
+                    
+                    <!-- Chart Rendering Test -->
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: #f1f5f9; margin-bottom: 1rem;">🎨 Chart Rendering Test</h3>
+                        <div style="background: #1e293b; padding: 1rem; border-radius: 0.5rem; border: 1px solid #334155;">
+                            <div style="margin-bottom: 0.5rem;">
+                                <strong>Chart Container:</strong> <span id="debug-chart-container-status">Not checked</span>
+                            </div>
+                            <div style="margin-bottom: 0.5rem;">
+                                <strong>SVG Element:</strong> <span id="debug-svg-status">Not checked</span>
+                            </div>
+                            <div style="margin-bottom: 0.5rem;">
+                                <strong>Data Processing:</strong> <span id="debug-data-processing-status">Not checked</span>
+                            </div>
+                            <div>
+                                <strong>Render Errors:</strong> <span id="debug-render-errors">None</span>
+                            </div>
+                        </div>
+                        <button class="btn" onclick="testChartRendering()" style="margin-top: 1rem;">
+                            Test Chart Rendering
+                            <span id="debug-render-loading" class="loading" style="display: none;"></span>
+                        </button>
+                    </div>
+                    
+                    <!-- Error Log -->
+                    <div>
+                        <h3 style="color: #f1f5f9; margin-bottom: 1rem;">⚠️ Error Log</h3>
+                        <div style="background: #0f172a; padding: 1rem; border-radius: 0.5rem; border: 1px solid #334155; max-height: 300px; overflow-y: auto;">
+                            <div id="debug-error-log" style="color: #e2e8f0; font-family: 'Courier New', monospace; font-size: 0.875rem;">No errors logged</div>
+                        </div>
+                        <button class="btn" onclick="clearErrorLog()" style="margin-top: 1rem;">
+                            Clear Error Log
                         </button>
                     </div>
                 </div>
@@ -1555,7 +1634,12 @@
                         text.setAttribute('text-anchor', 'middle');
                         text.setAttribute('fill', '#94a3b8');
                         text.setAttribute('font-size', '12');
-                        text.textContent = date.split(',')[1].trim(); // Show just the date part
+                        // Handle different date formats safely
+                        if (date.includes(',')) {
+                            text.textContent = date.split(',')[1].trim(); // "Sun, May 25" -> "May 25"
+                        } else {
+                            text.textContent = date; // "5/25/2025" -> "5/25/2025"
+                        }
                         g.appendChild(text);
                     }
                 });
@@ -1651,6 +1735,130 @@
             if (tooltip) {
                 tooltip.remove();
             }
+        }
+        
+        // Debug Functions - Simplified
+        
+        async function testSRPAPI() {
+            const loadingSpinner = document.getElementById('debug-api-loading');
+            loadingSpinner.style.display = 'inline-block';
+            
+            const startTime = performance.now();
+            
+            try {
+                const response = await fetch('/api/srp/chart');
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - startTime);
+                
+                document.getElementById('debug-api-response-status').textContent = `${response.status} ${response.statusText}`;
+                document.getElementById('debug-api-response-time').textContent = `${responseTime}ms`;
+                document.getElementById('debug-api-last-test').textContent = new Date().toLocaleTimeString();
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('debug-raw-data').textContent = JSON.stringify(data, null, 2);
+                    
+                    // Set the data for chart rendering tests
+                    window.debugSRPData = data;
+                    
+                    if (data.error) {
+                        document.getElementById('debug-api-response-status').style.color = '#f59e0b';
+                    } else {
+                        document.getElementById('debug-api-response-status').style.color = '#22c55e';
+                    }
+                } else {
+                    document.getElementById('debug-api-response-status').style.color = '#ef4444';
+                }
+                
+            } catch (error) {
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - startTime);
+                
+                document.getElementById('debug-api-response-status').textContent = 'Error: ' + error.message;
+                document.getElementById('debug-api-response-status').style.color = '#ef4444';
+                document.getElementById('debug-api-response-time').textContent = `${responseTime}ms (failed)`;
+                document.getElementById('debug-api-last-test').textContent = new Date().toLocaleTimeString();
+            } finally {
+                loadingSpinner.style.display = 'none';
+            }
+        }
+        
+        async function loadDebugData() {
+            const loadingSpinner = document.getElementById('debug-data-loading');
+            loadingSpinner.style.display = 'inline-block';
+            
+            try {
+                const response = await fetch('/api/srp/chart');
+                const data = await response.json();
+                
+                document.getElementById('debug-raw-data').textContent = JSON.stringify(data, null, 2);
+                window.debugSRPData = data;
+            } catch (error) {
+                document.getElementById('debug-raw-data').textContent = 'Failed to load data: ' + error.message;
+            } finally {
+                loadingSpinner.style.display = 'none';
+            }
+        }
+        
+        function testChartRendering() {
+            const loadingSpinner = document.getElementById('debug-render-loading');
+            loadingSpinner.style.display = 'inline-block';
+            
+            try {
+                // Test chart container
+                const chartContainer = document.getElementById('srp-usage-chart-container');
+                if (chartContainer) {
+                    document.getElementById('debug-chart-container-status').textContent = 'Found';
+                    document.getElementById('debug-chart-container-status').style.color = '#22c55e';
+                } else {
+                    document.getElementById('debug-chart-container-status').textContent = 'Missing';
+                    document.getElementById('debug-chart-container-status').style.color = '#ef4444';
+                }
+                
+                // Test SVG element
+                const svgElement = document.getElementById('srp-usage-chart');
+                if (svgElement) {
+                    document.getElementById('debug-svg-status').textContent = 'Found';
+                    document.getElementById('debug-svg-status').style.color = '#22c55e';
+                } else {
+                    document.getElementById('debug-svg-status').textContent = 'Missing';
+                    document.getElementById('debug-svg-status').style.color = '#ef4444';
+                }
+                
+                // Test data processing
+                const testData = window.debugSRPData;
+                if (testData) {
+                    document.getElementById('debug-data-processing-status').textContent = 'Data Available';
+                    document.getElementById('debug-data-processing-status').style.color = '#22c55e';
+                    
+                    // Try to render chart with test data
+                    try {
+                        renderSRPChart(testData);
+                        document.getElementById('debug-render-errors').textContent = 'None - Render successful';
+                        document.getElementById('debug-render-errors').style.color = '#22c55e';
+                        
+                        // Make the chart visible
+                        document.getElementById('srp-usage-chart-container').style.display = 'block';
+                        
+                    } catch (renderError) {
+                        document.getElementById('debug-render-errors').textContent = renderError.message;
+                        document.getElementById('debug-render-errors').style.color = '#ef4444';
+                    }
+                } else {
+                    document.getElementById('debug-data-processing-status').textContent = 'No Data - Run API test first';
+                    document.getElementById('debug-data-processing-status').style.color = '#f59e0b';
+                }
+                
+            } catch (error) {
+                document.getElementById('debug-render-errors').textContent = error.message;
+                document.getElementById('debug-render-errors').style.color = '#ef4444';
+            } finally {
+                loadingSpinner.style.display = 'none';
+            }
+        }
+        
+        function clearErrorLog() {
+            document.getElementById('debug-error-log').textContent = 'No errors logged';
         }
         
         // Initialize

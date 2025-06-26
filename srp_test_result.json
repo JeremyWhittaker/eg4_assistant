@@ -1,0 +1,10 @@
+{
+  "allKwValues": [
+    "0.1 kW"
+  ],
+  "cycleInfo": "",
+  "demand": "0.1 kW",
+  "timestamp": "2025-06-23T21:57:11.257Z",
+  "type": "PEAK DEMAND",
+  "url": "https://myaccount.srpnet.com/power/myaccount/usage"
+}
