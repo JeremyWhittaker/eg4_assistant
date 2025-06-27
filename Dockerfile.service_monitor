@@ -1,0 +1,39 @@
+FROM python:3.9-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    sudo \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+RUN pip install --no-cache-dir \
+    docker \
+    psutil \
+    requests \
+    flask
+
+# Create directory for logs
+RUN mkdir -p /var/log
+
+# Create a user for the monitor
+RUN useradd -m -s /bin/bash monitor && \
+    echo "monitor ALL=(ALL) NOPASSWD: /usr/bin/systemctl" >> /etc/sudoers
+
+# Copy the monitor script
+COPY service_monitor.py /app/service_monitor.py
+RUN chmod +x /app/service_monitor.py
+
+# Create default config
+COPY monitor_config.json /app/monitor_config.json
+
+WORKDIR /app
+
+# Expose status port
+EXPOSE 9090
+
+# Run as monitor user
+USER monitor
+
+# Run the monitor
+CMD ["python", "-u", "/app/service_monitor.py"]

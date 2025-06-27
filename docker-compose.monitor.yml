@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  service-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile.service_monitor
+    container_name: service-monitor
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      # Mount Docker socket to manage containers
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Mount config file
+      - ./monitor_config.json:/app/monitor_config.json:rw
+      # Persist logs
+      - ./monitor_logs:/var/log:rw
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TZ=America/Phoenix
+    networks:
+      - monitor-network
+      - solar_assistant_monitor-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  monitor-network:
+    driver: bridge
+  solar_assistant_monitor-network:
+    external: true

@@ -1,0 +1,72 @@
+{
+  "check_interval": 30,
+  "max_recovery_attempts": 3,
+  "recovery_cooldown": 300,
+  "services": {
+    "docker_containers": [
+      {
+        "name": "eg4-web-monitor",
+        "health_check": {
+          "type": "http",
+          "url": "http://eg4-web-monitor:8282",
+          "timeout": 10,
+          "expected_status": 200
+        },
+        "recovery_actions": [
+          "check_logs",
+          "restart_container",
+          "rebuild_if_needed"
+        ],
+        "alerts": {
+          "email": false,
+          "webhook": null
+        }
+      },
+      {
+        "name": "influxdb",
+        "health_check": {
+          "type": "port",
+          "port": 8086,
+          "timeout": 5
+        },
+        "recovery_actions": [
+          "restart_container"
+        ]
+      },
+      {
+        "name": "grafana",
+        "health_check": {
+          "type": "port",
+          "port": 3000,
+          "timeout": 5
+        },
+        "recovery_actions": [
+          "restart_container"
+        ]
+      },
+      {
+        "name": "mosquitto",
+        "health_check": {
+          "type": "port",
+          "port": 1883,
+          "timeout": 5
+        },
+        "recovery_actions": [
+          "restart_container"
+        ]
+      }
+    ],
+    "system_processes": []
+  },
+  "alerts": {
+    "email": {
+      "enabled": false,
+      "smtp_server": "smtp.gmail.com",
+      "smtp_port": 587,
+      "from_email": "",
+      "to_email": "",
+      "password": ""
+    },
+    "log_retention_days": 30
+  }
+}

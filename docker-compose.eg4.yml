@@ -17,7 +17,7 @@ services:
       - LOG_LEVEL=INFO
     volumes:
       # Mount .env file for credentials
-      - ./.env:/app/.env:ro
+      - ./.env:/app/.env:rw
       # Mount templates for live updates during development
       - ./templates:/app/templates:ro
       # Persist browser data

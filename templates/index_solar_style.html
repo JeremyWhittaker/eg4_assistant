@@ -529,6 +529,9 @@
             <div id="no-data-message" class="no-data">
                 <div class="loading"></div>
                 <p>Waiting for data...</p>
+                <p style="font-size: 0.875rem; color: #94a3b8; margin-top: 1rem;">
+                    If this persists, click the <strong>Configuration</strong> tab above to check your credentials.
+                </p>
             </div>
             
             <div id="monitoring-data" style="display: none;">
@@ -1035,11 +1038,34 @@
         
         // Tab switching
         function switchTab(tabName) {
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            // Remove active class from all tabs and content
+            document.querySelectorAll('.tab').forEach(tab => {
+                if (tab.textContent.toLowerCase().includes(tabName.toLowerCase())) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             
-            event.target.classList.add('active');
-            document.getElementById(`${tabName}-tab`).classList.add('active');
+            // Show the selected tab content
+            const selectedTab = document.getElementById(`${tabName}-tab`);
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+            }
+            
+            // Load SRP data when switching to SRP tab
+            if (tabName === 'srp') {
+                const displayVisible = document.getElementById('srp-demand-display').style.display === 'block';
+                if (!displayVisible) {
+                    getSRPDemand();
+                }
+            } else if (tabName === 'srp-usage') {
+                const chartVisible = document.getElementById('srp-usage-chart-container').style.display === 'block';
+                if (!chartVisible) {
+                    refreshSRPChart();
+                }
+            }
         }
         
         // Calculate gauge rotation

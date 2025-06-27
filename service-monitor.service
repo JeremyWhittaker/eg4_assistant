@@ -1,0 +1,18 @@
+[Unit]
+Description=Service Monitor for Docker Containers
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+WorkingDirectory=/home/jeremy/src/solar_assistant
+ExecStartPre=/usr/bin/docker compose -f docker-compose.monitor.yml build
+ExecStart=/usr/bin/docker compose -f docker-compose.monitor.yml up
+ExecStop=/usr/bin/docker compose -f docker-compose.monitor.yml down
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
