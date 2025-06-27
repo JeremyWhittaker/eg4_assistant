@@ -6,12 +6,14 @@ services:
       context: .
       dockerfile: Dockerfile.eg4_monitor
     container_name: eg4-web-monitor
-    restart: unless-stopped
+    restart: always
     ports:
       - "8282:8282"
     environment:
       - PYTHONUNBUFFERED=1
       - TZ=America/Phoenix
+      - FLASK_ENV=production
+      - LOG_LEVEL=INFO
     volumes:
       # Mount .env file for credentials
       - ./.env:/app/.env:ro
@@ -19,6 +21,8 @@ services:
       - ./templates:/app/templates:ro
       # Persist browser data
       - eg4_browser_data:/home/pwuser/.cache
+      # Persist logs
+      - ./logs:/tmp:rw
     networks:
       - monitor-network
     logging:

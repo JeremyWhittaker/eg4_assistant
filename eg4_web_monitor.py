@@ -16,12 +16,26 @@ import time as time_module
 from collections import deque
 import secrets
 from pathlib import Path
+import logging
+import sys
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler('/tmp/eg4_monitor.log')
+    ]
+)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = secrets.token_hex(16)
-socketio = SocketIO(app, cors_allowed_origins="*")
+# Reduce socket.io logging verbosity
+socketio = SocketIO(app, cors_allowed_origins="*", logger=False, engineio_logger=False)
 
 # Configuration files directory
 CONFIG_DIR = Path(__file__).parent
@@ -77,6 +91,7 @@ class EG4WebMonitor:
         self.browser = None
         self.page = None
         self.playwright = None
+        logger.info(f"EG4WebMonitor initialized with username: {self.username[:3]}***")
         
     async def start(self):
         """Start the browser"""
@@ -87,7 +102,7 @@ class EG4WebMonitor:
     async def login(self):
         """Login to EG4 cloud monitor"""
         try:
-            print(f"Attempting login with username: {self.username}")
+            logger.info(f"Attempting login with username: {self.username}")
             await self.page.goto(f"{self.base_url}/WManage/web/login", wait_until='networkidle')
             await self.page.wait_for_selector('input[name="account"]', timeout=10000)
             
@@ -102,14 +117,14 @@ class EG4WebMonitor:
             login_success = 'login' not in current_url
             
             if login_success:
-                print("Login successful!")
+                logger.info("Login successful!")
             else:
-                print("Login failed - still on login page")
+                logger.error("Login failed - still on login page")
             
             return login_success
                 
         except Exception as e:
-            print(f"Login error: {e}")
+            logger.error(f"Login error: {e}")
             return False
     
     async def verify_credentials(self):
@@ -120,28 +135,28 @@ class EG4WebMonitor:
             await self.close()
             return success
         except Exception as e:
-            print(f"Credential verification error: {e}")
+            logger.error(f"Credential verification error: {e}")
             if self.browser:
                 await self.close()
             return False
     
     async def wait_for_data(self):
         """Wait for real data to load on the page"""
-        print("Waiting for data to load...")
+        logger.info("Waiting for data to load...")
         for i in range(30):
             await asyncio.sleep(1)
             soc = await self.page.evaluate("() => document.querySelector('.socText')?.textContent")
             if i % 5 == 0:
-                print(f"Checking SOC ({i+1}/30): {soc}")
+                logger.debug(f"Checking SOC ({i+1}/30): {soc}")
             if soc and soc != '--':
-                print(f"Data loaded! SOC: {soc}")
+                logger.info(f"Data loaded! SOC: {soc}")
                 return True
-        print("Data did not load after 30 seconds")
+        logger.warning("Data did not load after 30 seconds")
         return False
     
     async def navigate_to_monitor(self):
         """Navigate to the monitor page and wait for data"""
-        print("Navigating to monitor page...")
+        logger.info("Navigating to monitor page...")
         await self.page.goto(f"{self.base_url}/WManage/web/monitor/inverter", wait_until='networkidle')
         
         await asyncio.sleep(2)
@@ -1231,7 +1246,7 @@ def config():
             password = data['password'].strip()
             
             # Verify credentials first
-            print(f"Verifying credentials for user: {username}")
+            logger.info(f"Verifying credentials for user: {username}")
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             verified = loop.run_until_complete(verify_credentials_async(username, password))
@@ -1579,7 +1594,7 @@ def handle_connect():
 @socketio.on('disconnect')
 def handle_disconnect():
     """Handle client disconnection"""
-    print('Client disconnected')
+    logger.info('Client disconnected')
 
 if __name__ == '__main__':
     # Check if credentials exist
@@ -1603,4 +1618,6 @@ if __name__ == '__main__':
         else:
             print("Existing credentials could not be verified")
     
-    socketio.run(app, host='0.0.0.0', port=8282, debug=True, allow_unsafe_werkzeug=True)
+    # Run the application
+    logger.info(f"Starting Flask application on http://0.0.0.0:8282")
+    socketio.run(app, host='0.0.0.0', port=8282, debug=False, allow_unsafe_werkzeug=True)
