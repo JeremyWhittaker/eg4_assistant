@@ -1528,33 +1528,18 @@
             g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
             svg.appendChild(g);
             
-            // Get data based on chart type
-            let chartData = [];
-            let chartLabel = '';
-            let chartUnit = 'kWh';
-            let chartColor = '#3b82f6'; // Default blue
+            // Check if we should render demand separately (single bar) or energy charts (off-peak/on-peak bars)
+            const isDemandChart = currentChartType === 'demand';
             
-            if (currentChartType === 'netEnergy') {
-                chartData = data.netEnergy || [];
-                chartLabel = 'Net Energy';
-                chartColor = '#3b82f6'; // Blue
-            } else if (currentChartType === 'generation') {
-                chartData = data.generation || [];
-                chartLabel = 'Solar Generation';
-                chartColor = '#22c55e'; // Green
-            } else if (currentChartType === 'usage') {
-                chartData = data.usage || [];
-                chartLabel = 'Energy Usage';
-                chartColor = '#ef4444'; // Red
-            } else if (currentChartType === 'demand') {
-                chartData = data.demand || [];
-                chartLabel = 'Peak Demand';
-                chartUnit = 'kW';
-                chartColor = '#f59e0b'; // Orange
+            // For demand chart, use existing single-bar logic
+            if (isDemandChart) {
+                const chartData = data.demand || [];
+                const chartLabel = 'Peak Demand';
+                const chartUnit = 'kW';
+                const chartColor = '#f59e0b'; // Orange
                 
                 // If demand data is empty, show a message
                 if (!chartData || chartData.length === 0) {
-                    // Clear the chart and show a message
                     svg.innerHTML = '';
                     const message = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                     message.setAttribute('x', '400');
@@ -1566,99 +1551,189 @@
                     svg.appendChild(message);
                     return;
                 }
-            }
-            
-            // Calculate max and min values for scaling
-            const maxValue = Math.max(...chartData, 1) * 1.1; // Add 10% padding
-            const minValue = Math.min(...chartData, 0) * 1.1; // Add 10% padding for negative values
-            const range = maxValue - minValue;
-            const hasNegative = minValue < 0;
-            
-            // Create scales
-            const barWidth = width / (data.dates ? data.dates.length : 30);
-            
-            // Calculate zero line position
-            const zeroY = hasNegative ? height - (Math.abs(minValue) / range) * height : height;
-            
-            // Draw zero line if there are negative values
-            if (hasNegative) {
-                const zeroLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                zeroLine.setAttribute('x1', 0);
-                zeroLine.setAttribute('y1', zeroY);
-                zeroLine.setAttribute('x2', width);
-                zeroLine.setAttribute('y2', zeroY);
-                zeroLine.setAttribute('stroke', '#64748b');
-                zeroLine.setAttribute('stroke-width', '2');
-                g.appendChild(zeroLine);
-            }
-            
-            // Draw bars based on chart type
-            if (data.dates && chartData.length > 0) {
-                data.dates.forEach((date, i) => {
-                    const x = i * barWidth;
-                    const value = chartData[i] || 0;
-                    
-                    if (value !== 0) {
-                        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                        rect.setAttribute('x', x + 2);
+                
+                // Render single bars for demand
+                const maxValue = Math.max(...chartData, 1) * 1.1;
+                const barWidth = width / (data.dates ? data.dates.length : 30);
+                
+                if (data.dates && chartData.length > 0) {
+                    data.dates.forEach((date, i) => {
+                        const x = i * barWidth;
+                        const value = chartData[i] || 0;
                         
-                        if (hasNegative) {
-                            // Handle negative values
-                            const barHeight = Math.abs(value / range) * height;
-                            if (value > 0) {
-                                rect.setAttribute('y', zeroY - barHeight);
-                            } else {
-                                rect.setAttribute('y', zeroY);
-                            }
-                            rect.setAttribute('height', barHeight);
-                        } else {
-                            // Original logic for positive-only values
+                        if (value !== 0) {
+                            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                            rect.setAttribute('x', x + 2);
                             rect.setAttribute('y', height - (value / maxValue) * height);
                             rect.setAttribute('height', (value / maxValue) * height);
+                            rect.setAttribute('width', barWidth - 4);
+                            rect.setAttribute('fill', chartColor);
+                            rect.setAttribute('rx', '3');
+                            rect.setAttribute('class', 'chart-bar');
+                            rect.setAttribute('data-date', date);
+                            rect.setAttribute('data-value', value);
+                            
+                            rect.addEventListener('mouseenter', function(e) {
+                                showChartTooltip(e, date, value, chartUnit);
+                            });
+                            rect.addEventListener('mouseleave', hideChartTooltip);
+                            
+                            g.appendChild(rect);
                         }
-                        
-                        rect.setAttribute('width', barWidth - 4);
-                        
-                        // Color based on chart type and value
-                        let color = chartColor;
-                        
-                        // Special coloring for net energy based on positive/negative
-                        if (currentChartType === 'netEnergy') {
-                            color = value < 0 ? '#22c55e' : '#ef4444'; // green for net generation, red for net usage
-                        }
-                        
-                        rect.setAttribute('fill', color);
-                        rect.setAttribute('rx', '3');
-                        rect.setAttribute('class', 'chart-bar');
-                        rect.setAttribute('data-date', date);
-                        rect.setAttribute('data-value', value);
-                        
-                        // Add hover effect
-                        rect.addEventListener('mouseenter', function(e) {
-                            showChartTooltip(e, date, value, chartUnit);
-                        });
-                        rect.addEventListener('mouseleave', hideChartTooltip);
-                        
-                        g.appendChild(rect);
-                    }
+                    });
+                }
+                
+                // Add Y-axis for demand
+                const yLabels = 5;
+                for (let i = 0; i <= yLabels; i++) {
+                    const y = height - (i / yLabels) * height;
+                    const value = Math.round((i / yLabels) * maxValue);
                     
-                    // Add date label
-                    if (i % Math.ceil(data.dates.length / 6) === 0) { // Show ~6 date labels
-                        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                        text.setAttribute('x', x + barWidth / 2);
-                        text.setAttribute('y', height + 20);
-                        text.setAttribute('text-anchor', 'middle');
-                        text.setAttribute('fill', '#94a3b8');
-                        text.setAttribute('font-size', '12');
-                        // Handle different date formats safely
-                        if (date.includes(',')) {
-                            text.textContent = date.split(',')[1].trim(); // "Sun, May 25" -> "May 25"
-                        } else {
-                            text.textContent = date; // "5/25/2025" -> "5/25/2025"
+                    // Grid line
+                    const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    gridLine.setAttribute('x1', 0);
+                    gridLine.setAttribute('y1', y);
+                    gridLine.setAttribute('x2', width);
+                    gridLine.setAttribute('y2', y);
+                    gridLine.setAttribute('stroke', '#334155');
+                    gridLine.setAttribute('stroke-opacity', '0.3');
+                    gridLine.setAttribute('stroke-dasharray', '2,2');
+                    g.appendChild(gridLine);
+                    
+                    // Label
+                    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    label.setAttribute('x', -10);
+                    label.setAttribute('y', y + 5);
+                    label.setAttribute('text-anchor', 'end');
+                    label.setAttribute('fill', '#94a3b8');
+                    label.setAttribute('font-size', '12');
+                    label.textContent = value + ' ' + chartUnit;
+                    g.appendChild(label);
+                }
+            } else {
+                // For energy charts (netEnergy, generation, usage), show off-peak and on-peak bars
+                const offPeakData = data.offPeak || [];
+                const onPeakData = data.onPeak || [];
+                
+                // Calculate max value for scaling
+                const allValues = [...offPeakData, ...onPeakData];
+                const maxValue = Math.max(...allValues.map(Math.abs), 1) * 1.1;
+                const minValue = Math.min(...allValues, 0) * 1.1;
+                const range = maxValue - minValue;
+                const hasNegative = minValue < 0;
+                
+                // Bar width calculations - two bars per day
+                const dayWidth = width / (data.dates ? data.dates.length : 30);
+                const barWidth = dayWidth * 0.35; // Each bar is 35% of day width
+                const barGap = dayWidth * 0.1; // 10% gap between bars
+                
+                // Calculate zero line position
+                const zeroY = hasNegative ? height - (Math.abs(minValue) / range) * height : height;
+                
+                // Draw zero line if there are negative values
+                if (hasNegative) {
+                    const zeroLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    zeroLine.setAttribute('x1', 0);
+                    zeroLine.setAttribute('y1', zeroY);
+                    zeroLine.setAttribute('x2', width);
+                    zeroLine.setAttribute('y2', zeroY);
+                    zeroLine.setAttribute('stroke', '#64748b');
+                    zeroLine.setAttribute('stroke-width', '2');
+                    g.appendChild(zeroLine);
+                }
+                
+                // Draw bars for each day
+                if (data.dates && offPeakData.length > 0) {
+                    data.dates.forEach((date, i) => {
+                        const dayX = i * dayWidth;
+                        const offPeakValue = offPeakData[i] || 0;
+                        const onPeakValue = onPeakData[i] || 0;
+                        
+                        // Draw off-peak bar (blue)
+                        if (offPeakValue !== 0) {
+                            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                            rect.setAttribute('x', dayX + barGap);
+                            
+                            if (hasNegative) {
+                                const barHeight = Math.abs(offPeakValue / range) * height;
+                                if (offPeakValue > 0) {
+                                    rect.setAttribute('y', zeroY - barHeight);
+                                } else {
+                                    rect.setAttribute('y', zeroY);
+                                }
+                                rect.setAttribute('height', barHeight);
+                            } else {
+                                rect.setAttribute('y', height - (offPeakValue / maxValue) * height);
+                                rect.setAttribute('height', (offPeakValue / maxValue) * height);
+                            }
+                            
+                            rect.setAttribute('width', barWidth);
+                            rect.setAttribute('fill', '#3b82f6'); // Blue for off-peak
+                            rect.setAttribute('rx', '2');
+                            rect.setAttribute('class', 'chart-bar off-peak');
+                            rect.setAttribute('data-date', date);
+                            rect.setAttribute('data-value', offPeakValue);
+                            rect.setAttribute('data-type', 'off-peak');
+                            
+                            rect.addEventListener('mouseenter', function(e) {
+                                showChartTooltip(e, date, offPeakValue, 'kWh', 'Off-Peak');
+                            });
+                            rect.addEventListener('mouseleave', hideChartTooltip);
+                            
+                            g.appendChild(rect);
                         }
-                        g.appendChild(text);
-                    }
-                });
+                        
+                        // Draw on-peak bar (red)
+                        if (onPeakValue !== 0) {
+                            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                            rect.setAttribute('x', dayX + barWidth + barGap * 2);
+                            
+                            if (hasNegative) {
+                                const barHeight = Math.abs(onPeakValue / range) * height;
+                                if (onPeakValue > 0) {
+                                    rect.setAttribute('y', zeroY - barHeight);
+                                } else {
+                                    rect.setAttribute('y', zeroY);
+                                }
+                                rect.setAttribute('height', barHeight);
+                            } else {
+                                rect.setAttribute('y', height - (onPeakValue / maxValue) * height);
+                                rect.setAttribute('height', (onPeakValue / maxValue) * height);
+                            }
+                            
+                            rect.setAttribute('width', barWidth);
+                            rect.setAttribute('fill', '#ef4444'); // Red for on-peak
+                            rect.setAttribute('rx', '2');
+                            rect.setAttribute('class', 'chart-bar on-peak');
+                            rect.setAttribute('data-date', date);
+                            rect.setAttribute('data-value', onPeakValue);
+                            rect.setAttribute('data-type', 'on-peak');
+                            
+                            rect.addEventListener('mouseenter', function(e) {
+                                showChartTooltip(e, date, onPeakValue, 'kWh', 'On-Peak');
+                            });
+                            rect.addEventListener('mouseleave', hideChartTooltip);
+                            
+                            g.appendChild(rect);
+                        }
+                        
+                        // Add date label
+                        if (i % Math.ceil(data.dates.length / 6) === 0) { // Show ~6 date labels
+                            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                            text.setAttribute('x', dayX + dayWidth / 2);
+                            text.setAttribute('y', height + 20);
+                            text.setAttribute('text-anchor', 'middle');
+                            text.setAttribute('fill', '#94a3b8');
+                            text.setAttribute('font-size', '12');
+                            // Handle different date formats safely
+                            if (date.includes(',')) {
+                                text.textContent = date.split(',')[1].trim(); // "Sun, May 25" -> "May 25"
+                            } else {
+                                text.textContent = date; // "5/25/2025" -> "5/25/2025"
+                            }
+                            g.appendChild(text);
+                        }
+                    });
             }
             
             // Add Y-axis labels
@@ -1695,7 +1770,7 @@
                 g.appendChild(label);
             }
             
-            // Add axes
+            // Add axes for both chart types
             // Y-axis
             const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             yAxis.setAttribute('x1', 0);
@@ -1715,6 +1790,17 @@
             g.appendChild(xAxis);
             
             // Add title
+            let chartLabel = '';
+            if (currentChartType === 'netEnergy') {
+                chartLabel = 'Net Energy';
+            } else if (currentChartType === 'generation') {
+                chartLabel = 'Solar Generation';
+            } else if (currentChartType === 'usage') {
+                chartLabel = 'Energy Usage';
+            } else if (currentChartType === 'demand') {
+                chartLabel = 'Peak Demand';
+            }
+            
             const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             title.setAttribute('x', width / 2);
             title.setAttribute('y', -5);
@@ -1722,7 +1808,7 @@
             title.setAttribute('fill', '#e2e8f0');
             title.setAttribute('font-size', '16');
             title.setAttribute('font-weight', '600');
-            title.textContent = `Daily ${chartLabel} (${chartUnit})`;
+            title.textContent = `Daily ${chartLabel} (${isDemandChart ? 'kW' : 'kWh'})`;
             g.appendChild(title);
             
             // Update date range
@@ -1731,11 +1817,13 @@
             }
         }
         
-        function showChartTooltip(event, date, value, unit) {
+        function showChartTooltip(event, date, value, unit, rateType) {
             const tooltip = document.createElement('div');
             tooltip.className = 'chart-tooltip';
+            const rateLabel = rateType ? `<div style="color: #94a3b8; font-size: 11px;">${rateType}</div>` : '';
             tooltip.innerHTML = `
                 <div><strong>${date}</strong></div>
+                ${rateLabel}
                 <div>${value} ${unit}</div>
             `;
             

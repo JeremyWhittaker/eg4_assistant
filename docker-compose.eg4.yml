@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  eg4-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile.eg4_monitor
+    container_name: eg4-web-monitor
+    restart: unless-stopped
+    ports:
+      - "8282:8282"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TZ=America/Phoenix
+    volumes:
+      # Mount .env file for credentials
+      - ./.env:/app/.env:ro
+      # Mount templates for live updates during development
+      - ./templates:/app/templates:ro
+      # Persist browser data
+      - eg4_browser_data:/home/pwuser/.cache
+    networks:
+      - monitor-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8282/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  monitor-network:
+    driver: bridge
+
+volumes:
+  eg4_browser_data:

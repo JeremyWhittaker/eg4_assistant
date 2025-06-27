@@ -609,10 +609,19 @@ class SRPMonitor:
                 ('Demand', 'demand')
             ]
             
-            # Now click "View as data table" to get the table view
-            view_table_button = await self.page.query_selector('button:has-text("View as data table")')
+            # Check if we're already in table view or need to click to table view
+            view_table_button = await self.page.query_selector('button:has-text("View as table")')
             if not view_table_button:
                 view_table_button = await self.page.query_selector('button:has-text("View data table")')
+            
+            # If neither found, check if already in table view or need to click "View as chart" to toggle
+            is_table_view = await self.page.query_selector('table')
+            if not is_table_view and not view_table_button:
+                # We might be in chart view, check for the "View as chart" button
+                view_chart_button = await self.page.query_selector('button:has-text("View as chart")')
+                if view_chart_button:
+                    app.logger.info("Found 'View as chart' button, page is already in table view")
+                    view_table_button = None  # Don't need to click anything
             
             if view_table_button:
                 await view_table_button.click()
@@ -761,11 +770,17 @@ class SRPMonitor:
                                 except Exception as e:
                                     app.logger.warning(f"Error parsing row values: {e}, row: {row}")
                 
-                # Click back to chart view
+                # Click back to chart view if we switched to table view
                 view_chart_button = await self.page.query_selector('button:has-text("View as chart")')
                 if view_chart_button:
                     await view_chart_button.click()
                     await asyncio.sleep(1)
+                else:
+                    # Try alternative button text
+                    view_chart_button = await self.page.query_selector('button:has-text("View chart")')
+                    if view_chart_button:
+                        await view_chart_button.click()
+                        await asyncio.sleep(1)
             else:
                 app.logger.warning("'View as data table' button not found")
             
@@ -793,10 +808,16 @@ class SRPMonitor:
                             await asyncio.sleep(2)
                             app.logger.info(f"Clicked '{button_text}' button")
                         
-                        # Click "View as data table" for this chart type
-                        view_table_btn = await self.page.query_selector('button:has-text("View as data table")')
-                        if not view_table_btn:
-                            view_table_btn = await self.page.query_selector('button:has-text("View data table")')
+                        # Check if we need to switch to table view
+                        is_table_view = await self.page.query_selector('table')
+                        if not is_table_view:
+                            # Try to find button to switch to table view
+                            view_table_btn = await self.page.query_selector('button:has-text("View as table")')
+                            if not view_table_btn:
+                                view_table_btn = await self.page.query_selector('button:has-text("View data table")')
+                        else:
+                            # Already in table view
+                            view_table_btn = None
                         
                         if view_table_btn:
                             await view_table_btn.click()
@@ -946,11 +967,17 @@ class SRPMonitor:
                                             except Exception as e:
                                                 app.logger.warning(f"Error parsing demand value: {e}, value_text: '{value_text}'")
                             
-                            # Click back to chart view
+                            # Click back to chart view if needed
                             view_chart_btn = await self.page.query_selector('button:has-text("View as chart")')
                             if view_chart_btn:
                                 await view_chart_btn.click()
                                 await asyncio.sleep(1)
+                            else:
+                                # Try alternative button text
+                                view_chart_btn = await self.page.query_selector('button:has-text("View chart")')
+                                if view_chart_btn:
+                                    await view_chart_btn.click()
+                                    await asyncio.sleep(1)
                         else:
                             app.logger.warning(f"'{button_text}' button not found")
                             # Take a screenshot for debugging
@@ -1576,4 +1603,4 @@ if __name__ == '__main__':
         else:
             print("Existing credentials could not be verified")
     
-    socketio.run(app, host='0.0.0.0', port=8282, debug=True)
+    socketio.run(app, host='0.0.0.0', port=8282, debug=True, allow_unsafe_werkzeug=True)
