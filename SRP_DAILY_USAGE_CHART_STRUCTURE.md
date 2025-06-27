@@ -8,17 +8,18 @@ The SRP daily usage chart is a fully implemented interactive SVG-based visualiza
 ### Features Implemented:
 - ✅ Real-time data extraction from SRP customer portal
 - ✅ Interactive chart with 4 data views: Net Energy, Generation, Usage, Demand
+- ✅ Separate off-peak (blue) and on-peak (red) bars for energy charts
 - ✅ Temperature overlay with high/low temperature data
 - ✅ 31+ days of historical data
 - ✅ Automatic data calculations from off-peak and on-peak values
 - ✅ Caching system (6-hour cache) to avoid repeated logins
 - ✅ Error handling and retry logic for robust operation
 - ✅ Solar Assistant-style dashboard integration
-- ✅ Color-coded charts for each data type:
-  - **Net Energy**: Blue/Red (positive/negative)
-  - **Generation**: Green
-  - **Usage**: Red
-  - **Demand**: Orange (with message for daily view)
+- ✅ Color-coded charts:
+  - **Energy Charts** (Net Energy, Generation, Usage): 
+    - Off-Peak: Blue bars
+    - On-Peak: Red bars
+  - **Demand Chart**: Single orange bars (only has on-peak data)
 
 ### API Endpoints:
 - `GET /api/srp/chart` - Returns chart data (cached)
@@ -430,6 +431,18 @@ The API returns data with mismatched array lengths:
 - Debug tab provides real-time troubleshooting
 
 ## Recent Updates
+
+### Chart Bar Separation (June 2025)
+- Implemented separate off-peak (blue) and on-peak (red) bars for energy charts
+- Each day now shows two bars side by side representing different rate periods
+- Added legend showing Off-Peak and On-Peak color coding
+- Enhanced tooltips to display rate type (Off-Peak/On-Peak) for each bar
+- Demand chart continues to show single orange bars as it only has on-peak data
+
+### Button Detection Improvements (June 2025)
+- Updated to handle "View as chart" button for toggling between chart and table views
+- Improved logic to detect current view state (chart vs table)
+- Added fallback button text detection for better compatibility
 
 ### Data Extraction Fixes (June 2025)
 - Fixed date alignment issue where chart x-axis labels were mixed with actual dates
