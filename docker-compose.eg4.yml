@@ -7,6 +7,7 @@ services:
       dockerfile: Dockerfile.eg4_monitor
     container_name: eg4-web-monitor
     restart: always
+    shm_size: '2gb'
     ports:
       - "8282:8282"
     environment:

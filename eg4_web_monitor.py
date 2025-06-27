@@ -96,7 +96,19 @@ class EG4WebMonitor:
     async def start(self):
         """Start the browser"""
         self.playwright = await async_playwright().start()
-        self.browser = await self.playwright.chromium.launch(headless=True)
+        # Launch browser with additional flags for container environment
+        self.browser = await self.playwright.chromium.launch(
+            headless=True,
+            args=[
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--disable-web-security',
+                '--disable-features=IsolateOrigins',
+                '--disable-site-isolation-trials'
+            ]
+        )
         self.page = await self.browser.new_page()
         
     async def login(self):
@@ -285,7 +297,19 @@ class SRPMonitor:
     async def start(self):
         """Start the browser"""
         self.playwright = await async_playwright().start()
-        self.browser = await self.playwright.chromium.launch(headless=True)
+        # Launch browser with additional flags for container environment
+        self.browser = await self.playwright.chromium.launch(
+            headless=True,
+            args=[
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--disable-web-security',
+                '--disable-features=IsolateOrigins',
+                '--disable-site-isolation-trials'
+            ]
+        )
         self.page = await self.browser.new_page()
         
     async def login(self):
@@ -1585,8 +1609,20 @@ def handle_file(filename):
 @socketio.on('connect')
 def handle_connect():
     """Handle client connection"""
+    global monitor_thread, monitor_running
     emit('connected', {'data': 'Connected to EG4 Web Monitor'})
-    print("Client connected")
+    logger.info(f"Client connected from {request.remote_addr}")
+    
+    # Start monitor if not running
+    if credentials_verified and not monitor_running:
+        logger.info("Starting monitor thread on client connect")
+        monitor_running = True
+        monitor_thread = threading.Thread(target=run_monitor)
+        monitor_thread.daemon = True
+        monitor_thread.start()
+    elif not credentials_verified:
+        emit('status', {'message': 'Please configure EG4 credentials', 'type': 'warning'})
+    
     # Send current data if available
     if monitor_data and 'error' not in monitor_data:
         emit('monitor_update', monitor_data)
@@ -1603,20 +1639,22 @@ if __name__ == '__main__':
     
     if username and password:
         # Verify existing credentials
-        print("Verifying existing credentials...")
+        logger.info("Verifying existing credentials...")
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         credentials_verified = loop.run_until_complete(verify_credentials_async(username, password))
         
         if credentials_verified:
-            print("Existing credentials verified!")
+            logger.info("Existing credentials verified!")
             # Auto-start monitoring
             monitor_running = True
             monitor_thread = threading.Thread(target=run_monitor)
             monitor_thread.daemon = True
             monitor_thread.start()
         else:
-            print("Existing credentials could not be verified")
+            logger.warning("Existing credentials could not be verified")
+    else:
+        logger.warning("No EG4 credentials found in environment")
     
     # Run the application
     logger.info(f"Starting Flask application on http://0.0.0.0:8282")
