@@ -47,6 +47,7 @@ monitor_thread = None
 monitor_running = False
 monitor_data = {}
 credentials_verified = False
+srp_data = {}
 
 # SRP data cache
 srp_cache = {
@@ -96,26 +97,61 @@ class EG4WebMonitor:
     async def start(self):
         """Start the browser"""
         self.playwright = await async_playwright().start()
-        # Launch browser with additional flags for container environment
+        # Launch browser with extensive container-friendly options
+        browser_args = [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-web-security',
+            '--disable-features=IsolateOrigins,site-per-process',
+            '--disable-site-isolation-trials',
+            '--single-process',  # Critical for container stability
+            '--disable-background-networking',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-breakpad',
+            '--disable-client-side-phishing-detection',
+            '--disable-component-extensions-with-background-pages',
+            '--disable-default-apps',
+            '--disable-extensions',
+            '--disable-features=TranslateUI',
+            '--disable-hang-monitor',
+            '--disable-ipc-flooding-protection',
+            '--disable-popup-blocking',
+            '--disable-prompt-on-repost',
+            '--disable-renderer-backgrounding',
+            '--disable-sync',
+            '--force-color-profile=srgb',
+            '--metrics-recording-only',
+            '--no-first-run',
+            '--no-default-browser-check',
+            '--no-service-autorun',
+            '--password-store=basic',
+            '--use-mock-keychain',
+            '--no-zygote',
+            '--disable-blink-features=AutomationControlled'
+        ]
+        
         self.browser = await self.playwright.chromium.launch(
             headless=True,
-            args=[
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-gpu',
-                '--disable-web-security',
-                '--disable-features=IsolateOrigins',
-                '--disable-site-isolation-trials'
-            ]
+            args=browser_args,
+            handle_sigint=False,
+            handle_sigterm=False,
+            handle_sighup=False
         )
-        self.page = await self.browser.new_page()
+        
+        # Create page with viewport
+        self.page = await self.browser.new_page(
+            viewport={'width': 1920, 'height': 1080},
+            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        )
         
     async def login(self):
         """Login to EG4 cloud monitor"""
         try:
             logger.info(f"Attempting login with username: {self.username}")
-            await self.page.goto(f"{self.base_url}/WManage/web/login", wait_until='networkidle')
+            await self.page.goto(f"{self.base_url}/WManage/web/login", wait_until='domcontentloaded', timeout=15000)
             await self.page.wait_for_selector('input[name="account"]', timeout=10000)
             
             await self.page.fill('input[name="account"]', self.username)
@@ -297,20 +333,55 @@ class SRPMonitor:
     async def start(self):
         """Start the browser"""
         self.playwright = await async_playwright().start()
-        # Launch browser with additional flags for container environment
+        # Launch browser with extensive container-friendly options
+        browser_args = [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-web-security',
+            '--disable-features=IsolateOrigins,site-per-process',
+            '--disable-site-isolation-trials',
+            '--single-process',  # Critical for container stability
+            '--disable-background-networking',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-breakpad',
+            '--disable-client-side-phishing-detection',
+            '--disable-component-extensions-with-background-pages',
+            '--disable-default-apps',
+            '--disable-extensions',
+            '--disable-features=TranslateUI',
+            '--disable-hang-monitor',
+            '--disable-ipc-flooding-protection',
+            '--disable-popup-blocking',
+            '--disable-prompt-on-repost',
+            '--disable-renderer-backgrounding',
+            '--disable-sync',
+            '--force-color-profile=srgb',
+            '--metrics-recording-only',
+            '--no-first-run',
+            '--no-default-browser-check',
+            '--no-service-autorun',
+            '--password-store=basic',
+            '--use-mock-keychain',
+            '--no-zygote',
+            '--disable-blink-features=AutomationControlled'
+        ]
+        
         self.browser = await self.playwright.chromium.launch(
             headless=True,
-            args=[
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-gpu',
-                '--disable-web-security',
-                '--disable-features=IsolateOrigins',
-                '--disable-site-isolation-trials'
-            ]
+            args=browser_args,
+            handle_sigint=False,
+            handle_sigterm=False,
+            handle_sighup=False
         )
-        self.page = await self.browser.new_page()
+        
+        # Create page with viewport
+        self.page = await self.browser.new_page(
+            viewport={'width': 1920, 'height': 1080},
+            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        )
         
     async def login(self):
         """Login to SRP account"""
@@ -319,7 +390,7 @@ class SRPMonitor:
             app.logger.info(f"SRP login attempt for user: {self.username}")
             
             # Go directly to the login page
-            await self.page.goto('https://myaccount.srpnet.com/power', wait_until='networkidle')
+            await self.page.goto('https://myaccount.srpnet.com/power', wait_until='domcontentloaded', timeout=15000)
             await asyncio.sleep(2)
             
             # Check if we're already logged in
@@ -1159,17 +1230,203 @@ def check_alerts(data):
     
     return alerts
 
+class SRPWebMonitor:
+    """Monitor for SRP (Salt River Project) usage data"""
+    def __init__(self):
+        self.browser = None
+        self.page = None
+        self.playwright = None
+        
+    async def start(self):
+        """Start the browser with proper settings"""
+        browser_args = [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--single-process',
+            '--disable-gpu',
+            '--disable-web-security',
+            '--disable-features=IsolateOrigins,site-per-process',
+            '--disable-blink-features=AutomationControlled'
+        ]
+        
+        self.playwright = await async_playwright().start()
+        self.browser = await self.playwright.chromium.launch(
+            headless=True,
+            args=browser_args
+        )
+        self.page = await self.browser.new_page()
+        
+    async def login(self, username, password):
+        """Login to SRP account"""
+        try:
+            logger.info(f"SRP: Navigating to login page...")
+            await self.page.goto('https://myaccount.srpnet.com', wait_until='networkidle', timeout=30000)
+            await asyncio.sleep(2)
+            
+            # Check if already logged in
+            current_url = self.page.url
+            logger.info(f"SRP: Current URL: {current_url}")
+            if '/myaccount/dashboard' in current_url.lower() or 'power/myaccount/dashboard' in current_url.lower():
+                logger.info("SRP: Already logged in")
+                return True
+                
+            # Fill login form
+            logger.info("SRP: Looking for username field...")
+            try:
+                username_field = await self.page.wait_for_selector('input[name="username"], input#username_desktop', timeout=5000)
+            except:
+                # Check again if we're on dashboard (sometimes redirect happens)
+                await asyncio.sleep(2)
+                current_url = self.page.url
+                logger.info(f"SRP: Rechecking URL after wait: {current_url}")
+                if '/myaccount/dashboard' in current_url.lower() or 'power/myaccount/dashboard' in current_url.lower():
+                    logger.info("SRP: Login redirect completed - already logged in")
+                    return True
+                raise
+            await username_field.fill(username)
+            logger.info("SRP: Username filled")
+            
+            password_field = await self.page.query_selector('input[name="password"], input#password_desktop')
+            if password_field:
+                await password_field.fill(password)
+                logger.info("SRP: Password filled")
+                
+            # Submit
+            submit_btn = await self.page.query_selector('button[type="submit"], button:has-text("Sign In")')
+            if submit_btn:
+                logger.info("SRP: Clicking submit button...")
+                await submit_btn.click()
+                await self.page.wait_for_load_state('networkidle', timeout=15000)
+            else:
+                logger.warning("SRP: Submit button not found")
+                
+            # Verify login
+            await asyncio.sleep(3)
+            final_url = self.page.url
+            logger.info(f"SRP: Final URL after login: {final_url}")
+            success = 'myaccount/dashboard' in final_url.lower()
+            logger.info(f"SRP: Login success check: {success} (looking for 'myaccount/dashboard' in '{final_url.lower()}')")
+            return success
+            
+        except Exception as e:
+            logger.error(f"SRP login error: {e}")
+            return False
+            
+    async def navigate_to_usage(self):
+        """Navigate to usage page"""
+        try:
+            logger.info("SRP: Looking for Usage menu...")
+            # Click Usage in menu
+            usage_menu = await self.page.query_selector('a:has-text("Usage"), span:has-text("Usage")')
+            if usage_menu:
+                logger.info("SRP: Clicking Usage menu...")
+                await usage_menu.click()
+                await asyncio.sleep(2)
+            else:
+                logger.warning("SRP: Usage menu not found")
+                
+            # Click Daily option
+            logger.info("SRP: Looking for Daily option...")
+            daily_option = await self.page.query_selector('a:has-text("Daily"), li:has-text("Daily")')
+            if daily_option:
+                logger.info("SRP: Clicking Daily option...")
+                await daily_option.click()
+                await asyncio.sleep(3)
+                return True
+            else:
+                logger.warning("SRP: Daily option not found")
+                return False
+                
+        except Exception as e:
+            logger.error(f"SRP navigation error: {e}")
+            return False
+            
+    async def extract_usage_data(self):
+        """Extract daily usage data"""
+        try:
+            logger.info("SRP: Extracting usage data...")
+            # Switch to chart view
+            chart_btn = await self.page.query_selector('button:has-text("View as chart")')
+            if chart_btn:
+                logger.info("SRP: Switching to chart view...")
+                await chart_btn.click()
+                await asyncio.sleep(2)
+                
+            # Extract data from table (fallback if chart parsing fails)
+            usage_data = []
+            
+            # Try to find usage rows
+            logger.info("SRP: Looking for usage rows...")
+            rows = await self.page.query_selector_all('tr[class*="usage-row"], tr[data-date]')
+            logger.info(f"SRP: Found {len(rows)} usage rows")
+            
+            for row in rows[-7:]:  # Last 7 days
+                try:
+                    date_elem = await row.query_selector('td:first-child')
+                    date_text = await date_elem.inner_text() if date_elem else ''
+                    
+                    # Find off-peak and on-peak values
+                    cells = await row.query_selector_all('td')
+                    if len(cells) >= 4:
+                        off_peak_text = await cells[2].inner_text()  # Assuming off-peak is 3rd column
+                        on_peak_text = await cells[3].inner_text()   # Assuming on-peak is 4th column
+                        
+                        off_peak_kwh = float(off_peak_text.replace('kWh', '').strip())
+                        on_peak_kwh = float(on_peak_text.replace('kWh', '').strip())
+                        
+                        usage_data.append({
+                            'date': date_text,
+                            'off_peak_kwh': off_peak_kwh,
+                            'on_peak_kwh': on_peak_kwh
+                        })
+                except:
+                    continue
+                    
+            return {
+                'daily_usage': usage_data,
+                'timestamp': datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"SRP data extraction error: {e}")
+            return None
+            
+    async def close(self):
+        """Close browser"""
+        if self.browser:
+            await self.browser.close()
+        if self.playwright:
+            await self.playwright.stop()
+
 async def monitor_loop():
     """Background monitoring loop"""
-    global monitor_data, monitor_running, credentials_verified
+    global monitor_data, monitor_running, credentials_verified, srp_data
+    
+    logger.info("Monitor loop started")
     
     if not credentials_verified:
-        print("Credentials not verified, stopping monitor")
+        logger.error("Credentials not verified, stopping monitor")
         monitor_data = {'error': 'Credentials not verified'}
         return
     
     monitor = EG4WebMonitor()
     await monitor.start()
+    
+    # Initialize SRP monitor if credentials exist
+    srp_monitor = None
+    srp_username = os.getenv('SRP_USERNAME', '').strip().strip("'\"")
+    srp_password = os.getenv('SRP_PASSWORD', '').strip().strip("'\"")
+    
+    logger.info(f"SRP credentials check - username: {srp_username[:3] + '***' if srp_username else 'None'}, has_password: {bool(srp_password)}")
+    
+    if srp_username and srp_password:
+        try:
+            srp_monitor = SRPWebMonitor()
+            await srp_monitor.start()
+            logger.info(f"SRP monitor initialized for user: {srp_username[:3]}***")
+        except Exception as e:
+            logger.error(f"Failed to initialize SRP monitor: {e}")
     
     try:
         if not await monitor.login():
@@ -1195,9 +1452,34 @@ async def monitor_loop():
                 # Emit data to connected clients
                 socketio.emit('monitor_update', data)
                 print(f"Data update sent: SOC={data['battery']['soc']}")
+                
+                # Fetch SRP data if monitor is available (run less frequently - every 5 updates)
+                update_count = getattr(monitor_loop, 'update_count', 0)
+                monitor_loop.update_count = update_count + 1
+                
+                if srp_monitor and (update_count % 5 == 1 or not srp_data):
+                    try:
+                        logger.info("Fetching SRP data...")
+                        if await srp_monitor.login(srp_username, srp_password):
+                            logger.info("SRP login successful, navigating to usage...")
+                            if await srp_monitor.navigate_to_usage():
+                                logger.info("SRP navigation successful, extracting data...")
+                                usage_data = await srp_monitor.extract_usage_data()
+                                if usage_data:
+                                    srp_data = usage_data
+                                    socketio.emit('srp_update', usage_data)
+                                    logger.info(f"SRP data update sent: {len(usage_data.get('daily_usage', []))} days")
+                                else:
+                                    logger.warning("No SRP usage data extracted")
+                            else:
+                                logger.error("SRP navigation to usage page failed")
+                        else:
+                            logger.error("SRP login failed")
+                    except Exception as e:
+                        logger.error(f"SRP update error: {e}")
             
-            # Wait before next update
-            for i in range(30):
+            # Wait before next update (1 minute)
+            for i in range(60):
                 if not monitor_running:
                     break
                 await asyncio.sleep(1)
@@ -1207,6 +1489,8 @@ async def monitor_loop():
         monitor_data = {'error': str(e)}
     finally:
         await monitor.close()
+        if srp_monitor:
+            await srp_monitor.close()
 
 def run_monitor():
     """Run the monitor in a separate thread"""
@@ -1218,17 +1502,57 @@ def start_monitoring_if_needed():
     """Start monitoring if credentials are verified"""
     global monitor_thread, monitor_running
     
+    logger.info(f"start_monitoring_if_needed called - credentials_verified: {credentials_verified}, monitor_running: {monitor_running}")
+    
     if credentials_verified and not monitor_running:
         monitor_running = True
         monitor_thread = threading.Thread(target=run_monitor)
         monitor_thread.daemon = True
         monitor_thread.start()
-        print("Auto-started monitoring")
+        logger.info("Auto-started monitoring thread")
 
 @app.route('/')
 def index():
     """Main page with tabs"""
-    return render_template('index_solar_style.html')
+    # Temporarily use simple template for debugging
+    return render_template('simple.html')
+
+@app.route('/test')
+def test_page():
+    """Debug test page"""
+    return render_template('test_page.html')
+
+@app.route('/debug')
+def debug_page():
+    """Simple debug page"""
+    return render_template('debug.html')
+
+@app.route('/api/debug')
+def debug_endpoint():
+    """Debug endpoint to check system status"""
+    try:
+        global monitor_task
+        debug_info = {
+            'monitor_running': monitor_task is not None and not monitor_task.done() if monitor_task else False,
+            'connected_clients': len(connected_clients),
+            'last_data': {
+                'soc': battery_soc,
+                'power': battery_power,
+                'pv': pv_power,
+                'grid': grid_power,
+                'load': load_power,
+                'timestamp': datetime.now().isoformat()
+            },
+            'credentials_status': {
+                'eg4_username': eg4_username is not None,
+                'eg4_password': eg4_password is not None,
+                'srp_username': srp_username is not None,
+                'srp_password': srp_password is not None
+            }
+        }
+        return jsonify(debug_info)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/config', methods=['GET', 'POST'])
 def config():
@@ -1609,19 +1933,15 @@ def handle_file(filename):
 @socketio.on('connect')
 def handle_connect():
     """Handle client connection"""
-    global monitor_thread, monitor_running
     emit('connected', {'data': 'Connected to EG4 Web Monitor'})
     logger.info(f"Client connected from {request.remote_addr}")
     
-    # Start monitor if not running
-    if credentials_verified and not monitor_running:
-        logger.info("Starting monitor thread on client connect")
-        monitor_running = True
-        monitor_thread = threading.Thread(target=run_monitor)
-        monitor_thread.daemon = True
-        monitor_thread.start()
-    elif not credentials_verified:
+    # Check monitoring status
+    if not credentials_verified:
         emit('status', {'message': 'Please configure EG4 credentials', 'type': 'warning'})
+    elif not monitor_running:
+        emit('status', {'message': 'Monitoring will start shortly...', 'type': 'info'})
+        # Don't start monitor here - let it start from the main startup
     
     # Send current data if available
     if monitor_data and 'error' not in monitor_data:
@@ -1646,11 +1966,9 @@ if __name__ == '__main__':
         
         if credentials_verified:
             logger.info("Existing credentials verified!")
-            # Auto-start monitoring
-            monitor_running = True
-            monitor_thread = threading.Thread(target=run_monitor)
-            monitor_thread.daemon = True
-            monitor_thread.start()
+            logger.info(f"About to call start_monitoring_if_needed - monitor_running={monitor_running}")
+            start_monitoring_if_needed()
+            logger.info("Monitoring thread startup initiated")
         else:
             logger.warning("Existing credentials could not be verified")
     else:

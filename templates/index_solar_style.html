@@ -858,10 +858,10 @@
                         <!-- Chart controls -->
                         <div style="margin-bottom: 2rem;">
                             <span style="margin-right: 1rem;">View my</span>
-                            <button class="btn chart-type-btn active" onclick="switchChartType('netEnergy')">Net Energy</button>
-                            <button class="btn chart-type-btn" onclick="switchChartType('generation')">Generation</button>
-                            <button class="btn chart-type-btn" onclick="switchChartType('usage')">Usage</button>
-                            <button class="btn chart-type-btn" onclick="switchChartType('demand')">Demand</button>
+                            <button class="btn chart-type-btn active" onclick="switchChartType('netEnergy', this)">Net Energy</button>
+                            <button class="btn chart-type-btn" onclick="switchChartType('generation', this)">Generation</button>
+                            <button class="btn chart-type-btn" onclick="switchChartType('usage', this)">Usage</button>
+                            <button class="btn chart-type-btn" onclick="switchChartType('demand', this)">Demand</button>
                         </div>
                         
                         <!-- Chart will be rendered here -->
@@ -1009,6 +1009,7 @@
     </style>
     
     <script>
+        console.log('Initializing Socket.IO connection...');
         const socket = io();
         let credentialsVerified = false;
         let lastBatterySoc = null;
@@ -1016,6 +1017,7 @@
         
         // Socket event handlers
         socket.on('connect', () => {
+            console.log('Socket.IO connected!');
             document.getElementById('connection-dot').classList.add('online');
             document.getElementById('connection-text').textContent = 'Connected';
         });
@@ -1027,9 +1029,13 @@
         
         socket.on('monitor_update', (data) => {
             console.log('Received monitor update:', data);
-            updateMonitoringData(data);
-            document.getElementById('no-data-message').style.display = 'none';
-            document.getElementById('monitoring-data').style.display = 'block';
+            try {
+                updateMonitoringData(data);
+                document.getElementById('no-data-message').style.display = 'none';
+                document.getElementById('monitoring-data').style.display = 'block';
+            } catch (error) {
+                console.error('Error updating monitoring data:', error);
+            }
         });
         
         socket.on('alert', (alert) => {
@@ -1466,41 +1472,18 @@
             return 'just now';
         }
         
-        // Duplicate function removed - see loadConfiguration above
-        
-        // Update tab switching to load SRP data
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
-            event.target.classList.add('active');
-            document.getElementById(`${tabName}-tab`).classList.add('active');
-            
-            // Load SRP data when switching to SRP tab
-            if (tabName === 'srp') {
-                // Check if we need to load data (only if not already displayed)
-                const displayVisible = document.getElementById('srp-demand-display').style.display === 'block';
-                const loadingVisible = document.getElementById('srp-loading-state').style.display === 'block';
-                if (!displayVisible && !loadingVisible) {
-                    refreshSRPDemand();
-                }
-            } else if (tabName === 'srp-usage') {
-                // Load SRP usage chart if not already loaded
-                const chartVisible = document.getElementById('srp-usage-chart-container').style.display === 'block';
-                if (!chartVisible) {
-                    refreshSRPChart();
-                }
-            }
-        }
+        // Duplicate function removed - already defined above
         
         // SRP Usage Chart Functions
         let currentChartType = 'netEnergy';
         let srpChartData = null;
         
-        function switchChartType(type) {
+        function switchChartType(type, element) {
             currentChartType = type;
             document.querySelectorAll('.chart-type-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            if (element) {
+                element.classList.add('active');
+            }
             
             if (srpChartData) {
                 renderSRPChart(srpChartData);

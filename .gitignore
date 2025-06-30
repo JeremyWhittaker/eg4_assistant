@@ -98,3 +98,29 @@ id_rsa*
 monitoring_data/
 logs/docker/redis/
 docker/redis/data/
+
+# Debug and test files
+debug_*.py
+test_*.py
+*_test.py
+templates/debug.html
+templates/simple.html
+templates/test_page.html
+test_browser.py
+
+# Binary response files
+eg4_response_*.bin
+eg4_*_response.bin
+
+# Screenshot files
+*.png
+srp_*.png
+eg4_*.png
+
+# Test results
+srp_response.json
+srp_test_result.json
+
+# Playwright artifacts
+logs/playwright-artifacts-*/
+logs/playwright_chromiumdev_profile-*/
