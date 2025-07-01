@@ -512,8 +512,8 @@
         </div>
         
         <div class="tabs">
-            <div class="tab active" onclick="switchTab('monitoring')">Monitoring</div>
-            <div class="tab" onclick="switchTab('configuration')">Configuration</div>
+            <div class="tab" onclick="switchTab('monitoring')">Monitoring</div>
+            <div class="tab active" onclick="switchTab('configuration')">Configuration</div>
             <div class="tab" onclick="switchTab('alerts')">Alerts</div>
             <div class="tab" onclick="switchTab('srp')">SRP Demand</div>
             <div class="tab" onclick="switchTab('srp-usage')">SRP Usage</div>
@@ -521,7 +521,7 @@
         </div>
         
         <!-- Monitoring Tab -->
-        <div id="monitoring-tab" class="tab-content active">
+        <div id="monitoring-tab" class="tab-content">
             <div id="credentials-status" class="credentials-status unverified">
                 ⚠️ Please configure and verify credentials in the Configuration tab first
             </div>
@@ -662,12 +662,26 @@
         </div>
         
         <!-- Configuration Tab -->
-        <div id="configuration-tab" class="tab-content">
+        <div id="configuration-tab" class="tab-content active">
             <div class="card">
                 <div class="card-section">
                     <h2 style="margin-bottom: 1.5rem;">EG4 Cloud Credentials</h2>
                     
-                    <div class="config-form">
+                    <div id="eg4-saved-credentials" style="display: none;">
+                        <div style="background: #064e3b; border: 1px solid #22c55e; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="color: #22c55e; font-weight: 500; margin-bottom: 0.25rem;">Credentials Saved</div>
+                                    <div style="color: #e2e8f0;">Username: <span id="eg4-saved-username"></span></div>
+                                </div>
+                                <button class="btn" onclick="deleteEG4Credentials()" style="background: #dc2626;">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="eg4-credential-form" class="config-form">
                         <div class="form-group">
                             <label for="config-username">Username</label>
                             <input type="text" id="config-username" placeholder="Enter EG4 username">
@@ -690,7 +704,21 @@
                 <div class="card-section">
                     <h3>SRP Account Credentials</h3>
                     
-                    <div class="config-form">
+                    <div id="srp-saved-credentials" style="display: none;">
+                        <div style="background: #064e3b; border: 1px solid #22c55e; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="color: #22c55e; font-weight: 500; margin-bottom: 0.25rem;">Credentials Saved</div>
+                                    <div style="color: #e2e8f0;">Username: <span id="srp-saved-username"></span></div>
+                                </div>
+                                <button class="btn" onclick="deleteSRPCredentials()" style="background: #dc2626;">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="srp-credential-form" class="config-form">
                         <div class="form-group">
                             <label for="srp-username">SRP Username</label>
                             <input type="text" id="srp-username" placeholder="Enter SRP username">
@@ -1064,7 +1092,7 @@
             if (tabName === 'srp') {
                 const displayVisible = document.getElementById('srp-demand-display').style.display === 'block';
                 if (!displayVisible) {
-                    getSRPDemand();
+                    refreshSRPDemand();
                 }
             } else if (tabName === 'srp-usage') {
                 const chartVisible = document.getElementById('srp-usage-chart-container').style.display === 'block';
@@ -1203,8 +1231,12 @@
                     showAlert('Configuration saved and verified successfully!', 'success');
                     credentialsVerified = true;
                     updateCredentialsStatus(true);
+                    // Update UI to show saved credentials
+                    document.getElementById('eg4-saved-username').textContent = username;
+                    document.getElementById('eg4-saved-credentials').style.display = 'block';
+                    document.getElementById('eg4-credential-form').style.display = 'none';
                     // Switch to monitoring tab
-                    document.querySelector('.tab').click();
+                    switchTab('monitoring');
                 } else if (result.status === 'invalid') {
                     if (confirm('Credentials could not be verified. Save anyway?')) {
                         const response2 = await fetch('/api/config', {
@@ -1281,14 +1313,28 @@
             if (response.ok) {
                 const config = await response.json();
                 
-                // Set EG4 username
+                // Handle EG4 credentials display
                 if (config.username) {
-                    document.getElementById('config-username').value = config.username;
+                    // Show saved credentials, hide form
+                    document.getElementById('eg4-saved-username').textContent = config.username;
+                    document.getElementById('eg4-saved-credentials').style.display = 'block';
+                    document.getElementById('eg4-credential-form').style.display = 'none';
+                } else {
+                    // Show form, hide saved credentials
+                    document.getElementById('eg4-saved-credentials').style.display = 'none';
+                    document.getElementById('eg4-credential-form').style.display = 'block';
                 }
                 
-                // Set SRP username
+                // Handle SRP credentials display
                 if (config.srp_username) {
-                    document.getElementById('srp-username').value = config.srp_username;
+                    // Show saved credentials, hide form
+                    document.getElementById('srp-saved-username').textContent = config.srp_username;
+                    document.getElementById('srp-saved-credentials').style.display = 'block';
+                    document.getElementById('srp-credential-form').style.display = 'none';
+                } else {
+                    // Show form, hide saved credentials
+                    document.getElementById('srp-saved-credentials').style.display = 'none';
+                    document.getElementById('srp-credential-form').style.display = 'block';
                 }
                 
                 // Update credentials status
@@ -1353,6 +1399,10 @@
                 
                 if (result.status === 'success') {
                     showAlert('SRP configuration saved successfully!', 'success');
+                    // Update UI to show saved credentials
+                    document.getElementById('srp-saved-username').textContent = username;
+                    document.getElementById('srp-saved-credentials').style.display = 'block';
+                    document.getElementById('srp-credential-form').style.display = 'none';
                     // Load SRP data if on SRP tab
                     if (document.getElementById('srp-tab').classList.contains('active')) {
                         refreshSRPDemand();
@@ -1364,6 +1414,62 @@
                 showAlert('Error saving SRP configuration', 'error');
             } finally {
                 document.getElementById('srp-config-loading').style.display = 'none';
+            }
+        }
+        
+        // Delete EG4 credentials
+        async function deleteEG4Credentials() {
+            if (!confirm('Are you sure you want to delete your EG4 credentials?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/config/delete-eg4', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    showAlert('EG4 credentials deleted', 'success');
+                    // Show form, hide saved credentials
+                    document.getElementById('eg4-saved-credentials').style.display = 'none';
+                    document.getElementById('eg4-credential-form').style.display = 'block';
+                    // Clear form fields
+                    document.getElementById('config-username').value = '';
+                    document.getElementById('config-password').value = '';
+                    // Update status
+                    updateCredentialsStatus(false);
+                } else {
+                    showAlert('Failed to delete EG4 credentials', 'error');
+                }
+            } catch (error) {
+                showAlert('Error deleting credentials', 'error');
+            }
+        }
+        
+        // Delete SRP credentials
+        async function deleteSRPCredentials() {
+            if (!confirm('Are you sure you want to delete your SRP credentials?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/config/delete-srp', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    showAlert('SRP credentials deleted', 'success');
+                    // Show form, hide saved credentials
+                    document.getElementById('srp-saved-credentials').style.display = 'none';
+                    document.getElementById('srp-credential-form').style.display = 'block';
+                    // Clear form fields
+                    document.getElementById('srp-username').value = '';
+                    document.getElementById('srp-password').value = '';
+                } else {
+                    showAlert('Failed to delete SRP credentials', 'error');
+                }
+            } catch (error) {
+                showAlert('Error deleting credentials', 'error');
             }
         }
         
@@ -1513,6 +1619,11 @@
                     renderSRPChart(data);
                     document.getElementById('srp-usage-loading').style.display = 'none';
                     document.getElementById('srp-usage-chart-container').style.display = 'block';
+                    
+                    // Show a message if data is limited
+                    if (data.dataLimited) {
+                        showAlert(data.message || 'Limited data available', 'info');
+                    }
                 }
             } catch (error) {
                 showAlert('Error fetching chart data', 'error');
@@ -1540,6 +1651,46 @@
             // Check if we should render demand separately (single bar) or energy charts (off-peak/on-peak bars)
             const isDemandChart = currentChartType === 'demand';
             
+            // Declare variables at function scope
+            let maxValue = 1;
+            let minValue = 0;
+            let range = 1;
+            let hasNegative = false;
+            
+            // Check if we have any data to display
+            const hasData = data && data.dates && data.dates.length > 0 && (
+                (data.offPeak && data.offPeak.length > 0) ||
+                (data.onPeak && data.onPeak.length > 0) ||
+                (data.usage && data.usage.length > 0) ||
+                (data.netEnergy && data.netEnergy.length > 0) ||
+                (data.generation && data.generation.length > 0) ||
+                (data.demand && data.demand.length > 0)
+            );
+            
+            if (!hasData && data.dataLimited) {
+                // Show message for limited data
+                svg.innerHTML = '';
+                const message = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                message.setAttribute('x', '400');
+                message.setAttribute('y', '200');
+                message.setAttribute('text-anchor', 'middle');
+                message.setAttribute('font-size', '16');
+                message.setAttribute('fill', '#94a3b8');
+                message.textContent = 'Chart data is visible but detailed values cannot be extracted';
+                svg.appendChild(message);
+                
+                // Add sub-message
+                const subMessage = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                subMessage.setAttribute('x', '400');
+                subMessage.setAttribute('y', '225');
+                subMessage.setAttribute('text-anchor', 'middle');
+                subMessage.setAttribute('font-size', '14');
+                subMessage.setAttribute('fill', '#64748b');
+                subMessage.textContent = 'Try refreshing the page or check the SRP website directly';
+                svg.appendChild(subMessage);
+                return;
+            }
+            
             // For demand chart, use existing single-bar logic
             if (isDemandChart) {
                 const chartData = data.demand || [];
@@ -1562,7 +1713,7 @@
                 }
                 
                 // Render single bars for demand
-                const maxValue = Math.max(...chartData, 1) * 1.1;
+                maxValue = Math.max(...chartData, 1) * 1.1;
                 const barWidth = width / (data.dates ? data.dates.length : 30);
                 
                 if (data.dates && chartData.length > 0) {
@@ -1626,10 +1777,10 @@
                 
                 // Calculate max value for scaling
                 const allValues = [...offPeakData, ...onPeakData];
-                const maxValue = Math.max(...allValues.map(Math.abs), 1) * 1.1;
-                const minValue = Math.min(...allValues, 0) * 1.1;
-                const range = maxValue - minValue;
-                const hasNegative = minValue < 0;
+                maxValue = Math.max(...allValues.map(Math.abs), 1) * 1.1;
+                minValue = Math.min(...allValues, 0) * 1.1;
+                range = maxValue - minValue;
+                hasNegative = minValue < 0;
                 
                 // Bar width calculations - two bars per day
                 const dayWidth = width / (data.dates ? data.dates.length : 30);
@@ -1743,9 +1894,11 @@
                             g.appendChild(text);
                         }
                     });
+                }
             }
             
             // Add Y-axis labels
+            const chartUnit = isDemandChart ? 'kW' : 'kWh';
             const yLabels = 5;
             for (let i = 0; i <= yLabels; i++) {
                 const y = height - (i / yLabels) * height;

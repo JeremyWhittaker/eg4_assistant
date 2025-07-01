@@ -10,9 +10,10 @@ Solar Assistant is a comprehensive solar monitoring system for EG4 inverters wit
 4. **SRP Integration** - Salt River Project utility data integration
 
 ## Common Commands
-- **Run Web Monitor**: `docker-compose -f docker-compose.eg4.yml up -d`
-- **View Logs**: `docker-compose -f docker-compose.eg4.yml logs -f eg4_web_monitor`
-- **Restart Container**: `docker-compose -f docker-compose.eg4.yml restart eg4_web_monitor`
+- **Run Web Monitor**: `docker compose -f docker-compose.eg4.yml up -d`
+- **View Logs**: `docker compose -f docker-compose.eg4.yml logs -f eg4-monitor`
+- **Restart Container**: `docker compose -f docker-compose.eg4.yml restart eg4-monitor`
+- **Rebuild Container**: `docker compose -f docker-compose.eg4.yml build eg4-monitor`
 - **Run Tests**: `pytest tests/` (if tests directory exists)
 - **Check Linting**: `flake8 *.py` or `pylint *.py`
 - **Type Check**: `mypy *.py` (if configured)
@@ -29,6 +30,19 @@ Solar Assistant is a comprehensive solar monitoring system for EG4 inverters wit
 3. **SRP Data Not Showing**:
    - Issue: Navigation flow broken after login detection
    - Solution: Ensure `navigate_to_usage()` and `extract_usage_data()` run after login
+
+4. **JavaScript Errors - saveConfiguration not defined**:
+   - Cause: Variable scope issues in renderSRPChart function
+   - Solution: Declared variables at function scope, fixed chartUnit references
+
+5. **SRP Usage Chart Stuck Loading**:
+   - Issue: Code timing out trying to click invisible elements
+   - Solution: Use direct URL navigation, skip unnecessary clicks when chart visible
+
+6. **Credential Management**:
+   - Added persistent credential storage with delete functionality
+   - Credentials now survive container restarts
+   - UI shows saved credentials securely (username only)
 
 ## Architecture Notes
 - Uses Flask + SocketIO for real-time updates
@@ -59,6 +73,9 @@ SRP_PASSWORD=your_srp_password
 - Use 60-second polling intervals for monitoring
 - SRP chart uses blue for off-peak, red for on-peak
 - Cross-origin access supported (e.g., 172.16.105.5 → 172.16.106.10:8282)
+- Configuration tab opens by default for first-time setup
+- Credentials are persisted in .env file (survives restarts)
+- Delete credentials through UI to change them
 
 ## Testing & Debugging
 - Debug templates available but should not be committed

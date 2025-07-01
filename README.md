@@ -4,9 +4,20 @@ A comprehensive, Docker-based solar monitoring system that provides real-time mo
 
 ## 🚀 Quick Start
 
+### EG4 Web Monitor (Docker)
 ```bash
 # Clone the repository
 git clone git@github.com:JeremyWhittaker/solar_assistant.git
+cd solar_assistant
+
+# Start the EG4 web monitor
+docker compose -f docker-compose.eg4.yml up -d
+
+# Access at http://localhost:8282
+```
+
+### Full Solar Assistant (Docker)
+```bash
 cd solar_assistant/docker
 
 # Initial setup
@@ -14,9 +25,9 @@ make install
 
 # Start the system
 make up
-```
 
-Access the web interface at: http://localhost
+# Access at http://localhost
+```
 
 ## 🌟 Features
 
@@ -38,6 +49,9 @@ Access the web interface at: http://localhost
 - **Automatic Backups**: Scheduled database backups with retention
 - **Energy Reports**: Daily/monthly/yearly statistics
 - **EG4 Cloud Monitor**: Remote monitoring via monitor.eg4electronics.com
+- **SRP Integration**: Salt River Project utility data with peak/off-peak visualization
+- **Service Auto-Recovery**: Automatic restart on crashes
+- **Persistent Credentials**: Secure credential storage that survives restarts
 - **Weather Integration**: (Coming soon)
 - **Energy Prediction**: (Coming soon)
 

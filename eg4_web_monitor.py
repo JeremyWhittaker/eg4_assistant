@@ -720,9 +720,13 @@ class SRPMonitor:
             ]
             
             # Check if we're already in table view or need to click to table view
-            view_table_button = await self.page.query_selector('button:has-text("View as table")')
-            if not view_table_button:
-                view_table_button = await self.page.query_selector('button:has-text("View data table")')
+            view_table_button = None
+            if chart_visible.get('hasChartButtons', 0) > 0:
+                app.logger.info("Chart buttons are visible, skipping view table button search")
+            else:
+                view_table_button = await self.page.query_selector('button:has-text("View as table")')
+                if not view_table_button:
+                    view_table_button = await self.page.query_selector('button:has-text("View data table")')
             
             # If neither found, check if already in table view or need to click "View as chart" to toggle
             is_table_view = await self.page.query_selector('table')
@@ -897,6 +901,18 @@ class SRPMonitor:
             # Skip clicking through chart types if we already have the data
             if chart_data['offPeak'] and chart_data['onPeak'] and len(chart_data['offPeak']) > 0:
                 app.logger.info("Data already extracted from initial table, skipping chart type buttons")
+            elif not view_table_button and chart_visible.get('hasChartButtons', 0) > 0:
+                # If chart is visible but no table button, we might already have the data visible
+                app.logger.info("Chart is visible but no table button found, returning available data")
+                # Use the dates from chart_info if available
+                if chart_info.get('dates'):
+                    chart_data['dates'] = chart_info['dates']
+                    app.logger.info(f"Returning chart data with {len(chart_data['dates'])} dates from chart visualization")
+                    # Set a flag to indicate limited data
+                    chart_data['dataLimited'] = True
+                    chart_data['message'] = "Chart is visible but detailed data extraction is not available"
+                else:
+                    app.logger.warning("No data extracted, chart might be empty")
             else:
                 # Now extract data for each chart type by clicking buttons
                 app.logger.info(f"Starting to extract data for chart types: {[ct[0] for ct in chart_types]}")
@@ -914,9 +930,21 @@ class SRPMonitor:
                             chart_button = await self.page.query_selector(f'button:has-text("{button_text.lower()}")')
                         
                         if chart_button:
-                            await chart_button.click()
-                            await asyncio.sleep(2)
-                            app.logger.info(f"Clicked '{button_text}' button")
+                            try:
+                                # Check if button is visible before clicking
+                                is_visible = await chart_button.is_visible()
+                                if is_visible:
+                                    await chart_button.click()
+                                    await asyncio.sleep(2)
+                                    app.logger.info(f"Clicked '{button_text}' button")
+                                else:
+                                    app.logger.warning(f"Button '{button_text}' found but not visible")
+                                    # Take a screenshot for debugging
+                                    await self.page.screenshot(path=f'/tmp/srp_no_button_{data_key}.png')
+                                    continue
+                            except Exception as e:
+                                app.logger.warning(f"Error clicking '{button_text}' button: {e}")
+                                continue
                         
                         # Check if we need to switch to table view
                         is_table_view = await self.page.query_selector('table')
@@ -1236,6 +1264,7 @@ class SRPWebMonitor:
         self.browser = None
         self.page = None
         self.playwright = None
+        self.base_url = 'https://myaccount.srpnet.com'
         
     async def start(self):
         """Start the browser with proper settings"""
@@ -1316,26 +1345,36 @@ class SRPWebMonitor:
     async def navigate_to_usage(self):
         """Navigate to usage page"""
         try:
-            logger.info("SRP: Looking for Usage menu...")
-            # Click Usage in menu
-            usage_menu = await self.page.query_selector('a:has-text("Usage"), span:has-text("Usage")')
-            if usage_menu:
-                logger.info("SRP: Clicking Usage menu...")
-                await usage_menu.click()
+            logger.info("SRP: Navigating directly to usage page...")
+            # Navigate directly to the usage page URL
+            await self.page.goto(f"{self.base_url}/power/myaccount/usage", wait_until='networkidle')
+            await asyncio.sleep(3)
+            
+            # Click on the Daily tab to show the daily usage view
+            logger.info("SRP: Looking for Daily tab...")
+            daily_tab = await self.page.query_selector('button:has-text("Daily")')
+            if not daily_tab:
+                # Try alternative selectors
+                daily_tab = await self.page.query_selector('.MuiTab-root:has-text("Daily")')
+            
+            if daily_tab:
+                logger.info("SRP: Clicking Daily tab...")
+                await daily_tab.click()
                 await asyncio.sleep(2)
-            else:
-                logger.warning("SRP: Usage menu not found")
                 
-            # Click Daily option
-            logger.info("SRP: Looking for Daily option...")
-            daily_option = await self.page.query_selector('a:has-text("Daily"), li:has-text("Daily")')
-            if daily_option:
-                logger.info("SRP: Clicking Daily option...")
-                await daily_option.click()
-                await asyncio.sleep(3)
+                # Click Submit button to load the daily data
+                submit_button = await self.page.query_selector('button.btn.srp-btn.btn-green:has-text("Submit")')
+                if submit_button:
+                    logger.info("SRP: Clicking Submit button to load daily data...")
+                    await submit_button.click()
+                    await asyncio.sleep(3)
+                    await self.page.wait_for_load_state('networkidle')
+                else:
+                    logger.info("SRP: Submit button not found, data might already be loaded")
+                
                 return True
             else:
-                logger.warning("SRP: Daily option not found")
+                logger.warning("SRP: Daily tab not found")
                 return False
                 
         except Exception as e:
@@ -1514,8 +1553,7 @@ def start_monitoring_if_needed():
 @app.route('/')
 def index():
     """Main page with tabs"""
-    # Temporarily use simple template for debugging
-    return render_template('simple.html')
+    return render_template('index_solar_style.html')
 
 @app.route('/test')
 def test_page():
@@ -1688,6 +1726,76 @@ def config():
 def get_monitor_data():
     """Get current monitor data"""
     return jsonify(monitor_data)
+
+@app.route('/api/config/delete-eg4', methods=['POST'])
+def delete_eg4_credentials():
+    """Delete EG4 credentials from .env file"""
+    global credentials_verified, monitor_running
+    
+    try:
+        env_path = Path('.env')
+        env_content = {}
+        
+        # Read existing content
+        if env_path.exists():
+            with open(env_path, 'r') as f:
+                for line in f:
+                    if '=' in line and not line.strip().startswith('#'):
+                        key, value = line.strip().split('=', 1)
+                        # Skip EG4 credentials
+                        if key not in ['EG4_MONITOR_USERNAME', 'EG4_MONITOR_PASSWORD', 'EG4_USERNAME', 'EG4_PASSWORD']:
+                            env_content[key] = value
+        
+        # Write back without EG4 credentials
+        with open(env_path, 'w') as f:
+            for key, value in env_content.items():
+                f.write(f"{key}={value}\n")
+        
+        # Clear from environment
+        os.environ.pop('EG4_MONITOR_USERNAME', None)
+        os.environ.pop('EG4_MONITOR_PASSWORD', None)
+        os.environ.pop('EG4_USERNAME', None)
+        os.environ.pop('EG4_PASSWORD', None)
+        
+        # Stop monitoring
+        credentials_verified = False
+        monitor_running = False
+        
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        logger.error(f"Error deleting EG4 credentials: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/config/delete-srp', methods=['POST'])
+def delete_srp_credentials():
+    """Delete SRP credentials from .env file"""
+    try:
+        env_path = Path('.env')
+        env_content = {}
+        
+        # Read existing content
+        if env_path.exists():
+            with open(env_path, 'r') as f:
+                for line in f:
+                    if '=' in line and not line.strip().startswith('#'):
+                        key, value = line.strip().split('=', 1)
+                        # Skip SRP credentials
+                        if key not in ['SRP_USERNAME', 'SRP_PASSWORD']:
+                            env_content[key] = value
+        
+        # Write back without SRP credentials
+        with open(env_path, 'w') as f:
+            for key, value in env_content.items():
+                f.write(f"{key}={value}\n")
+        
+        # Clear from environment
+        os.environ.pop('SRP_USERNAME', None)
+        os.environ.pop('SRP_PASSWORD', None)
+        
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        logger.error(f"Error deleting SRP credentials: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/srp/demand', methods=['GET'])
 def get_srp_demand():
