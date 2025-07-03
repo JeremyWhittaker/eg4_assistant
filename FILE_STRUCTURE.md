@@ -4,7 +4,7 @@ This document provides a detailed explanation of each file in the project direct
 
 ## Root Directory Files
 
-### `app.py` (457 lines)
+### `app.py` (692 lines)
 The main application file containing the Flask web server and monitoring logic.
 
 **Key Components:**
@@ -20,11 +20,13 @@ The main application file containing the Flask web server and monitoring logic.
 - Email alert system using gmail-send integration (subprocess calls)
 - RESTful API endpoints for configuration and status
 - Alert thresholds:
-  - Battery low warning (no high battery alert)
-  - SRP peak demand alerts
+  - Battery low warning with configurable check time
+  - SRP peak demand alerts with configurable check time
   - Time-based grid import alerts (only during configured hours)
+- Web-based Gmail configuration endpoint
+- Manual refresh endpoint for immediate data updates
 
-### `docker-compose.yml` (20 lines)
+### `docker-compose.yml` (21 lines)
 Docker Compose configuration for container orchestration.
 
 **Features:**
@@ -47,7 +49,7 @@ Container image definition for the application.
 6. Copies application files
 7. Exposes port 5000
 
-### `requirements.txt` (8 lines)
+### `requirements.txt` (7 lines)
 Python package dependencies:
 - `flask==3.0.0` - Web framework
 - `flask-socketio==5.3.5` - WebSocket support
@@ -57,7 +59,7 @@ Python package dependencies:
 - `email-validator==2.1.0` - Email validation
 - Comment about gmail-integration installation from local path
 
-### `requirements-dev.txt` (8 lines)
+### `requirements-dev.txt` (7 lines)
 Development dependencies for testing and code quality:
 - `pytest>=7.0.0` - Testing framework
 - `pytest-asyncio>=0.21.0` - Async test support
@@ -67,7 +69,7 @@ Development dependencies for testing and code quality:
 - `mypy>=1.0.0` - Type checking
 - `flake8>=6.0.0` - Style guide enforcement
 
-### `.env` (5 lines)
+### `.env` (4 lines)
 Environment configuration file containing credentials:
 - `EG4_USERNAME` - EG4 portal username
 - `EG4_PASSWORD` - EG4 portal password
@@ -76,11 +78,11 @@ Environment configuration file containing credentials:
 
 **Note:** This file is gitignored for security.
 
-### `.env.example` (15 lines)
+### `.env.example` (14 lines)
 Template for environment variables with placeholders.
 Shows required credentials and optional email configuration.
 
-### `.gitignore` (6 lines)
+### `.gitignore` (8 lines)
 Specifies files to exclude from version control:
 - `.env` - Credentials file
 - `*.pyc` - Compiled Python files
@@ -88,8 +90,10 @@ Specifies files to exclude from version control:
 - `logs/` - Log directory
 - `*.log` - Log files
 - `.DS_Store` - macOS metadata
+- `gmail_integration_temp/` - Temporary build directory
+- `config/` - Configuration directory
 
-### `README.md` (220+ lines)
+### `README.md` (399 lines)
 Main project documentation including:
 - Project overview and features
 - Quick start guide
@@ -99,7 +103,7 @@ Main project documentation including:
 - Security notes
 - Troubleshooting
 
-### `CLAUDE.md` (130+ lines)
+### `CLAUDE.md` (278 lines)
 AI development guide containing:
 - Project patterns and conventions
 - Development commands
@@ -108,7 +112,7 @@ AI development guide containing:
 - Known limitations
 - Future enhancements
 
-### `FILE_STRUCTURE.md` (This file)
+### `FILE_STRUCTURE.md` (This file - 216 lines)
 Detailed documentation of all project files and their purposes.
 
 ### `setup-gmail.sh` (23 lines, Executable script)
@@ -124,7 +128,7 @@ Setup script for Gmail integration:
 ### `templates/` Directory
 Contains HTML templates for the web interface.
 
-#### `templates/index.html` (391 lines)
+#### `templates/index.html` (680 lines)
 Single-page web dashboard application.
 
 **Features:**
@@ -144,15 +148,17 @@ Single-page web dashboard application.
    - Grid import/export with voltage
    - Load consumption
    - Battery and grid voltage displays
+   - Manual refresh button
+   - Last update timestamp
 2. SRP Peak Demand card
    - Current peak display
    - Last update timestamp
 3. Alert Configuration section
-   - Email recipients (comma-separated)
-   - Battery low threshold only
-   - Peak demand threshold  
-   - Grid import threshold with time window
-   - Grid import start/end hours (24-hour format)
+   - Email recipients with Gmail status indicator
+   - Battery alerts section with threshold and check time
+   - Peak demand alerts with threshold and configurable check time
+   - Grid import alerts with threshold and time window
+   - Gmail configuration modal for web-based setup
    - Save/test functionality with error handling
 
 ### `logs/` Directory (Created at runtime)
@@ -194,7 +200,8 @@ Volume mount point for persistent configuration.
    - Default check time: 6:00 AM UTC
    - Triggers when SOC drops below threshold (default: 20%)
    - Configurable check hour and minute
-2. **Peak Demand** - Checked once daily at 6:00 AM UTC
+2. **Peak Demand** - Checked once daily at configured time
+   - Default check time: 6:00 AM UTC (configurable)
    - Triggers when SRP demand exceeds threshold (default: 5.0 kW)
    - Only checks/alerts once per day to avoid spam
 3. **Grid Import** - Continuously monitored during operation

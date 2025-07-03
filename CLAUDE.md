@@ -6,36 +6,49 @@ This is a monitoring application for EG4 solar inverters and SRP (Salt River Pro
 
 **Latest Update (July 2025):** The application is fully functional with:
 - Automatic retry logic and error recovery
-- Gmail integration for email alerts (no SMTP configuration needed)
+- Web-based Gmail configuration (no command line needed)
 - Port 8085 by default
-- Battery and grid voltage monitoring added
+- Battery and grid voltage monitoring
 - Time-based grid import alerts (only during configured hours)
 - Battery high alert removed (unnecessary)
 - Configuration persistence to disk (survives container restarts)
 - Time-based battery checks (once daily at configured time)
-- Peak demand checks once daily at 6 AM
+- Configurable peak demand check time (default 6 AM)
+- Manual refresh button for EG4 data
+- Support for Google Workspace custom domains
+- Improved UI with logical alert grouping
 - All features tested and working in production
 
 ## Key Components
 
-### Main Application (app.py)
+### Main Application (app.py) - 692 lines
 - Flask web server with Socket.IO for real-time updates
 - Two monitor classes: `EG4Monitor` and `SRPMonitor` 
 - Background thread runs continuous monitoring loop
-- Email alert system using gmail-send integration
-- Simplified email configuration (recipients only, no SMTP settings)
+- Email alert system using gmail-send integration via subprocess
+- Web-based Gmail configuration with automatic credential setup
+- Manual refresh endpoint for immediate data updates
+- Configurable alert check times for battery and peak demand
 
-### Web Interface (templates/index.html)
+### Web Interface (templates/index.html) - 680 lines
 - Single-page application with real-time WebSocket updates
 - Dark theme dashboard showing inverter and utility data
-- Configuration interface for alert thresholds and email settings
+- Alert configuration organized into logical sections:
+  - Battery alerts with configurable check time
+  - Peak demand alerts with configurable check time
+  - Grid import alerts with time window
+- Gmail configuration modal for easy setup
+- Manual refresh button with 30-second cooldown
+- Last update timestamp for data freshness
 
 ### Docker Setup
-- Dockerfile installs Playwright and Chrome dependencies
-- docker-compose.yml configures the service with health checks
+- **Dockerfile** (59 lines): Installs Playwright and Chrome dependencies
+- **docker-compose.yml** (21 lines): Service orchestration with health checks
+- **setup-gmail.sh** (23 lines): Prepares gmail integration for Docker build
 - Requires environment variables for EG4 and SRP credentials
 - Default port mapping: 8085:5000 (external:internal)
 - 2GB shared memory allocation for browser stability
+- Volume mounts for logs and configuration persistence
 
 ## Development Commands
 
@@ -167,7 +180,7 @@ docker compose down
   - Includes email settings and all alert thresholds
 - Enhanced alert logic:
   - Battery SOC checked once daily at configured time
-  - Peak demand checked once daily at 6 AM
+  - Peak demand checked once daily at configured time (default 6 AM)
   - Grid import checked continuously but only alerts during configured hours
   - Prevents duplicate alerts with cooldown periods
 - Gmail integration improvements:
@@ -203,7 +216,7 @@ docker compose down
 - Email alerts via gmail-send integration
 - Configurable alert thresholds:
   - Battery low warnings (checked at specified time daily)
-  - Peak demand alerts (checked at 6 AM daily)
+  - Peak demand alerts (checked at configurable time daily)
   - Time-based grid import alerts (with hour configuration)
 - Automatic retry logic (3 login attempts, 5 reconnection attempts)
 - Battery and grid voltage display in UI
@@ -228,28 +241,29 @@ The application has been thoroughly tested and is running in production:
 ## Complete File Inventory
 
 ### Core Application Files
-- `app.py` (457 lines) - Main Flask application
-- `templates/index.html` (391 lines) - Web dashboard UI
-- `requirements.txt` (8 lines) - Python dependencies
-- `requirements-dev.txt` (8 lines) - Development dependencies
+- `app.py` (692 lines) - Main Flask application with monitoring logic
+- `templates/index.html` (680 lines) - Web dashboard UI with real-time updates
+- `requirements.txt` (7 lines) - Python dependencies
+- `requirements-dev.txt` (7 lines) - Development dependencies
 
 ### Docker Configuration
 - `Dockerfile` (59 lines) - Container image definition
-- `docker-compose.yml` (20 lines) - Service orchestration
+- `docker-compose.yml` (21 lines) - Service orchestration with volumes
 - `setup-gmail.sh` (23 lines) - Gmail integration setup script
 
 ### Configuration Files
-- `.env` - Environment variables (gitignored)
-- `.env.example` (15 lines) - Template for credentials
-- `.gitignore` (7 lines) - Git exclusions
+- `.env` (4 lines) - Environment variables (gitignored)
+- `.env.example` (14 lines) - Template for credentials
+- `.gitignore` (8 lines) - Git exclusions
 
 ### Documentation
-- `README.md` - User documentation
-- `CLAUDE.md` - This development guide
-- `FILE_STRUCTURE.md` - Detailed file documentation
+- `README.md` (399 lines) - User documentation
+- `CLAUDE.md` (262 lines) - This development guide
+- `FILE_STRUCTURE.md` (216 lines) - Detailed file documentation
 
 ### Runtime Directories
 - `logs/` - Container log volume mount
+- `config/` - Persistent configuration storage
 - `gmail_integration_temp/` - Temporary build directory (gitignored)
 
 ## Future Enhancements
@@ -259,5 +273,6 @@ The application has been thoroughly tested and is running in production:
 - Create mobile app with push notifications
 - Add Grafana integration for visualization
 - Implement API authentication
-- Add configuration persistence
 - Add timezone configuration option
+- Implement OAuth authentication for enhanced security
+- Add support for multiple alert profiles
