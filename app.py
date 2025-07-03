@@ -243,10 +243,29 @@ class SRPMonitor:
         if self.playwright:
             await self.playwright.stop()
 
+def check_gmail_configured():
+    """Check if gmail-send is configured"""
+    try:
+        # Try to run send-gmail with --check flag (or just check if command exists)
+        result = subprocess.run(['send-gmail', '--help'], capture_output=True, text=True)
+        if result.returncode == 0:
+            # Check if credentials are configured by looking for the .env file
+            gmail_env_path = os.path.expanduser('~/.gmail_send/.env')
+            if os.path.exists(gmail_env_path):
+                return True, "Gmail configured"
+            else:
+                return False, "Gmail not configured. Run 'gmail-auth-setup' to configure."
+        else:
+            return False, "send-gmail command not found. Install gmail-send package."
+    except FileNotFoundError:
+        return False, "send-gmail command not found. Install gmail-send package."
+    except Exception as e:
+        return False, f"Error checking gmail configuration: {str(e)}"
+
 def send_alert_email(subject, message):
     """Send email alert using gmail-send integration"""
     if not alert_config['email_enabled'] or not alert_config['email_to']:
-        return
+        return True, "Email alerts disabled or no recipients configured"
         
     try:
         # Format HTML body
@@ -285,11 +304,22 @@ def send_alert_email(subject, message):
         
         if result.returncode == 0:
             logger.info(f"Alert email sent: {subject}")
+            return True, "Email sent successfully"
         else:
-            logger.error(f"Failed to send alert email: {result.stderr}")
+            error_msg = result.stderr.strip()
+            if "not configured" in error_msg.lower() or "credentials" in error_msg.lower():
+                logger.error("Gmail not configured. Run 'gmail-auth-setup' to configure.")
+                return False, "Gmail not configured. Run 'gmail-auth-setup' on the host system to configure Gmail credentials."
+            else:
+                logger.error(f"Failed to send alert email: {error_msg}")
+                return False, f"Failed to send email: {error_msg}"
         
+    except FileNotFoundError:
+        logger.error("send-gmail command not found")
+        return False, "send-gmail command not found. Please install the gmail-send package."
     except Exception as e:
         logger.error(f"Failed to send alert email: {e}")
+        return False, f"Error sending email: {str(e)}"
 
 def check_thresholds():
     """Check if any thresholds are exceeded"""
@@ -350,7 +380,7 @@ def check_thresholds():
     
     # Send alerts
     for subject, message in alerts:
-        send_alert_email(subject, message)
+        success, _ = send_alert_email(subject, message)
         socketio.emit('alert', {'subject': subject, 'message': message, 'timestamp': datetime.now().isoformat()})
 
 async def monitor_loop():
@@ -511,8 +541,24 @@ def config():
 def test_email():
     if not alert_config['email_to']:
         return jsonify({'status': 'error', 'message': 'No recipient email configured'}), 400
-    send_alert_email('Test Alert', 'This is a test alert from EG4-SRP Monitor')
-    return jsonify({'status': 'success'})
+    
+    # First check if gmail is configured
+    configured, config_msg = check_gmail_configured()
+    if not configured:
+        return jsonify({'status': 'error', 'message': config_msg, 'gmail_configured': False}), 400
+    
+    # Try to send test email
+    success, msg = send_alert_email('Test Alert', 'This is a test alert from EG4-SRP Monitor')
+    if success:
+        return jsonify({'status': 'success', 'message': msg})
+    else:
+        return jsonify({'status': 'error', 'message': msg}), 400
+
+@app.route('/api/gmail-status')
+def gmail_status():
+    """Check if gmail-send is properly configured"""
+    configured, msg = check_gmail_configured()
+    return jsonify({'configured': configured, 'message': msg})
 
 @socketio.on('connect')
 def handle_connect():

@@ -230,8 +230,10 @@
                     </div>
                     <div class="form-group" style="background: #334155; padding: 1rem; border-radius: 0.25rem;">
                         <p style="margin: 0; color: #94a3b8; font-size: 0.875rem;">
-                            <strong>Note:</strong> Email alerts are sent using the gmail-send integration. 
-                            Make sure gmail-send is installed and configured with valid Gmail credentials.
+                            <strong>Gmail Status:</strong> <span id="gmail-status" style="color: #f59e0b;">Checking...</span>
+                        </p>
+                        <p style="margin: 0.5rem 0 0 0; color: #94a3b8; font-size: 0.875rem;">
+                            <strong>Note:</strong> Email alerts require gmail-send to be installed and configured on the host system.
                             Multiple recipients can be separated by commas.
                         </p>
                     </div>
@@ -385,16 +387,52 @@
         // Test email
         async function testEmail() {
             const response = await fetch('/api/test-email');
+            const result = await response.json();
+            
             if (response.ok) {
                 alert('Test email sent! Check your inbox.');
             } else {
-                const error = await response.json();
-                alert('Error: ' + (error.message || 'Failed to send test email'));
+                // Show detailed error message
+                let errorMsg = result.message || 'Failed to send test email';
+                
+                // If gmail is not configured, show setup instructions
+                if (result.gmail_configured === false) {
+                    errorMsg += '\n\nTo configure Gmail:\n';
+                    errorMsg += '1. On the host system, run: pip install gmail-send\n';
+                    errorMsg += '2. Then run: gmail-auth-setup\n';
+                    errorMsg += '3. Follow the prompts to set up your Gmail credentials\n';
+                    errorMsg += '4. Restart the container after configuration';
+                }
+                
+                alert(errorMsg);
+            }
+        }
+        
+        // Check Gmail status
+        async function checkGmailStatus() {
+            try {
+                const response = await fetch('/api/gmail-status');
+                const data = await response.json();
+                const statusEl = document.getElementById('gmail-status');
+                
+                if (data.configured) {
+                    statusEl.textContent = 'Configured ✓';
+                    statusEl.style.color = '#22c55e';
+                } else {
+                    statusEl.textContent = 'Not configured ✗';
+                    statusEl.style.color = '#ef4444';
+                    statusEl.title = data.message;
+                }
+            } catch (error) {
+                const statusEl = document.getElementById('gmail-status');
+                statusEl.textContent = 'Error checking status';
+                statusEl.style.color = '#ef4444';
             }
         }
         
         // Load initial data
         loadConfig();
+        checkGmailStatus();
         
         // Load current status
         fetch('/api/status').then(r => r.json()).then(data => {

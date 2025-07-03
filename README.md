@@ -93,7 +93,7 @@ eg4-srp-monitor/
 - Docker and Docker Compose
 - EG4 monitoring account credentials
 - SRP account credentials
-- Gmail integration for email alerts (see Email Setup below)
+- Gmail-send package installed and configured on the host system (required for email alerts)
 
 ## Quick Start
 
@@ -163,35 +163,50 @@ The container runs in UTC time by default. When configuring time-based alerts:
 
 ### Email Configuration
 
-Email alerts use the `gmail-send` integration which must be installed separately:
+Email alerts require the `gmail-send` package to be installed and configured on the **host system** (not inside the container):
 
-1. **Install Gmail Integration**
+1. **Install Gmail-Send on Host System**
    ```bash
-   # Install from the local gmail_integration directory
+   # On the host system (outside Docker)
+   pip install gmail-send
+   ```
+
+2. **Configure Gmail Credentials on Host**
+   Run the setup command on the host system:
+   ```bash
+   # This will prompt for your Gmail credentials
+   gmail-auth-setup
+   ```
+   
+   You'll need:
+   - Your Gmail address
+   - A Gmail App Password (not your regular password)
+   
+   **Create an App Password at:** https://myaccount.google.com/apppasswords
+
+3. **Install Local Integration (if available)**
+   If you have the local gmail_integration directory:
+   ```bash
    pip install -e ../gmail_integration
    ```
 
-2. **Configure Gmail Credentials**
-   The gmail integration should already be configured in `../gmail_integration/.env`:
-   ```env
-   GMAIL_ADDRESS=your-gmail@gmail.com
-   GMAIL_APP_PASSWORD=your-16-char-app-password
-   ```
+4. **Container Setup**
+   The container is already configured to use the host's gmail-send installation.
+   Just ensure gmail-send is working on the host before starting the container.
 
-   If not configured, run:
-   ```bash
-   gmail-auth-setup
-   ```
-
-3. **Set Email Recipients**
-   In the web interface (http://localhost:8085):
+5. **Configure Recipients in Web Interface**
+   - Open http://localhost:8085
+   - Check the "Gmail Status" indicator (should show "Configured ✓")
    - Enable email alerts
-   - Add recipient email addresses (comma-separated for multiple)
+   - Add recipient email addresses (comma-separated)
    - Click "Save Configuration"
-   - Use "Test Email" button to verify setup
+   - Use "Test Email" button to verify
 
-**Note**: Gmail App Passwords are required (not regular passwords). Create one at:
-https://myaccount.google.com/apppasswords
+**Troubleshooting:**
+- If Gmail Status shows "Not configured", run `gmail-auth-setup` on the host
+- The container uses the host's gmail-send command via subprocess
+- Gmail credentials are stored on the host, not in the container
+- Check container logs if emails fail to send
 
 ### Data Collection Intervals
 
@@ -294,9 +309,12 @@ docker compose logs -f eg4-srp-monitor  # View logs
    - EG4 updates every 60 seconds, SRP every 5 minutes
 
 3. **Email Alerts Not Sending**: 
-   - Confirm SMTP settings and credentials
+   - Check "Gmail Status" indicator in web interface
+   - If "Not configured", run `gmail-auth-setup` on the host system
+   - Ensure gmail-send is installed on host: `pip install gmail-send`
    - Test using the "Test Email" button in the web interface
-   - Check firewall rules for SMTP port
+   - Check container logs for detailed error messages
+   - Verify recipient email addresses are valid
 
 4. **High Memory Usage**: 
    - Playwright requires ~2GB RAM (configured in docker-compose.yml)

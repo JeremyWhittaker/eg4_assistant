@@ -75,21 +75,29 @@ docker compose down
 
 ## Gmail Integration
 
+### Prerequisites
+- gmail-send must be installed on the HOST system: `pip install gmail-send`
+- Run `gmail-auth-setup` on the HOST to configure Gmail credentials
+- The container accesses the host's gmail-send via subprocess
+
 ### Setup Process
 1. Run `./setup-gmail.sh` to copy gmail_integration for Docker build
 2. The Dockerfile will automatically include and install the integration
-3. Gmail credentials are managed by the gmail-send tool, not the app
+3. Gmail credentials are managed by the gmail-send tool on the host, not in the container
 
 ### How It Works
 - Uses `send-gmail` command via subprocess
 - Sends HTML-formatted emails with system status
 - Supports multiple recipients (comma-separated)
 - No SMTP configuration needed in the app
+- Requires gmail-send to be installed on host system
 
 ### Email Alert Configuration
 - Only requires recipient email addresses
-- Gmail sender credentials managed externally
+- Gmail sender credentials managed externally on host
 - Test email button to verify setup
+- Web interface shows Gmail configuration status
+- Detailed error messages guide setup process
 
 ## Important Patterns
 
@@ -110,9 +118,10 @@ docker compose down
 - No authentication on WebSocket connections
 
 ### Configuration Storage
-- Alert configuration stored in memory (not persisted)
-- Configuration is lost on container restart
-- Could be enhanced to use SQLite or JSON file for persistence
+- Alert configuration persisted to disk in ./config/config.json
+- Settings survive container restarts
+- Email recipients and all thresholds are saved
+- Alert state tracking prevents duplicate notifications
 
 ## Common Tasks
 
@@ -157,6 +166,11 @@ docker compose down
   - Peak demand checked once daily at 6 AM
   - Grid import checked continuously but only alerts during configured hours
   - Prevents duplicate alerts with cooldown periods
+- Gmail integration improvements:
+  - Added configuration status check endpoint
+  - Web UI shows Gmail configuration status
+  - Better error messages with setup instructions
+  - Detects if gmail-send is not installed or configured
 
 ### Changing Default Port
 1. Edit `docker-compose.yml` ports section
