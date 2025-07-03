@@ -95,7 +95,7 @@ eg4-srp-monitor/
 - Docker and Docker Compose
 - EG4 monitoring account credentials
 - SRP account credentials
-- Gmail account with App Password (for email alerts - configured through web interface)
+- Google account (Gmail or Google Workspace) with App Password for email alerts
 
 ## Quick Start
 
@@ -178,8 +178,8 @@ Email alerts can be configured directly through the web interface - no command l
 
 3. **Configure Gmail (if needed)**
    - Click the "Configure" button next to Gmail Status
-   - Enter your Gmail address
-   - Enter a Gmail App Password (16 characters)
+   - Enter your email address (Gmail or Google Workspace custom domain)
+   - Enter a Google App Password (16 characters)
    
    **To create an App Password:**
    - Go to https://myaccount.google.com/apppasswords
@@ -194,14 +194,16 @@ Email alerts can be configured directly through the web interface - no command l
    - Use "Test Email" button to verify everything works
 
 **Technical Details:**
-- Gmail credentials are stored securely on the host system
+- Works with both @gmail.com and Google Workspace custom domains
+- Credentials are stored securely on the host system
 - The container uses the host's gmail-send command via subprocess
 - Configuration persists across container restarts
 - No need to install anything on the host manually
 
 **Troubleshooting:**
 - If configuration fails, check that the app password is correct
-- Ensure you're using an App Password, not your regular Gmail password
+- Ensure you're using a Google App Password, not your regular password
+- Custom domain users: make sure you have Google Workspace with 2FA enabled
 - Check container logs for detailed error messages
 - The test email will confirm if everything is working
 

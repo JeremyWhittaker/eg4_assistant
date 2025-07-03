@@ -641,9 +641,9 @@ def configure_gmail_endpoint():
     if not app_password:
         return jsonify({'status': 'error', 'message': 'App password is required'}), 400
     
-    # Validate email format
-    if '@gmail.com' not in email_address.lower():
-        return jsonify({'status': 'error', 'message': 'Must be a Gmail address'}), 400
+    # Basic email validation - just check for @ symbol
+    if '@' not in email_address:
+        return jsonify({'status': 'error', 'message': 'Invalid email address format'}), 400
     
     # Configure Gmail
     success, message = configure_gmail(email_address, app_password)
