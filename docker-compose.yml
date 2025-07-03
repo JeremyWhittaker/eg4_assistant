@@ -9,10 +9,13 @@ services:
       - EG4_PASSWORD=${EG4_PASSWORD}
       - SRP_USERNAME=${SRP_USERNAME}
       - SRP_PASSWORD=${SRP_PASSWORD}
+      - TZ=America/Phoenix
     volumes:
       - ./logs:/var/log
       - ./.env:/app/.env:ro
       - ./config:/app/config
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     restart: unless-stopped
     shm_size: 2gb
     healthcheck:

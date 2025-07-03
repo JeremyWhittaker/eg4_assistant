@@ -16,6 +16,7 @@ import time
 import logging
 import sys
 import json
+import pytz
 
 # Configure logging
 logging.basicConfig(
@@ -52,6 +53,7 @@ CONFIG_FILE = '/app/config/config.json'
 alert_config = {
     'email_enabled': False,
     'email_to': '',  # Comma-separated list of recipients
+    'timezone': 'America/Phoenix',  # Default to Phoenix timezone
     'thresholds': {
         'battery_low': 20,
         'battery_check_hour': 6,  # Check battery at 6 AM
@@ -328,7 +330,7 @@ def send_alert_email(subject, message):
             <h2>EG4-SRP Monitor Alert</h2>
             <p>{message}</p>
             <hr>
-            <p>Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <p>Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {alert_config.get('timezone', 'UTC')}</p>
             <p>Current Status:</p>
             <ul>
                 <li>Battery SOC: {monitor_data['eg4'].get('battery', {}).get('soc', 'N/A')}%</li>
@@ -377,7 +379,15 @@ def send_alert_email(subject, message):
 def check_thresholds():
     """Check if any thresholds are exceeded"""
     alerts = []
-    now = datetime.now()
+    # Get timezone-aware current time
+    tz_name = alert_config.get('timezone', 'UTC')
+    try:
+        tz = pytz.timezone(tz_name)
+        now = datetime.now(tz)
+    except:
+        # Fallback to UTC if timezone is invalid
+        now = datetime.now(pytz.UTC)
+    
     today_str = now.strftime('%Y-%m-%d')
     
     if 'eg4' in monitor_data and monitor_data['eg4']:
@@ -392,7 +402,7 @@ def check_thresholds():
             
             soc = monitor_data['eg4'].get('battery', {}).get('soc', 0)
             if soc <= alert_config['thresholds']['battery_low']:
-                alerts.append(('Low Battery', f'Battery SOC is {soc}% at {battery_check_hour:02d}:{battery_check_minute:02d} (threshold: {alert_config["thresholds"]["battery_low"]}%)'))
+                alerts.append(('Low Battery', f'Battery SOC is {soc}% at {battery_check_hour:02d}:{battery_check_minute:02d} {tz_name} (threshold: {alert_config["thresholds"]["battery_low"]}%)'))
             
             # Mark as checked for today
             alert_config['last_alerts']['battery_checked_date'] = today_str
@@ -414,7 +424,7 @@ def check_thresholds():
                     if (now - last_alert_time).total_seconds() < 900:  # 15 minutes
                         return  # Skip alert if sent recently
                 
-                alerts.append(('High Grid Import', f'Grid import is {grid_power}W during peak hours ({start_hour}:00-{end_hour}:00, threshold: {alert_config["thresholds"]["grid_import"]}W)'))
+                alerts.append(('High Grid Import', f'Grid import is {grid_power}W during peak hours ({start_hour}:00-{end_hour}:00 {tz_name}, threshold: {alert_config["thresholds"]["grid_import"]}W)'))
                 alert_config['last_alerts']['grid_import_last_alert'] = now.isoformat()
                 save_config()
     
@@ -429,7 +439,7 @@ def check_thresholds():
             
             demand = monitor_data['srp'].get('demand', 0)
             if demand > alert_config['thresholds']['peak_demand']:
-                alerts.append(('High Peak Demand', f'Peak demand is {demand}kW at {peak_check_hour:02d}:{peak_check_minute:02d} (threshold: {alert_config["thresholds"]["peak_demand"]}kW)'))
+                alerts.append(('High Peak Demand', f'Peak demand is {demand}kW at {peak_check_hour:02d}:{peak_check_minute:02d} {tz_name} (threshold: {alert_config["thresholds"]["peak_demand"]}kW)'))
             
             # Mark as checked for today
             alert_config['last_alerts']['peak_demand_checked_date'] = today_str
@@ -596,6 +606,10 @@ def config():
         if 'email_to' in data:
             alert_config['email_to'] = data['email_to']
         
+        # Update timezone
+        if 'timezone' in data:
+            alert_config['timezone'] = data['timezone']
+        
         # Save configuration to file
         save_config()
         
@@ -673,6 +687,56 @@ def refresh_eg4():
     
     return jsonify({'status': 'success', 'message': 'Refresh requested'})
 
+@app.route('/api/timezone', methods=['POST'])
+def update_timezone():
+    """Update container timezone"""
+    data = request.json
+    
+    if not data or 'timezone' not in data:
+        return jsonify({'status': 'error', 'message': 'No timezone provided'}), 400
+    
+    timezone = data['timezone']
+    
+    # Validate timezone
+    valid_timezones = [
+        'UTC',
+        'America/Phoenix',
+        'America/Los_Angeles', 
+        'America/Denver',
+        'America/Chicago',
+        'America/New_York'
+    ]
+    
+    if timezone not in valid_timezones:
+        return jsonify({'status': 'error', 'message': 'Invalid timezone'}), 400
+    
+    # Update configuration
+    alert_config['timezone'] = timezone
+    save_config()
+    
+    # Set TZ environment variable
+    os.environ['TZ'] = timezone
+    
+    # Try to update system timezone (this may not work in container)
+    try:
+        # This will update the timezone for the current process
+        time.tzset()
+        logger.info(f"Timezone updated to {timezone}")
+    except Exception as e:
+        logger.error(f"Failed to update timezone: {e}")
+    
+    # For immediate effect in container, we need to restart the Flask app
+    # This is a simple approach - in production you might want a more graceful solution
+    
+    # Schedule a restart after response is sent
+    def restart_app():
+        time.sleep(1)  # Give time for response to be sent
+        os._exit(0)  # Docker will restart the container due to restart policy
+    
+    threading.Thread(target=restart_app).start()
+    
+    return jsonify({'status': 'success', 'message': f'Timezone updated to {timezone}. Container restarting...'})
+
 @socketio.on('connect')
 def handle_connect():
     emit('connected', {'data': 'Connected to EG4-SRP Monitor'})
@@ -685,6 +749,15 @@ def handle_connect():
 if __name__ == '__main__':
     # Load saved configuration
     load_config()
+    
+    # Set timezone from configuration
+    if alert_config.get('timezone'):
+        os.environ['TZ'] = alert_config['timezone']
+        try:
+            time.tzset()
+            logger.info(f"Timezone set to {alert_config['timezone']}")
+        except:
+            pass
     
     # Start monitoring on startup if credentials exist
     if os.getenv('EG4_USERNAME') and os.getenv('EG4_PASSWORD'):

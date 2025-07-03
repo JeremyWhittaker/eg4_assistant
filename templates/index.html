@@ -276,6 +276,25 @@
         <div class="config-section">
             <h2 style="margin-bottom: 1.5rem;">Alert Configuration</h2>
             
+            <!-- Timezone Settings -->
+            <div class="form-group" style="background: #334155; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <label style="margin: 0; font-weight: bold; color: #f1f5f9;">Timezone:</label>
+                    <select id="timezone-select" style="background: #1e293b; color: #e2e8f0; border: 1px solid #475569; padding: 0.5rem; border-radius: 0.25rem; cursor: pointer;">
+                        <option value="UTC">UTC</option>
+                        <option value="America/Phoenix" selected>Phoenix (MST)</option>
+                        <option value="America/Los_Angeles">Los Angeles (PST/PDT)</option>
+                        <option value="America/Denver">Denver (MST/MDT)</option>
+                        <option value="America/Chicago">Chicago (CST/CDT)</option>
+                        <option value="America/New_York">New York (EST/EDT)</option>
+                    </select>
+                    <span id="current-time" style="color: #94a3b8; font-size: 0.875rem;"></span>
+                </div>
+                <p style="margin: 0.5rem 0 0 0; color: #94a3b8; font-size: 0.75rem;">
+                    All alert times use the selected timezone. Container will restart when timezone is changed.
+                </p>
+            </div>
+            
             <div class="form-group">
                 <div class="checkbox-group">
                     <input type="checkbox" id="email-enabled">
@@ -322,7 +341,7 @@
                             </div>
                         </div>
                         <p style="margin: 0.5rem 0 0 0; color: #64748b; font-size: 0.75rem;">
-                            SOC is checked once daily at the specified time. Alert sent if below threshold.
+                            SOC is checked once daily at the specified time in your selected timezone. Alert sent if below threshold.
                         </p>
                     </div>
                     
@@ -344,7 +363,7 @@
                             </div>
                         </div>
                         <p style="margin: 0.5rem 0 0 0; color: #64748b; font-size: 0.75rem;">
-                            Peak demand is checked once daily at the specified time. Alert sent if exceeds threshold.
+                            Peak demand is checked once daily at the specified time in your selected timezone. Alert sent if exceeds threshold.
                         </p>
                     </div>
                     
@@ -366,7 +385,7 @@
                             </div>
                         </div>
                         <p style="margin: 0.5rem 0 0 0; color: #64748b; font-size: 0.75rem;">
-                            Only triggers during the specified hours when import exceeds threshold. Times in UTC.
+                            Only triggers during the specified hours when import exceeds threshold. Times in your selected timezone.
                         </p>
                     </div>
                 </div>
@@ -489,6 +508,11 @@
             document.getElementById('grid-import').value = config.thresholds.grid_import;
             document.getElementById('grid-import-start-hour').value = config.thresholds.grid_import_start_hour || 14;
             document.getElementById('grid-import-end-hour').value = config.thresholds.grid_import_end_hour || 20;
+            
+            // Set timezone
+            if (config.timezone) {
+                document.getElementById('timezone-select').value = config.timezone;
+            }
         }
         
         // Save configuration
@@ -496,6 +520,7 @@
             const config = {
                 email_enabled: document.getElementById('email-enabled').checked,
                 email_to: document.getElementById('email-to').value,
+                timezone: document.getElementById('timezone-select').value,
                 thresholds: {
                     battery_low: parseInt(document.getElementById('battery-low').value),
                     battery_check_hour: parseInt(document.getElementById('battery-check-hour').value),
@@ -654,6 +679,63 @@
                 button.textContent = 'Refresh';
             }
         }
+        
+        // Update current time display
+        function updateCurrentTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            const dateStr = now.toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric'
+            });
+            document.getElementById('current-time').textContent = `Current time: ${dateStr} ${timeStr}`;
+        }
+        
+        // Handle timezone change
+        async function handleTimezoneChange() {
+            const timezone = document.getElementById('timezone-select').value;
+            
+            // Save configuration first
+            await saveConfig();
+            
+            // Show notification about container restart
+            if (confirm('Changing timezone requires a container restart. The application will be unavailable for about 30 seconds. Continue?')) {
+                // Update timezone on server
+                const response = await fetch('/api/timezone', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ timezone })
+                });
+                
+                if (response.ok) {
+                    alert('Timezone updated. The container is restarting...');
+                    // Reload page after delay
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 5000);
+                } else {
+                    alert('Failed to update timezone');
+                    // Reload config to restore previous value
+                    loadConfig();
+                }
+            } else {
+                // Restore previous value
+                loadConfig();
+            }
+        }
+        
+        // Set up timezone change handler
+        document.getElementById('timezone-select').addEventListener('change', handleTimezoneChange);
+        
+        // Update time every second
+        setInterval(updateCurrentTime, 1000);
+        updateCurrentTime();
         
         // Load initial data
         loadConfig();

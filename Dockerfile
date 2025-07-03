@@ -1,10 +1,11 @@
 FROM python:3.9-slim
 
-# Install system dependencies for Playwright
+# Install system dependencies for Playwright and timezone support
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
     curl \
+    tzdata \
     libnss3 \
     libnspr4 \
     libatk1.0-0 \
