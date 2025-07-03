@@ -41,6 +41,10 @@ monitor_data = {
     'last_update': None
 }
 
+# Track manual refresh requests
+manual_refresh_requested = False
+last_manual_refresh = None
+
 # Configuration file path
 CONFIG_FILE = '/app/config/config.json'
 
@@ -53,6 +57,8 @@ alert_config = {
         'battery_check_hour': 6,  # Check battery at 6 AM
         'battery_check_minute': 0,
         'peak_demand': 5.0,
+        'peak_demand_check_hour': 6,  # Check peak demand at 6 AM
+        'peak_demand_check_minute': 0,
         'grid_import': 10000,
         'grid_import_start_hour': 14,  # 2 PM
         'grid_import_end_hour': 20     # 8 PM
@@ -413,13 +419,17 @@ def check_thresholds():
                 save_config()
     
     if 'srp' in monitor_data and monitor_data['srp']:
-        # Peak demand alert - check once per day at 6 AM
-        if (now.hour == 6 and now.minute == 0 and
+        # Peak demand alert - check at configured time
+        peak_check_hour = alert_config['thresholds'].get('peak_demand_check_hour', 6)
+        peak_check_minute = alert_config['thresholds'].get('peak_demand_check_minute', 0)
+        
+        if (now.hour == peak_check_hour and 
+            now.minute == peak_check_minute and
             alert_config['last_alerts'].get('peak_demand_checked_date') != today_str):
             
             demand = monitor_data['srp'].get('demand', 0)
             if demand > alert_config['thresholds']['peak_demand']:
-                alerts.append(('High Peak Demand', f'Peak demand is {demand}kW (threshold: {alert_config["thresholds"]["peak_demand"]}kW)'))
+                alerts.append(('High Peak Demand', f'Peak demand is {demand}kW at {peak_check_hour:02d}:{peak_check_minute:02d} (threshold: {alert_config["thresholds"]["peak_demand"]}kW)'))
             
             # Mark as checked for today
             alert_config['last_alerts']['peak_demand_checked_date'] = today_str
@@ -502,6 +512,13 @@ async def monitor_loop():
                     if consecutive_failures >= 5:
                         logger.error("Too many consecutive failures, restarting monitors")
                         raise Exception("Too many consecutive data fetch failures")
+                    
+                    # Check for manual refresh request
+                    global manual_refresh_requested
+                    if manual_refresh_requested:
+                        manual_refresh_requested = False
+                        logger.info("Manual refresh requested, fetching data immediately")
+                        continue  # Skip sleep and fetch data immediately
                     
                     # Wait 60 seconds
                     await asyncio.sleep(60)
@@ -635,6 +652,26 @@ def configure_gmail_endpoint():
         return jsonify({'status': 'success', 'message': message})
     else:
         return jsonify({'status': 'error', 'message': message}), 400
+
+@app.route('/api/refresh-eg4', methods=['POST'])
+def refresh_eg4():
+    """Manual refresh of EG4 data"""
+    global manual_refresh_requested, last_manual_refresh
+    
+    # Check if we've refreshed recently (within 30 seconds)
+    if last_manual_refresh:
+        time_since_refresh = (datetime.now() - last_manual_refresh).total_seconds()
+        if time_since_refresh < 30:
+            return jsonify({
+                'status': 'error', 
+                'message': f'Please wait {int(30 - time_since_refresh)} seconds before refreshing again'
+            }), 429
+    
+    # Set the refresh flag
+    manual_refresh_requested = True
+    last_manual_refresh = datetime.now()
+    
+    return jsonify({'status': 'success', 'message': 'Refresh requested'})
 
 @socketio.on('connect')
 def handle_connect():

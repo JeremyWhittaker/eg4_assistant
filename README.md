@@ -36,6 +36,8 @@ This application provides automated monitoring of solar energy systems using EG4
   - Load consumption
   - Battery voltage monitoring
   - Grid voltage monitoring
+  - Manual refresh button (30-second cooldown)
+  - Last update timestamp display
 
 - **SRP Peak Demand Tracking**
   - Automated peak demand monitoring
@@ -145,7 +147,8 @@ Configure alerts through the web interface:
   - Checked once daily at the configured time
 - **Peak Demand**: Alert when SRP peak demand exceeds threshold
   - Default threshold: 5.0 kW
-  - Checked once daily at 6:00 AM UTC
+  - Check time is configurable (default: 6:00 AM UTC)
+  - Checked once daily at the configured time
 - **Grid Import**: Alert when importing more than threshold from grid during specified hours
   - Default threshold: 10,000W
   - Default hours: 14:00-20:00 (2 PM - 8 PM)

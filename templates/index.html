@@ -212,7 +212,10 @@
         <div class="grid">
             <!-- EG4 Status -->
             <div class="card">
-                <h2>EG4 Inverter Status</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2 style="margin: 0;">EG4 Inverter Status</h2>
+                    <button onclick="refreshEG4()" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Refresh</button>
+                </div>
                 <div class="metric">
                     <span>Battery SOC</span>
                     <span class="value" id="battery-soc">--</span>
@@ -240,6 +243,10 @@
                 <div class="metric">
                     <span>Grid Voltage</span>
                     <span class="value" id="grid-voltage">--</span>
+                </div>
+                <div class="metric">
+                    <span>Last Update</span>
+                    <span class="value" id="eg4-update">--</span>
                 </div>
                 <div class="metric">
                     <span>Status</span>
@@ -296,46 +303,70 @@
                 
                 <div>
                     <h3 style="margin-bottom: 1rem; color: #f1f5f9;">Alert Thresholds</h3>
-                    <div class="threshold-grid">
-                        <div class="form-group">
-                            <label>Battery Low (%)</label>
-                            <input type="number" id="battery-low" min="0" max="100" value="20">
-                        </div>
-                        <div class="form-group">
-                            <label>Battery Check Time (24h)</label>
-                            <div style="display: flex; gap: 0.5rem;">
-                                <input type="number" id="battery-check-hour" min="0" max="23" value="6" style="width: 60px;" title="Hour">
-                                <span style="line-height: 2rem;">:</span>
-                                <input type="number" id="battery-check-minute" min="0" max="59" value="0" style="width: 60px;" title="Minute">
+                    
+                    <!-- Battery Alerts -->
+                    <div style="background: #0f172a; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                        <h4 style="margin: 0 0 0.75rem 0; color: #94a3b8; font-size: 1rem;">Battery Alerts</h4>
+                        <div class="threshold-grid">
+                            <div class="form-group">
+                                <label>Low Battery Threshold (%)</label>
+                                <input type="number" id="battery-low" min="0" max="100" value="20">
+                            </div>
+                            <div class="form-group">
+                                <label>Check Time (24h)</label>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <input type="number" id="battery-check-hour" min="0" max="23" value="6" style="width: 60px;" title="Hour">
+                                    <span style="line-height: 2rem;">:</span>
+                                    <input type="number" id="battery-check-minute" min="0" max="59" value="0" style="width: 60px;" title="Minute">
+                                </div>
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label>Peak Demand (kW)</label>
-                            <input type="number" id="peak-demand-threshold" min="0" step="0.1" value="5.0">
-                        </div>
-                        <div class="form-group">
-                            <label>Grid Import (W)</label>
-                            <input type="number" id="grid-import" min="0" value="10000">
-                        </div>
-                        <div class="form-group">
-                            <label>Grid Import Start Hour (24h)</label>
-                            <input type="number" id="grid-import-start-hour" min="0" max="23" value="14" title="14 = 2:00 PM">
-                        </div>
-                        <div class="form-group">
-                            <label>Grid Import End Hour (24h)</label>
-                            <input type="number" id="grid-import-end-hour" min="0" max="23" value="20" title="20 = 8:00 PM">
-                        </div>
+                        <p style="margin: 0.5rem 0 0 0; color: #64748b; font-size: 0.75rem;">
+                            SOC is checked once daily at the specified time. Alert sent if below threshold.
+                        </p>
                     </div>
-                    <div class="form-group" style="background: #334155; padding: 1rem; border-radius: 0.25rem; margin-top: 1rem;">
-                        <p style="margin: 0; color: #94a3b8; font-size: 0.875rem; margin-bottom: 0.5rem;">
-                            <strong>Battery Alert:</strong> SOC is checked once daily at the specified time. Alert sent if below threshold.
+                    
+                    <!-- Peak Demand Alerts -->
+                    <div style="background: #0f172a; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                        <h4 style="margin: 0 0 0.75rem 0; color: #94a3b8; font-size: 1rem;">Peak Demand Alerts</h4>
+                        <div class="threshold-grid">
+                            <div class="form-group">
+                                <label>Peak Demand Threshold (kW)</label>
+                                <input type="number" id="peak-demand-threshold" min="0" step="0.1" value="5.0">
+                            </div>
+                            <div class="form-group">
+                                <label>Check Time (24h)</label>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <input type="number" id="peak-demand-check-hour" min="0" max="23" value="6" style="width: 60px;" title="Hour">
+                                    <span style="line-height: 2rem;">:</span>
+                                    <input type="number" id="peak-demand-check-minute" min="0" max="59" value="0" style="width: 60px;" title="Minute">
+                                </div>
+                            </div>
+                        </div>
+                        <p style="margin: 0.5rem 0 0 0; color: #64748b; font-size: 0.75rem;">
+                            Peak demand is checked once daily at the specified time. Alert sent if exceeds threshold.
                         </p>
-                        <p style="margin: 0; color: #94a3b8; font-size: 0.875rem; margin-bottom: 0.5rem;">
-                            <strong>Grid Import Alert:</strong> Only triggers during the specified hours when import exceeds the threshold.
-                            Hours are in 24-hour format (0-23). Example: 14 = 2:00 PM, 20 = 8:00 PM.
-                        </p>
-                        <p style="margin: 0; color: #94a3b8; font-size: 0.875rem;">
-                            <strong>Peak Demand Alert:</strong> Checked once daily at 6:00 AM. Alert sent if peak exceeds threshold.
+                    </div>
+                    
+                    <!-- Grid Import Alerts -->
+                    <div style="background: #0f172a; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                        <h4 style="margin: 0 0 0.75rem 0; color: #94a3b8; font-size: 1rem;">Grid Import Alerts</h4>
+                        <div class="threshold-grid">
+                            <div class="form-group">
+                                <label>Import Threshold (W)</label>
+                                <input type="number" id="grid-import" min="0" value="10000">
+                            </div>
+                            <div class="form-group">
+                                <label>Start Hour (24h)</label>
+                                <input type="number" id="grid-import-start-hour" min="0" max="23" value="14" title="14 = 2:00 PM">
+                            </div>
+                            <div class="form-group">
+                                <label>End Hour (24h)</label>
+                                <input type="number" id="grid-import-end-hour" min="0" max="23" value="20" title="20 = 8:00 PM">
+                            </div>
+                        </div>
+                        <p style="margin: 0.5rem 0 0 0; color: #64748b; font-size: 0.75rem;">
+                            Only triggers during the specified hours when import exceeds threshold. Times in UTC.
                         </p>
                     </div>
                 </div>
@@ -413,6 +444,9 @@
             
             document.getElementById('eg4-status').className = 'status-indicator online';
             document.getElementById('eg4-status-text').textContent = 'Online';
+            
+            // Update last update time
+            document.getElementById('eg4-update').textContent = new Date().toLocaleTimeString();
         });
         
         // Update SRP data
@@ -447,6 +481,8 @@
             document.getElementById('battery-check-hour').value = config.thresholds.battery_check_hour || 6;
             document.getElementById('battery-check-minute').value = config.thresholds.battery_check_minute || 0;
             document.getElementById('peak-demand-threshold').value = config.thresholds.peak_demand;
+            document.getElementById('peak-demand-check-hour').value = config.thresholds.peak_demand_check_hour || 6;
+            document.getElementById('peak-demand-check-minute').value = config.thresholds.peak_demand_check_minute || 0;
             document.getElementById('grid-import').value = config.thresholds.grid_import;
             document.getElementById('grid-import-start-hour').value = config.thresholds.grid_import_start_hour || 14;
             document.getElementById('grid-import-end-hour').value = config.thresholds.grid_import_end_hour || 20;
@@ -462,6 +498,8 @@
                     battery_check_hour: parseInt(document.getElementById('battery-check-hour').value),
                     battery_check_minute: parseInt(document.getElementById('battery-check-minute').value),
                     peak_demand: parseFloat(document.getElementById('peak-demand-threshold').value),
+                    peak_demand_check_hour: parseInt(document.getElementById('peak-demand-check-hour').value),
+                    peak_demand_check_minute: parseInt(document.getElementById('peak-demand-check-minute').value),
                     grid_import: parseInt(document.getElementById('grid-import').value),
                     grid_import_start_hour: parseInt(document.getElementById('grid-import-start-hour').value),
                     grid_import_end_hour: parseInt(document.getElementById('grid-import-end-hour').value)
@@ -588,6 +626,29 @@
                 const statusEl = document.getElementById('gmail-status');
                 statusEl.textContent = 'Error checking status';
                 statusEl.style.color = '#ef4444';
+            }
+        }
+        
+        // Refresh EG4 data manually
+        async function refreshEG4() {
+            const button = event.target;
+            button.disabled = true;
+            button.textContent = 'Refreshing...';
+            
+            try {
+                const response = await fetch('/api/refresh-eg4', { method: 'POST' });
+                const result = await response.json();
+                
+                if (response.ok) {
+                    // Data will be updated via socket
+                } else {
+                    alert('Failed to refresh: ' + (result.message || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Error refreshing data: ' + error.message);
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Refresh';
             }
         }
         
