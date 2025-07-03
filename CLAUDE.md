@@ -130,6 +130,13 @@ docker compose down
 2. Add new threshold fields to configuration interface
 3. Update email template with new alert details
 
+### Recent Changes (July 2025)
+- Removed battery high alert (unnecessary)
+- Added time-based grid import alerts
+  - Only triggers during configured hours
+  - Uses container timezone (typically UTC)
+  - Default: 14:00-20:00 (2 PM - 8 PM UTC)
+
 ### Changing Default Port
 1. Edit `docker-compose.yml` ports section
 2. Change from `"8085:5000"` to `"YOUR_PORT:5000"`

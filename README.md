@@ -140,9 +140,18 @@ eg4-srp-monitor/
 Configure alerts through the web interface:
 
 - **Battery Low**: Alert when battery SOC drops below threshold (default: 20%)
-- **Battery High**: Alert when battery SOC exceeds threshold (default: 95%)
 - **Peak Demand**: Alert when SRP peak demand exceeds threshold (default: 5.0 kW)
-- **Grid Import**: Alert when importing more than threshold from grid (default: 10,000W)
+- **Grid Import**: Alert when importing more than threshold from grid during specified hours
+  - Default threshold: 10,000W
+  - Default hours: 14:00-20:00 (2 PM - 8 PM)
+  - Note: Times are in 24-hour format and use the container's timezone (typically UTC)
+
+### Time Zone Considerations
+
+The container runs in UTC time by default. When configuring time-based alerts:
+- Convert your local time to UTC
+- Example: 2 PM PST = 10 PM UTC (22:00)
+- Check container time: `docker compose exec eg4-srp-monitor date`
 
 ### Email Configuration
 

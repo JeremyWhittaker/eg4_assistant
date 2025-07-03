@@ -45,9 +45,10 @@ alert_config = {
     'email_to': '',  # Comma-separated list of recipients
     'thresholds': {
         'battery_low': 20,
-        'battery_high': 95,
         'peak_demand': 5.0,
-        'grid_import': 10000
+        'grid_import': 10000,
+        'grid_import_start_hour': 14,  # 2 PM
+        'grid_import_end_hour': 20     # 8 PM
     }
 }
 
@@ -255,17 +256,21 @@ def check_thresholds():
     alerts = []
     
     if 'eg4' in monitor_data and monitor_data['eg4']:
-        # Battery SOC alerts
+        # Battery SOC alerts - only low battery warning
         soc = monitor_data['eg4'].get('battery', {}).get('soc', 0)
         if soc <= alert_config['thresholds']['battery_low']:
             alerts.append(('Low Battery', f'Battery SOC is {soc}% (threshold: {alert_config["thresholds"]["battery_low"]}%)'))
-        elif soc >= alert_config['thresholds']['battery_high']:
-            alerts.append(('High Battery', f'Battery SOC is {soc}% (threshold: {alert_config["thresholds"]["battery_high"]}%)'))
         
-        # Grid import alert
+        # Grid import alert - only during configured hours
         grid_power = monitor_data['eg4'].get('grid', {}).get('power', 0)
-        if grid_power > alert_config['thresholds']['grid_import']:
-            alerts.append(('High Grid Import', f'Grid import is {grid_power}W (threshold: {alert_config["thresholds"]["grid_import"]}W)'))
+        current_hour = datetime.now().hour
+        start_hour = alert_config['thresholds']['grid_import_start_hour']
+        end_hour = alert_config['thresholds']['grid_import_end_hour']
+        
+        # Check if current time is within alert window
+        if start_hour <= current_hour < end_hour:
+            if grid_power > alert_config['thresholds']['grid_import']:
+                alerts.append(('High Grid Import', f'Grid import is {grid_power}W during peak hours ({start_hour}:00-{end_hour}:00, threshold: {alert_config["thresholds"]["grid_import"]}W)'))
     
     if 'srp' in monitor_data and monitor_data['srp']:
         # Peak demand alert
