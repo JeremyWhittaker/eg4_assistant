@@ -4,7 +4,7 @@ This document provides a detailed explanation of each file in the project direct
 
 ## Root Directory Files
 
-### `app.py` (692 lines)
+### `app.py` (766 lines)
 The main application file containing the Flask web server and monitoring logic.
 
 **Key Components:**
@@ -25,31 +25,33 @@ The main application file containing the Flask web server and monitoring logic.
   - Time-based grid import alerts (only during configured hours)
 - Web-based Gmail configuration endpoint
 - Manual refresh endpoint for immediate data updates
+- Timezone configuration endpoint with container restart
 
-### `docker-compose.yml` (21 lines)
+### `docker-compose.yml` (25 lines)
 Docker Compose configuration for container orchestration.
 
 **Features:**
 - Port mapping: 8085:5000 (external:internal)
 - Environment variable injection from .env file
-- Volume mounts for logs and .env file
+- Volume mounts for logs, .env file, config directory, and timezone data
+- Default timezone set to America/Phoenix
 - Health check configuration
 - 2GB shared memory for Playwright browser operations
 - Automatic restart policy
 
-### `Dockerfile` (59 lines)
+### `Dockerfile` (61 lines)
 Container image definition for the application.
 
 **Build Steps:**
 1. Base image: Python 3.9-slim
-2. Installs system dependencies for Playwright/Chromium
+2. Installs system dependencies for Playwright/Chromium and tzdata for timezone support
 3. Installs Python dependencies
 4. Copies and installs gmail integration
 5. Installs Chromium browser for web scraping
 6. Copies application files
 7. Exposes port 5000
 
-### `requirements.txt` (7 lines)
+### `requirements.txt` (9 lines)
 Python package dependencies:
 - `flask==3.0.0` - Web framework
 - `flask-socketio==5.3.5` - WebSocket support
@@ -57,9 +59,10 @@ Python package dependencies:
 - `python-dotenv==1.0.0` - Environment variable management
 - `playwright==1.40.0` - Browser automation
 - `email-validator==2.1.0` - Email validation
+- `pytz==2023.3` - Timezone handling
 - Comment about gmail-integration installation from local path
 
-### `requirements-dev.txt` (7 lines)
+### `requirements-dev.txt` (8 lines)
 Development dependencies for testing and code quality:
 - `pytest>=7.0.0` - Testing framework
 - `pytest-asyncio>=0.21.0` - Async test support
@@ -78,7 +81,7 @@ Environment configuration file containing credentials:
 
 **Note:** This file is gitignored for security.
 
-### `.env.example` (14 lines)
+### `.env.example` (15 lines)
 Template for environment variables with placeholders.
 Shows required credentials and optional email configuration.
 
@@ -93,7 +96,7 @@ Specifies files to exclude from version control:
 - `gmail_integration_temp/` - Temporary build directory
 - `config/` - Configuration directory
 
-### `README.md` (399 lines)
+### `README.md` (409 lines)
 Main project documentation including:
 - Project overview and features
 - Quick start guide
@@ -103,7 +106,7 @@ Main project documentation including:
 - Security notes
 - Troubleshooting
 
-### `CLAUDE.md` (278 lines)
+### `CLAUDE.md` (318 lines)
 AI development guide containing:
 - Project patterns and conventions
 - Development commands
@@ -112,7 +115,7 @@ AI development guide containing:
 - Known limitations
 - Future enhancements
 
-### `FILE_STRUCTURE.md` (This file - 216 lines)
+### `FILE_STRUCTURE.md` (This file - 240 lines)
 Detailed documentation of all project files and their purposes.
 
 ### `setup-gmail.sh` (23 lines, Executable script)
@@ -123,12 +126,20 @@ Setup script for Gmail integration:
 - Ensures gmail-send is available in container
 - Must be run before `docker compose build`
 
+### `update_timezone.sh` (20 lines, Executable script)
+Helper script for updating container timezone:
+- Takes timezone as command line argument
+- Updates docker-compose.yml with new timezone
+- Restarts container to apply changes
+- Example usage: `./update_timezone.sh America/Phoenix`
+- Note: Timezone can also be changed through web interface
+
 ## Subdirectories
 
 ### `templates/` Directory
 Contains HTML templates for the web interface.
 
-#### `templates/index.html` (680 lines)
+#### `templates/index.html` (762 lines)
 Single-page web dashboard application.
 
 **Features:**
@@ -160,6 +171,8 @@ Single-page web dashboard application.
    - Grid import alerts with threshold and time window
    - Gmail configuration modal for web-based setup
    - Save/test functionality with error handling
+   - Timezone selector with 6 US timezones (Phoenix default)
+   - Live current time display
 
 ### `logs/` Directory (Created at runtime)
 Volume mount point for application logs.
@@ -219,6 +232,9 @@ Volume mount point for persistent configuration.
 - Battery high alerts (removed as unnecessary)
 
 ## Time Zone Handling
-- Container runs in UTC by default
-- All time configurations should be in UTC
+- Container defaults to America/Phoenix timezone
+- Timezone is configurable through web interface
+- Available timezones: UTC, Phoenix, Los Angeles, Denver, Chicago, New York
+- Changing timezone restarts container to apply system-wide
+- All alert times are displayed in selected timezone
 - Use `docker compose exec eg4-srp-monitor date` to check container time

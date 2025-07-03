@@ -17,11 +17,14 @@ This is a monitoring application for EG4 solar inverters and SRP (Salt River Pro
 - Manual refresh button for EG4 data
 - Support for Google Workspace custom domains
 - Improved UI with logical alert grouping
+- **Timezone selector with Phoenix as default**
+- **All alert times use selected timezone instead of UTC**
+- **Container automatically restarts when timezone changes**
 - All features tested and working in production
 
 ## Key Components
 
-### Main Application (app.py) - 692 lines
+### Main Application (app.py) - 765 lines
 - Flask web server with Socket.IO for real-time updates
 - Two monitor classes: `EG4Monitor` and `SRPMonitor` 
 - Background thread runs continuous monitoring loop
@@ -30,9 +33,11 @@ This is a monitoring application for EG4 solar inverters and SRP (Salt River Pro
 - Manual refresh endpoint for immediate data updates
 - Configurable alert check times for battery and peak demand
 
-### Web Interface (templates/index.html) - 680 lines
+### Web Interface (templates/index.html) - 762 lines
 - Single-page application with real-time WebSocket updates
 - Dark theme dashboard showing inverter and utility data
+- Timezone selector at top of configuration (defaults to America/Phoenix)
+- Live current time display in selected timezone
 - Alert configuration organized into logical sections:
   - Battery alerts with configurable check time
   - Peak demand alerts with configurable check time
@@ -42,13 +47,14 @@ This is a monitoring application for EG4 solar inverters and SRP (Salt River Pro
 - Last update timestamp for data freshness
 
 ### Docker Setup
-- **Dockerfile** (59 lines): Installs Playwright and Chrome dependencies
-- **docker-compose.yml** (21 lines): Service orchestration with health checks
+- **Dockerfile** (60 lines): Installs Playwright, Chrome dependencies, and tzdata
+- **docker-compose.yml** (24 lines): Service orchestration with timezone support
 - **setup-gmail.sh** (23 lines): Prepares gmail integration for Docker build
 - Requires environment variables for EG4 and SRP credentials
 - Default port mapping: 8085:5000 (external:internal)
 - 2GB shared memory allocation for browser stability
-- Volume mounts for logs and configuration persistence
+- Volume mounts for logs, configuration persistence, and timezone data
+- Default timezone set to America/Phoenix
 
 ## Development Commands
 
@@ -172,7 +178,9 @@ docker compose down
   - Removed battery high threshold field
   - Added grid import time window configuration
   - Added battery check time configuration (hour:minute)
-  - Added helpful notes about UTC time and alert behavior
+  - Added timezone selector with 6 US timezones
+  - Shows current time in selected timezone
+  - Alert times now display with timezone name
 - Improved alert messages to include time window information
 - Added configuration persistence:
   - Settings saved to `./config/config.json`
@@ -194,6 +202,14 @@ docker compose down
     - No command line access required
     - Automatic credential file creation
     - Test email sent on successful configuration
+- **Timezone Support (July 2025)**:
+  - Added timezone selector defaulting to America/Phoenix
+  - Supports UTC, Phoenix, Los Angeles, Denver, Chicago, New York
+  - All alert checks use selected timezone
+  - Container restarts automatically when timezone changes
+  - Timezone setting persists across container restarts
+  - Added pytz library for proper timezone handling
+  - Current time display updates every second
 
 ### Changing Default Port
 1. Edit `docker-compose.yml` ports section
@@ -241,20 +257,21 @@ The application has been thoroughly tested and is running in production:
 ## Complete File Inventory
 
 ### Core Application Files
-- `app.py` (692 lines) - Main Flask application with monitoring logic
-- `templates/index.html` (680 lines) - Web dashboard UI with real-time updates
-- `requirements.txt` (7 lines) - Python dependencies
+- `app.py` (765 lines) - Main Flask application with monitoring logic and timezone support
+- `templates/index.html` (762 lines) - Web dashboard UI with timezone selector
+- `requirements.txt` (8 lines) - Python dependencies including pytz
 - `requirements-dev.txt` (7 lines) - Development dependencies
 
 ### Docker Configuration
-- `Dockerfile` (59 lines) - Container image definition
-- `docker-compose.yml` (21 lines) - Service orchestration with volumes
+- `Dockerfile` (60 lines) - Container image with tzdata support
+- `docker-compose.yml` (24 lines) - Service orchestration with timezone configuration
 - `setup-gmail.sh` (23 lines) - Gmail integration setup script
+- `update_timezone.sh` (19 lines) - Helper script for timezone updates
 
 ### Configuration Files
 - `.env` (4 lines) - Environment variables (gitignored)
 - `.env.example` (14 lines) - Template for credentials
-- `.gitignore` (8 lines) - Git exclusions
+- `.gitignore` (7 lines) - Git exclusions
 
 ### Documentation
 - `README.md` (399 lines) - User documentation

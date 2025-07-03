@@ -84,6 +84,7 @@ eg4-srp-monitor/
 ├── requirements-dev.txt # Development dependencies (testing, linting)
 ├── Dockerfile         # Container configuration
 ├── docker-compose.yml # Docker Compose setup
+├── update_timezone.sh # Timezone update helper script
 ├── .env.example       # Environment variable template
 ├── .gitignore         # Git ignore rules
 ├── CLAUDE.md          # Development guide
@@ -137,32 +138,47 @@ eg4-srp-monitor/
 
 ## Configuration
 
+### Timezone Configuration
+
+The application now includes timezone support with Phoenix as the default timezone:
+
+1. **Changing Timezone**
+   - Select your timezone from the dropdown in the web interface
+   - Available timezones:
+     - UTC
+     - Phoenix (MST) - Default
+     - Los Angeles (PST/PDT)
+     - Denver (MST/MDT)
+     - Chicago (CST/CDT)
+     - New York (EST/EDT)
+   - The current time is displayed next to the selector
+   - **Note**: Changing timezone will restart the container to apply system-wide
+
+2. **How It Works**
+   - Timezone selection persists across container restarts
+   - All alert times are displayed in your selected timezone
+   - Container system time updates to match your selection
+   - Default timezone is America/Phoenix (no daylight saving time)
+
 ### Alert Thresholds
 
 Configure alerts through the web interface:
 
 - **Battery Low**: Alert when battery SOC drops below threshold at specified check time
   - Default threshold: 20%
-  - Default check time: 6:00 AM UTC
+  - Default check time: 6:00 AM in your selected timezone
   - Checked once daily at the configured time
 - **Peak Demand**: Alert when SRP peak demand exceeds threshold
   - Default threshold: 5.0 kW
-  - Check time is configurable (default: 6:00 AM UTC)
+  - Check time is configurable (default: 6:00 AM in your selected timezone)
   - Checked once daily at the configured time
 - **Grid Import**: Alert when importing more than threshold from grid during specified hours
   - Default threshold: 10,000W
-  - Default hours: 14:00-20:00 (2 PM - 8 PM)
+  - Default hours: 14:00-20:00 (2 PM - 8 PM) in your selected timezone
   - Only alerts during the configured time window
-  - Note: Times are in 24-hour format and use the container's timezone (typically UTC)
+  - Times are in 24-hour format
 
-**Configuration Persistence**: All email and alert settings are now saved to disk and automatically loaded when the container restarts. Settings are stored in the `./config` directory on the host.
-
-### Time Zone Considerations
-
-The container runs in UTC time by default. When configuring time-based alerts:
-- Convert your local time to UTC
-- Example: 2 PM PST = 10 PM UTC (22:00)
-- Check container time: `docker compose exec eg4-srp-monitor date`
+**Configuration Persistence**: All settings including timezone, email, and alert configurations are saved to disk and automatically loaded when the container restarts. Settings are stored in the `./config` directory on the host.
 
 ### Email Configuration
 
@@ -375,11 +391,11 @@ flake8 app.py      # Style guide enforcement
 For detailed information about each file in the project, see [FILE_STRUCTURE.md](FILE_STRUCTURE.md).
 
 ### Key Files
-- `app.py` - Main application (457 lines)
-- `templates/index.html` - Web dashboard (391 lines)
-- `setup-gmail.sh` - Gmail integration setup
-- `docker-compose.yml` - Container configuration
-- `requirements.txt` - Python dependencies
+- `app.py` - Main application (766 lines)
+- `templates/index.html` - Web dashboard (762 lines)
+- `setup-gmail.sh` - Gmail integration setup (23 lines)
+- `docker-compose.yml` - Container configuration (25 lines)
+- `requirements.txt` - Python dependencies (9 lines)
 
 ## Contributing
 
