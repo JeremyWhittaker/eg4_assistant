@@ -1,0 +1,21 @@
+services:
+  eg4-srp-monitor:
+    build: .
+    container_name: eg4-srp-monitor
+    ports:
+      - "8085:5000"
+    environment:
+      - EG4_USERNAME=${EG4_USERNAME}
+      - EG4_PASSWORD=${EG4_PASSWORD}
+      - SRP_USERNAME=${SRP_USERNAME}
+      - SRP_PASSWORD=${SRP_PASSWORD}
+    volumes:
+      - ./logs:/var/log
+      - ./.env:/app/.env:ro
+    restart: unless-stopped
+    shm_size: 2gb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

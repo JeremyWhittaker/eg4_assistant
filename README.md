@@ -1,0 +1,308 @@
+# EG4-SRP Monitor
+
+A real-time monitoring and alerting system for EG4 inverters and SRP (Salt River Project) peak demand tracking.
+
+## Overview
+
+This application provides automated monitoring of solar energy systems using EG4 inverters and tracks peak demand from SRP utility accounts. It features a web-based dashboard with real-time updates and configurable email alerts.
+
+**Live Demo Screenshot:**
+```
+Battery: 93% SOC | 52.7V | 8359W charging
+Grid: 195W import | 239.7V
+Load: 10,063W consumption
+SRP Peak: 0.1 kW
+```
+
+## System Requirements
+
+- Docker and Docker Compose
+- 2GB+ RAM (for Playwright browser automation)
+- Network access to EG4 and SRP portals
+- Linux/macOS/Windows with Docker support
+
+## Features
+
+### Currently Implemented
+
+- **Real-time EG4 Inverter Monitoring**
+  - Battery state of charge (SOC) and power flow
+  - Solar PV generation
+  - Grid import/export
+  - Load consumption
+  - Battery voltage monitoring
+  - Grid voltage monitoring
+
+- **SRP Peak Demand Tracking**
+  - Automated peak demand monitoring
+  - Updates every 5 minutes during monitoring
+  - Current billing cycle peak display
+
+- **Alert System**
+  - Configurable thresholds for all monitored values
+  - Email notifications when thresholds are exceeded
+  - Real-time alerts in web interface
+  - Battery low/high alerts
+  - Peak demand alerts
+  - Grid import alerts
+
+- **Web Dashboard**
+  - Live data updates via WebSocket
+  - Dark theme optimized for monitoring
+  - Mobile-responsive design
+  - Configuration interface for alerts
+
+- **Automatic Recovery**
+  - Retry logic for login failures (3 attempts)
+  - Connection recovery with exponential backoff
+  - Handles data fetch failures gracefully
+  - Maximum 5 retry attempts before giving up
+
+### Planned Features
+
+- Historical data storage (database integration)
+- Data export functionality (CSV/JSON)
+- Support for multiple inverters
+- API authentication and multi-user support
+- Mobile app with push notifications
+- Grafana integration for advanced visualization
+
+## Project Structure
+
+```
+eg4-srp-monitor/
+├── app.py              # Main Flask application with monitoring logic
+├── templates/
+│   └── index.html      # Web dashboard interface
+├── requirements.txt    # Python dependencies
+├── requirements-dev.txt # Development dependencies (testing, linting)
+├── Dockerfile         # Container configuration
+├── docker-compose.yml # Docker Compose setup
+├── .env.example       # Environment variable template
+├── .gitignore         # Git ignore rules
+├── CLAUDE.md          # Development guide
+└── README.md          # This file
+```
+
+## Prerequisites
+
+- Docker and Docker Compose
+- EG4 monitoring account credentials
+- SRP account credentials
+- (Optional) SMTP server credentials for email alerts
+
+## Quick Start
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd eg4-srp-monitor
+   ```
+
+2. **Create environment file**
+   Copy the example and add your credentials:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your credentials
+   ```
+
+   Required variables:
+   ```env
+   EG4_USERNAME=your_eg4_username
+   EG4_PASSWORD=your_eg4_password
+   SRP_USERNAME=your_srp_username
+   SRP_PASSWORD=your_srp_password
+   ```
+
+3. **Build and run with Docker**
+   ```bash
+   docker compose build
+   docker compose up -d
+   ```
+
+4. **Access the web interface**
+   Open http://localhost:8085 in your browser
+
+   Note: The port is configurable in docker-compose.yml (default: 8085)
+
+## Configuration
+
+### Alert Thresholds
+
+Configure alerts through the web interface:
+
+- **Battery Low**: Alert when battery SOC drops below threshold (default: 20%)
+- **Battery High**: Alert when battery SOC exceeds threshold (default: 95%)
+- **Peak Demand**: Alert when SRP peak demand exceeds threshold (default: 5.0 kW)
+- **Grid Import**: Alert when importing more than threshold from grid (default: 10,000W)
+
+### Email Configuration
+
+To enable email alerts, configure the following in the web interface:
+
+- Email recipient address
+- Email sender address
+- SMTP server (default: smtp.gmail.com)
+- SMTP port (default: 587)
+- SMTP username and password
+
+### Data Collection Intervals
+
+- EG4 data: Updates every 60 seconds
+- SRP peak demand: Updates every 5 minutes
+- WebSocket updates: Real-time when data changes
+
+## Development
+
+### Run Locally Without Docker
+
+```bash
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Install Playwright browsers
+playwright install chromium
+
+# Set environment variables
+export EG4_USERNAME=your_username
+export EG4_PASSWORD=your_password
+export SRP_USERNAME=your_username
+export SRP_PASSWORD=your_password
+
+# Run the application
+python app.py
+```
+
+### Dependencies
+
+- **Flask**: Web framework and API
+- **Flask-SocketIO**: Real-time WebSocket communication
+- **Playwright**: Browser automation for data collection
+- **python-dotenv**: Environment variable management
+- **email-validator**: Email validation for alerts
+
+## Architecture
+
+### Backend (app.py)
+
+- **Flask Application**: Serves web interface and API endpoints
+- **WebSocket Server**: Provides real-time updates to connected clients (no authentication)
+- **Monitor Classes**:
+  - `EG4Monitor`: Handles EG4 inverter data collection via web scraping
+  - `SRPMonitor`: Collects SRP peak demand data
+- **Background Thread**: Runs continuous monitoring loop
+- **Alert System**: Checks thresholds and sends email notifications
+
+### Frontend (index.html)
+
+- **Single Page Application**: Pure JavaScript with Socket.IO client
+- **Real-time Updates**: WebSocket connection for live data
+- **Configuration Interface**: Save alert settings without restart
+- **Responsive Design**: Works on desktop and mobile devices
+
+### Data Flow
+
+1. Background thread starts monitor instances
+2. Monitors login to respective services using Playwright
+3. Data is scraped at configured intervals
+4. Updates are broadcast via WebSocket to all connected clients
+5. Thresholds are checked and alerts sent if needed
+6. Web interface updates in real-time
+
+## Troubleshooting
+
+### Container Health Checks
+
+The Docker container includes health checks that verify the API is responding:
+```bash
+docker compose ps  # Check container status
+docker compose logs -f eg4-srp-monitor  # View logs
+```
+
+### Common Issues
+
+1. **Login Failures**: 
+   - Check credentials in `.env` file
+   - Ensure variable names are exact: `EG4_USERNAME` not `EG4_MONITOR_USERNAME`
+   - The app will retry login 3 times before failing
+
+2. **No Data Updates**: 
+   - Verify network connectivity and site availability
+   - Check logs for specific error messages
+   - EG4 updates every 60 seconds, SRP every 5 minutes
+
+3. **Email Alerts Not Sending**: 
+   - Confirm SMTP settings and credentials
+   - Test using the "Test Email" button in the web interface
+   - Check firewall rules for SMTP port
+
+4. **High Memory Usage**: 
+   - Playwright requires ~2GB RAM (configured in docker-compose.yml)
+   - Container runs browsers in single-process mode for stability
+
+5. **Port Conflicts**:
+   - Default port is 8085, change in docker-compose.yml if needed
+   - Ensure no other service is using the configured port
+
+### Logs
+
+Logs are stored in:
+- Container: `/tmp/eg4_srp_monitor.log`
+- Host (when using docker-compose): `./logs/`
+- View logs: `docker compose exec eg4-srp-monitor cat /tmp/eg4_srp_monitor.log`
+
+## Security Notes
+
+- Credentials are stored in environment variables
+- SMTP passwords are masked in the web interface
+- WebSocket connections have no authentication (localhost only recommended)
+- Container runs with limited privileges
+- Configuration is not persisted between restarts (stored in memory only)
+
+## API Endpoints
+
+- `GET /` - Web dashboard interface
+- `GET /api/status` - Get current monitoring data
+- `GET /api/config` - Get current configuration (passwords masked)
+- `POST /api/config` - Update configuration
+- `GET /api/test-email` - Send a test email
+
+## Development
+
+### Install Development Dependencies
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+### Running Tests
+
+```bash
+pytest
+pytest --cov=app  # With coverage
+```
+
+### Code Quality
+
+```bash
+black app.py       # Format code
+pylint app.py      # Lint code
+mypy app.py        # Type checking
+flake8 app.py      # Style guide enforcement
+```
+
+## File Documentation
+
+For detailed information about each file in the project, see [FILE_STRUCTURE.md](FILE_STRUCTURE.md).
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests: `pip install -r requirements-dev.txt && pytest`
+5. Submit a pull request
+
+## License
+
+This project is for personal use. Please ensure you comply with the terms of service for EG4 and SRP when using their monitoring services.

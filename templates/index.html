@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EG4-SRP Monitor</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #f1f5f9;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+        }
+        
+        .card h2 {
+            margin-bottom: 1rem;
+            color: #3b82f6;
+            font-size: 1.25rem;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #334155;
+        }
+        
+        .metric:last-child {
+            border-bottom: none;
+        }
+        
+        .value {
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+        
+        .positive { color: #22c55e; }
+        .negative { color: #ef4444; }
+        .warning { color: #f59e0b; }
+        
+        .config-section {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #94a3b8;
+        }
+        
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="number"] {
+            width: 100%;
+            padding: 0.5rem;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 0.25rem;
+            color: #e2e8f0;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        button:hover {
+            background: #2563eb;
+        }
+        
+        .alert {
+            background: #dc2626;
+            color: white;
+            padding: 1rem;
+            border-radius: 0.25rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+        
+        .status-indicator.online { background: #22c55e; }
+        .status-indicator.offline { background: #dc2626; }
+        
+        .threshold-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>EG4-SRP Monitor</h1>
+        
+        <div id="alert" class="alert"></div>
+        
+        <div class="grid">
+            <!-- EG4 Status -->
+            <div class="card">
+                <h2>EG4 Inverter Status</h2>
+                <div class="metric">
+                    <span>Battery SOC</span>
+                    <span class="value" id="battery-soc">--</span>
+                </div>
+                <div class="metric">
+                    <span>Battery Power</span>
+                    <span class="value" id="battery-power">--</span>
+                </div>
+                <div class="metric">
+                    <span>PV Power</span>
+                    <span class="value positive" id="pv-power">--</span>
+                </div>
+                <div class="metric">
+                    <span>Grid Power</span>
+                    <span class="value" id="grid-power">--</span>
+                </div>
+                <div class="metric">
+                    <span>Load Power</span>
+                    <span class="value" id="load-power">--</span>
+                </div>
+                <div class="metric">
+                    <span>Battery Voltage</span>
+                    <span class="value" id="battery-voltage">--</span>
+                </div>
+                <div class="metric">
+                    <span>Grid Voltage</span>
+                    <span class="value" id="grid-voltage">--</span>
+                </div>
+                <div class="metric">
+                    <span>Status</span>
+                    <span><span class="status-indicator offline" id="eg4-status"></span><span id="eg4-status-text">Offline</span></span>
+                </div>
+            </div>
+            
+            <!-- SRP Status -->
+            <div class="card">
+                <h2>SRP Peak Demand</h2>
+                <div class="metric">
+                    <span>Current Peak</span>
+                    <span class="value warning" id="peak-demand" style="font-size: 1.5rem;">-- kW</span>
+                </div>
+                <div class="metric">
+                    <span>Last Update</span>
+                    <span class="value" id="srp-update">--</span>
+                </div>
+                <div class="metric">
+                    <span>Status</span>
+                    <span><span class="status-indicator offline" id="srp-status"></span><span id="srp-status-text">Offline</span></span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Alert Configuration -->
+        <div class="config-section">
+            <h2 style="margin-bottom: 1.5rem;">Alert Configuration</h2>
+            
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="email-enabled">
+                    <label for="email-enabled" style="margin: 0;">Enable Email Alerts</label>
+                </div>
+            </div>
+            
+            <div class="grid">
+                <div>
+                    <h3 style="margin-bottom: 1rem; color: #f1f5f9;">Email Settings</h3>
+                    <div class="form-group">
+                        <label>Email To</label>
+                        <input type="email" id="email-to" placeholder="recipient@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Email From</label>
+                        <input type="email" id="email-from" placeholder="sender@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>SMTP Server</label>
+                        <input type="text" id="smtp-server" value="smtp.gmail.com">
+                    </div>
+                    <div class="form-group">
+                        <label>SMTP Port</label>
+                        <input type="number" id="smtp-port" value="587">
+                    </div>
+                    <div class="form-group">
+                        <label>SMTP Username</label>
+                        <input type="text" id="smtp-username">
+                    </div>
+                    <div class="form-group">
+                        <label>SMTP Password</label>
+                        <input type="password" id="smtp-password">
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 style="margin-bottom: 1rem; color: #f1f5f9;">Alert Thresholds</h3>
+                    <div class="threshold-grid">
+                        <div class="form-group">
+                            <label>Battery Low (%)</label>
+                            <input type="number" id="battery-low" min="0" max="100" value="20">
+                        </div>
+                        <div class="form-group">
+                            <label>Battery High (%)</label>
+                            <input type="number" id="battery-high" min="0" max="100" value="95">
+                        </div>
+                        <div class="form-group">
+                            <label>Peak Demand (kW)</label>
+                            <input type="number" id="peak-demand-threshold" min="0" step="0.1" value="5.0">
+                        </div>
+                        <div class="form-group">
+                            <label>Grid Import (W)</label>
+                            <input type="number" id="grid-import" min="0" value="10000">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button onclick="saveConfig()">Save Configuration</button>
+                <button onclick="testEmail()" style="background: #475569;">Test Email</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const socket = io();
+        
+        // Update EG4 data
+        socket.on('eg4_update', (data) => {
+            document.getElementById('battery-soc').textContent = data.battery.soc + '%';
+            document.getElementById('battery-soc').className = 'value ' + 
+                (data.battery.soc < 20 ? 'negative' : data.battery.soc > 95 ? 'warning' : '');
+            
+            document.getElementById('battery-power').textContent = data.battery.power + 'W';
+            document.getElementById('battery-power').className = 'value ' + 
+                (data.battery.power < 0 ? 'negative' : 'positive');
+            
+            document.getElementById('pv-power').textContent = data.pv.power + 'W';
+            document.getElementById('grid-power').textContent = data.grid.power + 'W';
+            document.getElementById('grid-power').className = 'value ' + 
+                (data.grid.power > 0 ? 'negative' : 'positive');
+            
+            document.getElementById('load-power').textContent = data.load.power + 'W';
+            
+            document.getElementById('battery-voltage').textContent = data.battery.voltage + 'V';
+            document.getElementById('grid-voltage').textContent = data.grid.voltage + 'V';
+            
+            document.getElementById('eg4-status').className = 'status-indicator online';
+            document.getElementById('eg4-status-text').textContent = 'Online';
+        });
+        
+        // Update SRP data
+        socket.on('srp_update', (data) => {
+            document.getElementById('peak-demand').textContent = data.demand.toFixed(1) + ' kW';
+            document.getElementById('srp-update').textContent = new Date(data.timestamp).toLocaleTimeString();
+            
+            document.getElementById('srp-status').className = 'status-indicator online';
+            document.getElementById('srp-status-text').textContent = 'Online';
+        });
+        
+        // Handle alerts
+        socket.on('alert', (data) => {
+            const alertDiv = document.getElementById('alert');
+            alertDiv.style.display = 'block';
+            alertDiv.innerHTML = `<strong>${data.subject}:</strong> ${data.message}`;
+            
+            setTimeout(() => {
+                alertDiv.style.display = 'none';
+            }, 10000);
+        });
+        
+        // Load configuration
+        async function loadConfig() {
+            const response = await fetch('/api/config');
+            const config = await response.json();
+            
+            document.getElementById('email-enabled').checked = config.email_enabled;
+            document.getElementById('email-to').value = config.email_to;
+            document.getElementById('email-from').value = config.email_from;
+            document.getElementById('smtp-server').value = config.smtp_server;
+            document.getElementById('smtp-port').value = config.smtp_port;
+            document.getElementById('smtp-username').value = config.smtp_username;
+            document.getElementById('smtp-password').value = config.smtp_password;
+            
+            document.getElementById('battery-low').value = config.thresholds.battery_low;
+            document.getElementById('battery-high').value = config.thresholds.battery_high;
+            document.getElementById('peak-demand-threshold').value = config.thresholds.peak_demand;
+            document.getElementById('grid-import').value = config.thresholds.grid_import;
+        }
+        
+        // Save configuration
+        async function saveConfig() {
+            const config = {
+                email_enabled: document.getElementById('email-enabled').checked,
+                email_to: document.getElementById('email-to').value,
+                email_from: document.getElementById('email-from').value,
+                smtp_server: document.getElementById('smtp-server').value,
+                smtp_port: parseInt(document.getElementById('smtp-port').value),
+                smtp_username: document.getElementById('smtp-username').value,
+                smtp_password: document.getElementById('smtp-password').value,
+                thresholds: {
+                    battery_low: parseInt(document.getElementById('battery-low').value),
+                    battery_high: parseInt(document.getElementById('battery-high').value),
+                    peak_demand: parseFloat(document.getElementById('peak-demand-threshold').value),
+                    grid_import: parseInt(document.getElementById('grid-import').value)
+                }
+            };
+            
+            const response = await fetch('/api/config', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(config)
+            });
+            
+            if (response.ok) {
+                alert('Configuration saved successfully!');
+            }
+        }
+        
+        // Test email
+        async function testEmail() {
+            const response = await fetch('/api/test-email');
+            if (response.ok) {
+                alert('Test email sent! Check your inbox.');
+            }
+        }
+        
+        // Load initial data
+        loadConfig();
+        
+        // Load current status
+        fetch('/api/status').then(r => r.json()).then(data => {
+            if (data.eg4) {
+                socket.emit('eg4_update', data.eg4);
+            }
+            if (data.srp) {
+                socket.emit('srp_update', data.srp);
+            }
+        });
+    </script>
+</body>
+</html>
