@@ -11,6 +11,9 @@ This is a monitoring application for EG4 solar inverters and SRP (Salt River Pro
 - Battery and grid voltage monitoring added
 - Time-based grid import alerts (only during configured hours)
 - Battery high alert removed (unnecessary)
+- Configuration persistence to disk (survives container restarts)
+- Time-based battery checks (once daily at configured time)
+- Peak demand checks once daily at 6 AM
 - All features tested and working in production
 
 ## Key Components
@@ -142,8 +145,18 @@ docker compose down
 - Updated web interface:
   - Removed battery high threshold field
   - Added grid import time window configuration
-  - Added helpful notes about UTC time
+  - Added battery check time configuration (hour:minute)
+  - Added helpful notes about UTC time and alert behavior
 - Improved alert messages to include time window information
+- Added configuration persistence:
+  - Settings saved to `./config/config.json`
+  - Automatically loaded on container restart
+  - Includes email settings and all alert thresholds
+- Enhanced alert logic:
+  - Battery SOC checked once daily at configured time
+  - Peak demand checked once daily at 6 AM
+  - Grid import checked continuously but only alerts during configured hours
+  - Prevents duplicate alerts with cooldown periods
 
 ### Changing Default Port
 1. Edit `docker-compose.yml` ports section
@@ -152,11 +165,10 @@ docker compose down
 
 ## Security Considerations
 - Credentials stored as environment variables
-- No database - all state is in-memory
+- Configuration persisted to disk in JSON format
 - WebSocket has no authentication (localhost only recommended)
-- Configuration not persisted between restarts
 - Consider adding API key for production use
-- SMTP passwords masked in web interface but stored in plain text in memory
+- Email recipients stored in plain text in config file
 
 ## Current Implementation Status
 
@@ -166,8 +178,8 @@ docker compose down
 - Real-time WebSocket updates to web dashboard
 - Email alerts via gmail-send integration
 - Configurable alert thresholds:
-  - Battery low warnings
-  - Peak demand alerts
+  - Battery low warnings (checked at specified time daily)
+  - Peak demand alerts (checked at 6 AM daily)
   - Time-based grid import alerts (with hour configuration)
 - Automatic retry logic (3 login attempts, 5 reconnection attempts)
 - Battery and grid voltage display in UI
@@ -176,12 +188,11 @@ docker compose down
 - Multiple email recipient support (comma-separated)
 
 ### Known Limitations ⚠️
-- No data persistence between restarts
+- No historical data persistence between restarts (only configuration is saved)
 - No authentication for API or WebSocket
 - Single inverter support only
 - No historical data storage
 - No data export functionality
-- Configuration resets on container restart
 
 ### Production Ready ✅
 The application has been thoroughly tested and is running in production:

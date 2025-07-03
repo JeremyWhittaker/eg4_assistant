@@ -15,6 +15,7 @@ import threading
 import time
 import logging
 import sys
+import json
 
 # Configure logging
 logging.basicConfig(
@@ -40,17 +41,56 @@ monitor_data = {
     'last_update': None
 }
 
+# Configuration file path
+CONFIG_FILE = '/app/config/config.json'
+
+# Default configuration
 alert_config = {
     'email_enabled': False,
     'email_to': '',  # Comma-separated list of recipients
     'thresholds': {
         'battery_low': 20,
+        'battery_check_hour': 6,  # Check battery at 6 AM
+        'battery_check_minute': 0,
         'peak_demand': 5.0,
         'grid_import': 10000,
         'grid_import_start_hour': 14,  # 2 PM
         'grid_import_end_hour': 20     # 8 PM
+    },
+    'last_alerts': {
+        'battery_checked_date': None,
+        'peak_demand_checked_date': None,
+        'grid_import_last_alert': None  # Timestamp of last grid import alert
     }
 }
+
+def load_config():
+    """Load configuration from file if it exists"""
+    global alert_config
+    try:
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r') as f:
+                saved_config = json.load(f)
+                # Merge with defaults to handle missing keys
+                alert_config.update(saved_config)
+                # Ensure all threshold keys exist
+                for key, value in alert_config['thresholds'].items():
+                    if key not in saved_config.get('thresholds', {}):
+                        saved_config.setdefault('thresholds', {})[key] = value
+                logger.info("Configuration loaded from file")
+    except Exception as e:
+        logger.error(f"Failed to load config: {e}")
+
+def save_config():
+    """Save configuration to file"""
+    try:
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
+        with open(CONFIG_FILE, 'w') as f:
+            json.dump(alert_config, f, indent=2)
+        logger.info("Configuration saved to file")
+    except Exception as e:
+        logger.error(f"Failed to save config: {e}")
 
 class EG4Monitor:
     def __init__(self):
@@ -254,29 +294,59 @@ def send_alert_email(subject, message):
 def check_thresholds():
     """Check if any thresholds are exceeded"""
     alerts = []
+    now = datetime.now()
+    today_str = now.strftime('%Y-%m-%d')
     
     if 'eg4' in monitor_data and monitor_data['eg4']:
-        # Battery SOC alerts - only low battery warning
-        soc = monitor_data['eg4'].get('battery', {}).get('soc', 0)
-        if soc <= alert_config['thresholds']['battery_low']:
-            alerts.append(('Low Battery', f'Battery SOC is {soc}% (threshold: {alert_config["thresholds"]["battery_low"]}%)'))
+        # Battery SOC alert - only check at specific time
+        battery_check_hour = alert_config['thresholds'].get('battery_check_hour', 6)
+        battery_check_minute = alert_config['thresholds'].get('battery_check_minute', 0)
+        
+        # Check if it's time to check battery and we haven't checked today
+        if (now.hour == battery_check_hour and 
+            now.minute == battery_check_minute and
+            alert_config['last_alerts'].get('battery_checked_date') != today_str):
+            
+            soc = monitor_data['eg4'].get('battery', {}).get('soc', 0)
+            if soc <= alert_config['thresholds']['battery_low']:
+                alerts.append(('Low Battery', f'Battery SOC is {soc}% at {battery_check_hour:02d}:{battery_check_minute:02d} (threshold: {alert_config["thresholds"]["battery_low"]}%)'))
+            
+            # Mark as checked for today
+            alert_config['last_alerts']['battery_checked_date'] = today_str
+            save_config()
         
         # Grid import alert - only during configured hours
         grid_power = monitor_data['eg4'].get('grid', {}).get('power', 0)
-        current_hour = datetime.now().hour
+        current_hour = now.hour
         start_hour = alert_config['thresholds']['grid_import_start_hour']
         end_hour = alert_config['thresholds']['grid_import_end_hour']
         
         # Check if current time is within alert window
         if start_hour <= current_hour < end_hour:
             if grid_power > alert_config['thresholds']['grid_import']:
+                # Check if we haven't sent this alert recently (within 15 minutes)
+                last_grid_alert = alert_config['last_alerts'].get('grid_import_last_alert')
+                if last_grid_alert:
+                    last_alert_time = datetime.fromisoformat(last_grid_alert)
+                    if (now - last_alert_time).total_seconds() < 900:  # 15 minutes
+                        return  # Skip alert if sent recently
+                
                 alerts.append(('High Grid Import', f'Grid import is {grid_power}W during peak hours ({start_hour}:00-{end_hour}:00, threshold: {alert_config["thresholds"]["grid_import"]}W)'))
+                alert_config['last_alerts']['grid_import_last_alert'] = now.isoformat()
+                save_config()
     
     if 'srp' in monitor_data and monitor_data['srp']:
-        # Peak demand alert
-        demand = monitor_data['srp'].get('demand', 0)
-        if demand > alert_config['thresholds']['peak_demand']:
-            alerts.append(('High Peak Demand', f'Peak demand is {demand}kW (threshold: {alert_config["thresholds"]["peak_demand"]}kW)'))
+        # Peak demand alert - check once per day at 6 AM
+        if (now.hour == 6 and now.minute == 0 and
+            alert_config['last_alerts'].get('peak_demand_checked_date') != today_str):
+            
+            demand = monitor_data['srp'].get('demand', 0)
+            if demand > alert_config['thresholds']['peak_demand']:
+                alerts.append(('High Peak Demand', f'Peak demand is {demand}kW (threshold: {alert_config["thresholds"]["peak_demand"]}kW)'))
+            
+            # Mark as checked for today
+            alert_config['last_alerts']['peak_demand_checked_date'] = today_str
+            save_config()
     
     # Send alerts
     for subject, message in alerts:
@@ -432,6 +502,9 @@ def config():
         if 'email_to' in data:
             alert_config['email_to'] = data['email_to']
         
+        # Save configuration to file
+        save_config()
+        
         return jsonify({'status': 'success'})
 
 @app.route('/api/test-email')
@@ -451,6 +524,9 @@ def handle_connect():
         emit('srp_update', monitor_data['srp'])
 
 if __name__ == '__main__':
+    # Load saved configuration
+    load_config()
+    
     # Start monitoring on startup if credentials exist
     if os.getenv('EG4_USERNAME') and os.getenv('EG4_PASSWORD'):
         start_monitoring()

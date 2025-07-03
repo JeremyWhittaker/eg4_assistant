@@ -245,6 +245,14 @@
                             <input type="number" id="battery-low" min="0" max="100" value="20">
                         </div>
                         <div class="form-group">
+                            <label>Battery Check Time (24h)</label>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <input type="number" id="battery-check-hour" min="0" max="23" value="6" style="width: 60px;" title="Hour">
+                                <span style="line-height: 2rem;">:</span>
+                                <input type="number" id="battery-check-minute" min="0" max="59" value="0" style="width: 60px;" title="Minute">
+                            </div>
+                        </div>
+                        <div class="form-group">
                             <label>Peak Demand (kW)</label>
                             <input type="number" id="peak-demand-threshold" min="0" step="0.1" value="5.0">
                         </div>
@@ -262,9 +270,15 @@
                         </div>
                     </div>
                     <div class="form-group" style="background: #334155; padding: 1rem; border-radius: 0.25rem; margin-top: 1rem;">
-                        <p style="margin: 0; color: #94a3b8; font-size: 0.875rem;">
+                        <p style="margin: 0; color: #94a3b8; font-size: 0.875rem; margin-bottom: 0.5rem;">
+                            <strong>Battery Alert:</strong> SOC is checked once daily at the specified time. Alert sent if below threshold.
+                        </p>
+                        <p style="margin: 0; color: #94a3b8; font-size: 0.875rem; margin-bottom: 0.5rem;">
                             <strong>Grid Import Alert:</strong> Only triggers during the specified hours when import exceeds the threshold.
                             Hours are in 24-hour format (0-23). Example: 14 = 2:00 PM, 20 = 8:00 PM.
+                        </p>
+                        <p style="margin: 0; color: #94a3b8; font-size: 0.875rem;">
+                            <strong>Peak Demand Alert:</strong> Checked once daily at 6:00 AM. Alert sent if peak exceeds threshold.
                         </p>
                     </div>
                 </div>
@@ -333,6 +347,8 @@
             document.getElementById('email-to').value = config.email_to || '';
             
             document.getElementById('battery-low').value = config.thresholds.battery_low;
+            document.getElementById('battery-check-hour').value = config.thresholds.battery_check_hour || 6;
+            document.getElementById('battery-check-minute').value = config.thresholds.battery_check_minute || 0;
             document.getElementById('peak-demand-threshold').value = config.thresholds.peak_demand;
             document.getElementById('grid-import').value = config.thresholds.grid_import;
             document.getElementById('grid-import-start-hour').value = config.thresholds.grid_import_start_hour || 14;
@@ -346,6 +362,8 @@
                 email_to: document.getElementById('email-to').value,
                 thresholds: {
                     battery_low: parseInt(document.getElementById('battery-low').value),
+                    battery_check_hour: parseInt(document.getElementById('battery-check-hour').value),
+                    battery_check_minute: parseInt(document.getElementById('battery-check-minute').value),
                     peak_demand: parseFloat(document.getElementById('peak-demand-threshold').value),
                     grid_import: parseInt(document.getElementById('grid-import').value),
                     grid_import_start_hour: parseInt(document.getElementById('grid-import-start-hour').value),

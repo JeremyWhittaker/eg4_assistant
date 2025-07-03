@@ -139,12 +139,20 @@ eg4-srp-monitor/
 
 Configure alerts through the web interface:
 
-- **Battery Low**: Alert when battery SOC drops below threshold (default: 20%)
-- **Peak Demand**: Alert when SRP peak demand exceeds threshold (default: 5.0 kW)
+- **Battery Low**: Alert when battery SOC drops below threshold at specified check time
+  - Default threshold: 20%
+  - Default check time: 6:00 AM UTC
+  - Checked once daily at the configured time
+- **Peak Demand**: Alert when SRP peak demand exceeds threshold
+  - Default threshold: 5.0 kW
+  - Checked once daily at 6:00 AM UTC
 - **Grid Import**: Alert when importing more than threshold from grid during specified hours
   - Default threshold: 10,000W
   - Default hours: 14:00-20:00 (2 PM - 8 PM)
+  - Only alerts during the configured time window
   - Note: Times are in 24-hour format and use the container's timezone (typically UTC)
+
+**Configuration Persistence**: All email and alert settings are now saved to disk and automatically loaded when the container restarts. Settings are stored in the `./config` directory on the host.
 
 ### Time Zone Considerations
 

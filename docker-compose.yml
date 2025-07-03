@@ -12,6 +12,7 @@ services:
     volumes:
       - ./logs:/var/log
       - ./.env:/app/.env:ro
+      - ./config:/app/config
     restart: unless-stopped
     shm_size: 2gb
     healthcheck:

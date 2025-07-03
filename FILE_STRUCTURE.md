@@ -159,12 +159,18 @@ Single-page web dashboard application.
 Volume mount point for application logs.
 - Contains `eg4_srp_monitor.log` when running
 
+### `config/` Directory (Created at runtime)
+Volume mount point for persistent configuration.
+- Contains `config.json` with email and alert settings
+- Automatically created on first save
+- Survives container restarts
+
 ## Data Flow
 
 1. **Startup**: Docker container starts → Flask app initializes → Monitoring thread launches
 2. **Data Collection**: Playwright browsers → Login to portals → Scrape data → Parse values
 3. **Distribution**: Backend collects data → Socket.IO broadcast → Web clients update
-4. **Persistence**: Environment variables (credentials) persist, configuration is in-memory only
+4. **Persistence**: Environment variables (credentials) persist, configuration saved to disk
 5. **Alerts**: Threshold checks → Email notifications → Web UI alerts
 
 ## Port Configuration
@@ -184,12 +190,23 @@ Volume mount point for application logs.
 ## Alert System Details
 
 ### Current Alert Types
-1. **Battery Low** - Triggers when SOC drops below threshold (default: 20%)
-2. **Peak Demand** - Triggers when SRP demand exceeds threshold (default: 5.0 kW)
-3. **Grid Import** - Triggers when importing power during specified hours
+1. **Battery Low** - Checked once daily at configured time
+   - Default check time: 6:00 AM UTC
+   - Triggers when SOC drops below threshold (default: 20%)
+   - Configurable check hour and minute
+2. **Peak Demand** - Checked once daily at 6:00 AM UTC
+   - Triggers when SRP demand exceeds threshold (default: 5.0 kW)
+   - Only checks/alerts once per day to avoid spam
+3. **Grid Import** - Continuously monitored during operation
    - Time-based: Only alerts during configured hours
    - Default window: 14:00-20:00 UTC (2 PM - 8 PM)
    - Threshold: 10,000W default
+   - 15-minute cooldown between alerts
+
+### Alert State Tracking
+- Battery and peak demand checks tracked by date
+- Grid import alerts tracked by timestamp
+- State persisted in config.json to survive restarts
 
 ### Removed Features
 - Battery high alerts (removed as unnecessary)
