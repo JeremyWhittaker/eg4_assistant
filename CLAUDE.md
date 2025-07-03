@@ -75,15 +75,19 @@ docker compose down
 
 ## Gmail Integration
 
-### Prerequisites
-- gmail-send must be installed on the HOST system: `pip install gmail-send`
-- Run `gmail-auth-setup` on the HOST to configure Gmail credentials
-- The container accesses the host's gmail-send via subprocess
+### Web-Based Configuration
+- Gmail can now be configured entirely through the web interface
+- No command line access required for users
+- Configuration stored securely on the host system at ~/.gmail_send/.env
 
 ### Setup Process
 1. Run `./setup-gmail.sh` to copy gmail_integration for Docker build
 2. The Dockerfile will automatically include and install the integration
-3. Gmail credentials are managed by the gmail-send tool on the host, not in the container
+3. Users configure Gmail through the web interface:
+   - Click "Configure" button when Gmail Status shows "Not configured"
+   - Enter Gmail address and App Password
+   - System automatically creates ~/.gmail_send/.env file
+   - Test email sent to verify configuration
 
 ### How It Works
 - Uses `send-gmail` command via subprocess
@@ -171,6 +175,12 @@ docker compose down
   - Web UI shows Gmail configuration status
   - Better error messages with setup instructions
   - Detects if gmail-send is not installed or configured
+  - **NEW: Web-based Gmail configuration**
+    - Added modal dialog for Gmail setup
+    - Users can configure Gmail entirely through the web interface
+    - No command line access required
+    - Automatic credential file creation
+    - Test email sent on successful configuration
 
 ### Changing Default Port
 1. Edit `docker-compose.yml` ports section

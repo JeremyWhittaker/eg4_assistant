@@ -252,15 +252,62 @@ def check_gmail_configured():
             # Check if credentials are configured by looking for the .env file
             gmail_env_path = os.path.expanduser('~/.gmail_send/.env')
             if os.path.exists(gmail_env_path):
+                # Try to read current configuration
+                try:
+                    with open(gmail_env_path, 'r') as f:
+                        content = f.read()
+                        if 'GMAIL_ADDRESS=' in content:
+                            # Extract email address
+                            for line in content.split('\n'):
+                                if line.startswith('GMAIL_ADDRESS='):
+                                    email = line.split('=', 1)[1].strip()
+                                    return True, f"Gmail configured with {email}"
+                except:
+                    pass
                 return True, "Gmail configured"
             else:
-                return False, "Gmail not configured. Run 'gmail-auth-setup' to configure."
+                return False, "Gmail not configured. Configure through the web interface."
         else:
             return False, "send-gmail command not found. Install gmail-send package."
     except FileNotFoundError:
         return False, "send-gmail command not found. Install gmail-send package."
     except Exception as e:
         return False, f"Error checking gmail configuration: {str(e)}"
+
+def configure_gmail(email_address, app_password):
+    """Configure gmail-send with provided credentials"""
+    try:
+        # Create the gmail_send directory if it doesn't exist
+        gmail_dir = os.path.expanduser('~/.gmail_send')
+        os.makedirs(gmail_dir, exist_ok=True)
+        
+        # Write the .env file
+        env_path = os.path.join(gmail_dir, '.env')
+        with open(env_path, 'w') as f:
+            f.write(f"GMAIL_ADDRESS={email_address}\n")
+            f.write(f"GMAIL_APP_PASSWORD={app_password}\n")
+        
+        # Set proper permissions (read/write for owner only)
+        os.chmod(env_path, 0o600)
+        
+        # Test the configuration by trying to send a test email
+        test_cmd = [
+            'send-gmail',
+            '--to', email_address,
+            '--subject', 'Gmail Configuration Test',
+            '--body', 'Gmail has been successfully configured for EG4-SRP Monitor!'
+        ]
+        
+        result = subprocess.run(test_cmd, capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            return True, "Gmail configured successfully! Test email sent."
+        else:
+            # Configuration saved but test failed
+            return False, f"Configuration saved but test failed: {result.stderr}"
+            
+    except Exception as e:
+        return False, f"Failed to configure Gmail: {str(e)}"
 
 def send_alert_email(subject, message):
     """Send email alert using gmail-send integration"""
@@ -559,6 +606,35 @@ def gmail_status():
     """Check if gmail-send is properly configured"""
     configured, msg = check_gmail_configured()
     return jsonify({'configured': configured, 'message': msg})
+
+@app.route('/api/configure-gmail', methods=['POST'])
+def configure_gmail_endpoint():
+    """Configure Gmail credentials from web interface"""
+    data = request.json
+    
+    if not data:
+        return jsonify({'status': 'error', 'message': 'No data provided'}), 400
+    
+    email_address = data.get('email_address', '').strip()
+    app_password = data.get('app_password', '').strip()
+    
+    if not email_address:
+        return jsonify({'status': 'error', 'message': 'Email address is required'}), 400
+    
+    if not app_password:
+        return jsonify({'status': 'error', 'message': 'App password is required'}), 400
+    
+    # Validate email format
+    if '@gmail.com' not in email_address.lower():
+        return jsonify({'status': 'error', 'message': 'Must be a Gmail address'}), 400
+    
+    # Configure Gmail
+    success, message = configure_gmail(email_address, app_password)
+    
+    if success:
+        return jsonify({'status': 'success', 'message': message})
+    else:
+        return jsonify({'status': 'error', 'message': message}), 400
 
 @socketio.on('connect')
 def handle_connect():

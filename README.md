@@ -93,7 +93,7 @@ eg4-srp-monitor/
 - Docker and Docker Compose
 - EG4 monitoring account credentials
 - SRP account credentials
-- Gmail-send package installed and configured on the host system (required for email alerts)
+- Gmail account with App Password (for email alerts - configured through web interface)
 
 ## Quick Start
 
@@ -163,50 +163,44 @@ The container runs in UTC time by default. When configuring time-based alerts:
 
 ### Email Configuration
 
-Email alerts require the `gmail-send` package to be installed and configured on the **host system** (not inside the container):
+Email alerts can be configured directly through the web interface - no command line required!
 
-1. **Install Gmail-Send on Host System**
-   ```bash
-   # On the host system (outside Docker)
-   pip install gmail-send
-   ```
+1. **Access the Web Interface**
+   Open http://localhost:8085 in your browser
 
-2. **Configure Gmail Credentials on Host**
-   Run the setup command on the host system:
-   ```bash
-   # This will prompt for your Gmail credentials
-   gmail-auth-setup
-   ```
+2. **Check Gmail Status**
+   Look for the "Gmail Status" indicator in the Email Settings section:
+   - ✗ Not configured (red) - Click "Configure" to set up
+   - ✓ Configured (green) - Gmail is ready to send alerts
+
+3. **Configure Gmail (if needed)**
+   - Click the "Configure" button next to Gmail Status
+   - Enter your Gmail address
+   - Enter a Gmail App Password (16 characters)
    
-   You'll need:
-   - Your Gmail address
-   - A Gmail App Password (not your regular password)
-   
-   **Create an App Password at:** https://myaccount.google.com/apppasswords
+   **To create an App Password:**
+   - Go to https://myaccount.google.com/apppasswords
+   - Enable 2-Step Verification if not already enabled
+   - Generate an App Password for "Mail"
+   - Copy the 16-character password (without spaces)
 
-3. **Install Local Integration (if available)**
-   If you have the local gmail_integration directory:
-   ```bash
-   pip install -e ../gmail_integration
-   ```
-
-4. **Container Setup**
-   The container is already configured to use the host's gmail-send installation.
-   Just ensure gmail-send is working on the host before starting the container.
-
-5. **Configure Recipients in Web Interface**
-   - Open http://localhost:8085
-   - Check the "Gmail Status" indicator (should show "Configured ✓")
-   - Enable email alerts
+4. **Set Email Recipients**
+   - Enable email alerts with the checkbox
    - Add recipient email addresses (comma-separated)
    - Click "Save Configuration"
-   - Use "Test Email" button to verify
+   - Use "Test Email" button to verify everything works
+
+**Technical Details:**
+- Gmail credentials are stored securely on the host system
+- The container uses the host's gmail-send command via subprocess
+- Configuration persists across container restarts
+- No need to install anything on the host manually
 
 **Troubleshooting:**
-- If Gmail Status shows "Not configured", run `gmail-auth-setup` on the host
-- The container uses the host's gmail-send command via subprocess
-- Gmail credentials are stored on the host, not in the container
-- Check container logs if emails fail to send
+- If configuration fails, check that the app password is correct
+- Ensure you're using an App Password, not your regular Gmail password
+- Check container logs for detailed error messages
+- The test email will confirm if everything is working
 
 ### Data Collection Intervals
 

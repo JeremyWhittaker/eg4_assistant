@@ -146,6 +146,61 @@
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
         }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-content {
+            background-color: #1e293b;
+            margin: 10% auto;
+            padding: 2rem;
+            border: 1px solid #334155;
+            border-radius: 0.5rem;
+            width: 90%;
+            max-width: 500px;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .close {
+            color: #94a3b8;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover,
+        .close:focus {
+            color: #f1f5f9;
+        }
+        
+        .link-button {
+            background: none;
+            border: none;
+            color: #3b82f6;
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: inherit;
+            padding: 0;
+        }
+        
+        .link-button:hover {
+            color: #2563eb;
+        }
     </style>
 </head>
 <body>
@@ -231,10 +286,10 @@
                     <div class="form-group" style="background: #334155; padding: 1rem; border-radius: 0.25rem;">
                         <p style="margin: 0; color: #94a3b8; font-size: 0.875rem;">
                             <strong>Gmail Status:</strong> <span id="gmail-status" style="color: #f59e0b;">Checking...</span>
+                            <button id="configure-gmail-btn" class="link-button" style="margin-left: 1rem; display: none;" onclick="showGmailConfig()">Configure</button>
                         </p>
                         <p style="margin: 0.5rem 0 0 0; color: #94a3b8; font-size: 0.875rem;">
-                            <strong>Note:</strong> Email alerts require gmail-send to be installed and configured on the host system.
-                            Multiple recipients can be separated by commas.
+                            <strong>Note:</strong> Email alerts are sent via Gmail. Multiple recipients can be separated by commas.
                         </p>
                     </div>
                 </div>
@@ -290,6 +345,46 @@
                 <button onclick="saveConfig()">Save Configuration</button>
                 <button onclick="testEmail()" style="background: #475569;">Test Email</button>
             </div>
+        </div>
+    </div>
+    
+    <!-- Gmail Configuration Modal -->
+    <div id="gmail-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 style="margin: 0; color: #f1f5f9;">Configure Gmail</h2>
+                <span class="close" onclick="closeGmailConfig()">&times;</span>
+            </div>
+            
+            <div class="form-group">
+                <label>Gmail Address</label>
+                <input type="email" id="gmail-address" placeholder="your-email@gmail.com">
+            </div>
+            
+            <div class="form-group">
+                <label>Gmail App Password</label>
+                <input type="password" id="gmail-app-password" placeholder="16-character app password">
+                <p style="margin: 0.5rem 0 0 0; color: #94a3b8; font-size: 0.875rem;">
+                    <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color: #3b82f6;">
+                        Create an App Password
+                    </a> (not your regular Gmail password)
+                </p>
+            </div>
+            
+            <div id="gmail-config-error" style="display: none; background: #dc2626; color: white; padding: 0.5rem; border-radius: 0.25rem; margin-bottom: 1rem;"></div>
+            
+            <div style="background: #334155; padding: 1rem; border-radius: 0.25rem; margin-bottom: 1rem;">
+                <p style="margin: 0 0 0.5rem 0; color: #f1f5f9; font-weight: bold;">Instructions:</p>
+                <ol style="margin: 0; padding-left: 1.5rem; color: #94a3b8; font-size: 0.875rem;">
+                    <li>Go to Google Account settings</li>
+                    <li>Enable 2-Step Verification if not already enabled</li>
+                    <li>Generate an App Password for "Mail"</li>
+                    <li>Copy the 16-character password (without spaces)</li>
+                    <li>Enter it above along with your Gmail address</li>
+                </ol>
+            </div>
+            
+            <button onclick="configureGmail()" style="width: 100%;">Configure Gmail</button>
         </div>
     </div>
     
@@ -395,16 +490,80 @@
                 // Show detailed error message
                 let errorMsg = result.message || 'Failed to send test email';
                 
-                // If gmail is not configured, show setup instructions
+                // If gmail is not configured, offer to configure it
                 if (result.gmail_configured === false) {
-                    errorMsg += '\n\nTo configure Gmail:\n';
-                    errorMsg += '1. On the host system, run: pip install gmail-send\n';
-                    errorMsg += '2. Then run: gmail-auth-setup\n';
-                    errorMsg += '3. Follow the prompts to set up your Gmail credentials\n';
-                    errorMsg += '4. Restart the container after configuration';
+                    if (confirm(errorMsg + '\n\nWould you like to configure Gmail now?')) {
+                        showGmailConfig();
+                    }
+                } else {
+                    alert(errorMsg);
                 }
+            }
+        }
+        
+        // Show Gmail configuration modal
+        function showGmailConfig() {
+            document.getElementById('gmail-modal').style.display = 'block';
+            document.getElementById('gmail-config-error').style.display = 'none';
+        }
+        
+        // Close Gmail configuration modal
+        function closeGmailConfig() {
+            document.getElementById('gmail-modal').style.display = 'none';
+            document.getElementById('gmail-address').value = '';
+            document.getElementById('gmail-app-password').value = '';
+            document.getElementById('gmail-config-error').style.display = 'none';
+        }
+        
+        // Configure Gmail
+        async function configureGmail() {
+            const email = document.getElementById('gmail-address').value.trim();
+            const password = document.getElementById('gmail-app-password').value.trim();
+            const errorDiv = document.getElementById('gmail-config-error');
+            
+            if (!email) {
+                errorDiv.textContent = 'Please enter your Gmail address';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            if (!password) {
+                errorDiv.textContent = 'Please enter your Gmail app password';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            // Disable button while configuring
+            const button = event.target;
+            button.disabled = true;
+            button.textContent = 'Configuring...';
+            
+            try {
+                const response = await fetch('/api/configure-gmail', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        email_address: email,
+                        app_password: password
+                    })
+                });
                 
-                alert(errorMsg);
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert(result.message);
+                    closeGmailConfig();
+                    checkGmailStatus();
+                } else {
+                    errorDiv.textContent = result.message;
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Error configuring Gmail: ' + error.message;
+                errorDiv.style.display = 'block';
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Configure Gmail';
             }
         }
         
@@ -418,10 +577,12 @@
                 if (data.configured) {
                     statusEl.textContent = 'Configured ✓';
                     statusEl.style.color = '#22c55e';
+                    document.getElementById('configure-gmail-btn').style.display = 'none';
                 } else {
                     statusEl.textContent = 'Not configured ✗';
                     statusEl.style.color = '#ef4444';
                     statusEl.title = data.message;
+                    document.getElementById('configure-gmail-btn').style.display = 'inline';
                 }
             } catch (error) {
                 const statusEl = document.getElementById('gmail-status');
@@ -443,6 +604,14 @@
                 socket.emit('srp_update', data.srp);
             }
         });
+        
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('gmail-modal');
+            if (event.target == modal) {
+                closeGmailConfig();
+            }
+        };
     </script>
 </body>
 </html>
