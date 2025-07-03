@@ -9,6 +9,8 @@ This is a monitoring application for EG4 solar inverters and SRP (Salt River Pro
 - Gmail integration for email alerts (no SMTP configuration needed)
 - Port 8085 by default
 - Battery and grid voltage monitoring added
+- Time-based grid import alerts (only during configured hours)
+- Battery high alert removed (unnecessary)
 - All features tested and working in production
 
 ## Key Components
@@ -136,6 +138,12 @@ docker compose down
   - Only triggers during configured hours
   - Uses container timezone (typically UTC)
   - Default: 14:00-20:00 (2 PM - 8 PM UTC)
+  - Configure start/end hours in web interface
+- Updated web interface:
+  - Removed battery high threshold field
+  - Added grid import time window configuration
+  - Added helpful notes about UTC time
+- Improved alert messages to include time window information
 
 ### Changing Default Port
 1. Edit `docker-compose.yml` ports section
@@ -157,12 +165,15 @@ docker compose down
 - SRP peak demand monitoring (updates every 5 minutes)
 - Real-time WebSocket updates to web dashboard
 - Email alerts via gmail-send integration
-- Configurable alert thresholds (battery, peak demand, grid import)
+- Configurable alert thresholds:
+  - Battery low warnings
+  - Peak demand alerts
+  - Time-based grid import alerts (with hour configuration)
 - Automatic retry logic (3 login attempts, 5 reconnection attempts)
 - Battery and grid voltage display in UI
 - Docker containerization with health checks
 - HTML formatted alert emails with full system status
-- Multiple email recipient support
+- Multiple email recipient support (comma-separated)
 
 ### Known Limitations ⚠️
 - No data persistence between restarts
@@ -179,6 +190,33 @@ The application has been thoroughly tested and is running in production:
 - All monitoring features operational
 - GitHub repository maintained at: JeremyWhittaker/eg4_assistant (branch: eg4-srp-monitor)
 
+## Complete File Inventory
+
+### Core Application Files
+- `app.py` (457 lines) - Main Flask application
+- `templates/index.html` (391 lines) - Web dashboard UI
+- `requirements.txt` (8 lines) - Python dependencies
+- `requirements-dev.txt` (8 lines) - Development dependencies
+
+### Docker Configuration
+- `Dockerfile` (59 lines) - Container image definition
+- `docker-compose.yml` (20 lines) - Service orchestration
+- `setup-gmail.sh` (23 lines) - Gmail integration setup script
+
+### Configuration Files
+- `.env` - Environment variables (gitignored)
+- `.env.example` (15 lines) - Template for credentials
+- `.gitignore` (7 lines) - Git exclusions
+
+### Documentation
+- `README.md` - User documentation
+- `CLAUDE.md` - This development guide
+- `FILE_STRUCTURE.md` - Detailed file documentation
+
+### Runtime Directories
+- `logs/` - Container log volume mount
+- `gmail_integration_temp/` - Temporary build directory (gitignored)
+
 ## Future Enhancements
 - Add historical data storage (SQLite/PostgreSQL)
 - Implement data export functionality (CSV/JSON)
@@ -187,3 +225,4 @@ The application has been thoroughly tested and is running in production:
 - Add Grafana integration for visualization
 - Implement API authentication
 - Add configuration persistence
+- Add timezone configuration option

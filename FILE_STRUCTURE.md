@@ -4,7 +4,7 @@ This document provides a detailed explanation of each file in the project direct
 
 ## Root Directory Files
 
-### `app.py` (406 lines)
+### `app.py` (457 lines)
 The main application file containing the Flask web server and monitoring logic.
 
 **Key Components:**
@@ -19,8 +19,12 @@ The main application file containing the Flask web server and monitoring logic.
 - Background monitoring thread with automatic retry logic
 - Email alert system using gmail-send integration (subprocess calls)
 - RESTful API endpoints for configuration and status
+- Alert thresholds:
+  - Battery low warning (no high battery alert)
+  - SRP peak demand alerts
+  - Time-based grid import alerts (only during configured hours)
 
-### `docker-compose.yml` (21 lines)
+### `docker-compose.yml` (20 lines)
 Docker Compose configuration for container orchestration.
 
 **Features:**
@@ -31,7 +35,7 @@ Docker Compose configuration for container orchestration.
 - 2GB shared memory for Playwright browser operations
 - Automatic restart policy
 
-### `Dockerfile` (63 lines)
+### `Dockerfile` (59 lines)
 Container image definition for the application.
 
 **Build Steps:**
@@ -107,18 +111,20 @@ AI development guide containing:
 ### `FILE_STRUCTURE.md` (This file)
 Detailed documentation of all project files and their purposes.
 
-### `setup-gmail.sh` (Executable script)
+### `setup-gmail.sh` (23 lines, Executable script)
 Setup script for Gmail integration:
-- Checks for gmail_integration directory
-- Copies it to temporary location for Docker build
+- Checks for gmail_integration directory in ../gmail_integration
+- Validates .env file exists with Gmail credentials
+- Copies gmail_integration to temporary location for Docker build
 - Ensures gmail-send is available in container
+- Must be run before `docker compose build`
 
 ## Subdirectories
 
 ### `templates/` Directory
 Contains HTML templates for the web interface.
 
-#### `templates/index.html` (389 lines)
+#### `templates/index.html` (391 lines)
 Single-page web dashboard application.
 
 **Features:**
@@ -135,15 +141,19 @@ Single-page web dashboard application.
 1. EG4 Inverter Status card
    - Battery SOC, power, voltage
    - PV generation
-   - Grid import/export
+   - Grid import/export with voltage
    - Load consumption
+   - Battery and grid voltage displays
 2. SRP Peak Demand card
    - Current peak display
    - Last update timestamp
 3. Alert Configuration section
-   - Email settings
-   - Threshold configuration
-   - Save/test functionality
+   - Email recipients (comma-separated)
+   - Battery low threshold only
+   - Peak demand threshold  
+   - Grid import threshold with time window
+   - Grid import start/end hours (24-hour format)
+   - Save/test functionality with error handling
 
 ### `logs/` Directory (Created at runtime)
 Volume mount point for application logs.
@@ -167,6 +177,24 @@ Volume mount point for application logs.
 
 - Credentials stored in `.env` file (gitignored)
 - No authentication on web interface (localhost recommended)
-- SMTP passwords masked in API responses
+- Gmail credentials managed externally by gmail-send
 - Container runs with limited privileges
 - Single-process mode for container stability
+
+## Alert System Details
+
+### Current Alert Types
+1. **Battery Low** - Triggers when SOC drops below threshold (default: 20%)
+2. **Peak Demand** - Triggers when SRP demand exceeds threshold (default: 5.0 kW)
+3. **Grid Import** - Triggers when importing power during specified hours
+   - Time-based: Only alerts during configured hours
+   - Default window: 14:00-20:00 UTC (2 PM - 8 PM)
+   - Threshold: 10,000W default
+
+### Removed Features
+- Battery high alerts (removed as unnecessary)
+
+## Time Zone Handling
+- Container runs in UTC by default
+- All time configurations should be in UTC
+- Use `docker compose exec eg4-srp-monitor date` to check container time

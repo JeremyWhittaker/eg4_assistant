@@ -12,9 +12,9 @@ This application provides automated monitoring of solar energy systems using EG4
 - ✅ All features tested and working
 - 📊 Real-time monitoring data example:
   ```
-  Battery: 82% SOC | 52.6V | 8655W charging
-  Grid: 0W | 240.7V
-  Load: 10,700W consumption
+  Battery: 23% SOC | 51.6V | 0W
+  Grid: 17,810W import | 238.9V
+  Load: 17,810W consumption
   SRP Peak: Updates every 5 minutes
   ```
 
@@ -345,9 +345,16 @@ mypy app.py        # Type checking
 flake8 app.py      # Style guide enforcement
 ```
 
-## File Documentation
+## Project Structure
 
 For detailed information about each file in the project, see [FILE_STRUCTURE.md](FILE_STRUCTURE.md).
+
+### Key Files
+- `app.py` - Main application (457 lines)
+- `templates/index.html` - Web dashboard (391 lines)
+- `setup-gmail.sh` - Gmail integration setup
+- `docker-compose.yml` - Container configuration
+- `requirements.txt` - Python dependencies
 
 ## Contributing
 
