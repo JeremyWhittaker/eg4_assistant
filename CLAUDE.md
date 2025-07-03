@@ -4,7 +4,12 @@
 
 This is a monitoring application for EG4 solar inverters and SRP (Salt River Project) peak demand tracking. It uses web scraping to collect data and provides real-time monitoring with email alerts.
 
-**Latest Update:** The application is fully functional with automatic retry logic, proper error handling, and runs on port 8085 by default.
+**Latest Update (July 2025):** The application is fully functional with:
+- Automatic retry logic and error recovery
+- Gmail integration for email alerts (no SMTP configuration needed)
+- Port 8085 by default
+- Battery and grid voltage monitoring added
+- All features tested and working in production
 
 ## Key Components
 
@@ -140,21 +145,32 @@ docker compose down
 
 ## Current Implementation Status
 
-### Working Features
-- EG4 inverter data collection with all advertised metrics
-- SRP peak demand monitoring
-- Real-time WebSocket updates
-- Email alerts with configurable thresholds
-- Automatic retry and recovery logic
-- Battery and grid voltage display
-- Docker containerization
+### Working Features ✅
+- EG4 inverter data collection with all metrics (SOC, power, voltage)
+- SRP peak demand monitoring (updates every 5 minutes)
+- Real-time WebSocket updates to web dashboard
+- Email alerts via gmail-send integration
+- Configurable alert thresholds (battery, peak demand, grid import)
+- Automatic retry logic (3 login attempts, 5 reconnection attempts)
+- Battery and grid voltage display in UI
+- Docker containerization with health checks
+- HTML formatted alert emails with full system status
+- Multiple email recipient support
 
-### Known Limitations
+### Known Limitations ⚠️
 - No data persistence between restarts
 - No authentication for API or WebSocket
 - Single inverter support only
 - No historical data storage
 - No data export functionality
+- Configuration resets on container restart
+
+### Production Ready ✅
+The application has been thoroughly tested and is running in production:
+- Container stable with automatic restarts
+- Email alerts confirmed working
+- All monitoring features operational
+- GitHub repository maintained at: JeremyWhittaker/eg4_assistant (branch: eg4-srp-monitor)
 
 ## Future Enhancements
 - Add historical data storage (SQLite/PostgreSQL)

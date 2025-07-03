@@ -17,7 +17,7 @@ The main application file containing the Flask web server and monitoring logic.
   - Similar browser automation approach
   - Updates every 5 minutes during peak hours
 - Background monitoring thread with automatic retry logic
-- Email alert system with configurable thresholds
+- Email alert system using gmail-send integration (subprocess calls)
 - RESTful API endpoints for configuration and status
 
 ### `docker-compose.yml` (21 lines)
@@ -31,25 +31,27 @@ Docker Compose configuration for container orchestration.
 - 2GB shared memory for Playwright browser operations
 - Automatic restart policy
 
-### `Dockerfile` (54 lines)
+### `Dockerfile` (63 lines)
 Container image definition for the application.
 
 **Build Steps:**
 1. Base image: Python 3.9-slim
 2. Installs system dependencies for Playwright/Chromium
 3. Installs Python dependencies
-4. Installs Chromium browser for web scraping
-5. Copies application files
-6. Exposes port 5000
+4. Copies and installs gmail integration
+5. Installs Chromium browser for web scraping
+6. Copies application files
+7. Exposes port 5000
 
-### `requirements.txt` (6 lines)
+### `requirements.txt` (8 lines)
 Python package dependencies:
-- `Flask==2.3.2` - Web framework
-- `Flask-SocketIO==5.3.4` - WebSocket support
-- `playwright==1.37.0` - Browser automation
+- `flask==3.0.0` - Web framework
+- `flask-socketio==5.3.5` - WebSocket support
+- `python-socketio==5.10.0` - Socket.IO implementation
 - `python-dotenv==1.0.0` - Environment variable management
-- `email-validator==2.0.0` - Email validation
-- `python-engineio==4.5.1` - Socket.IO engine
+- `playwright==1.40.0` - Browser automation
+- `email-validator==2.1.0` - Email validation
+- Comment about gmail-integration installation from local path
 
 ### `requirements-dev.txt` (8 lines)
 Development dependencies for testing and code quality:
@@ -104,6 +106,12 @@ AI development guide containing:
 
 ### `FILE_STRUCTURE.md` (This file)
 Detailed documentation of all project files and their purposes.
+
+### `setup-gmail.sh` (Executable script)
+Setup script for Gmail integration:
+- Checks for gmail_integration directory
+- Copies it to temporary location for Docker build
+- Ensures gmail-send is available in container
 
 ## Subdirectories
 

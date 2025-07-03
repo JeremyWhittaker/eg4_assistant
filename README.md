@@ -6,13 +6,17 @@ A real-time monitoring and alerting system for EG4 inverters and SRP (Salt River
 
 This application provides automated monitoring of solar energy systems using EG4 inverters and tracks peak demand from SRP utility accounts. It features a web-based dashboard with real-time updates and configurable email alerts.
 
-**Live Demo Screenshot:**
-```
-Battery: 93% SOC | 52.7V | 8359W charging
-Grid: 195W import | 239.7V
-Load: 10,063W consumption
-SRP Peak: 0.1 kW
-```
+**Current Status (July 2025):**
+- ✅ Running in production at port 8085
+- ✅ Email alerts via gmail-send integration
+- ✅ All features tested and working
+- 📊 Real-time monitoring data example:
+  ```
+  Battery: 82% SOC | 52.6V | 8655W charging
+  Grid: 0W | 240.7V
+  Load: 10,700W consumption
+  SRP Peak: Updates every 5 minutes
+  ```
 
 ## System Requirements
 
@@ -343,6 +347,12 @@ For detailed information about each file in the project, see [FILE_STRUCTURE.md]
 3. Make your changes
 4. Run tests: `pip install -r requirements-dev.txt && pytest`
 5. Submit a pull request
+
+## Repository
+
+This project is maintained at: https://github.com/JeremyWhittaker/eg4_assistant
+- Branch: `eg4-srp-monitor`
+- Status: Production ready
 
 ## License
 
