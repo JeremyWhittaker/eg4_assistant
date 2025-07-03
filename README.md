@@ -89,7 +89,7 @@ eg4-srp-monitor/
 - Docker and Docker Compose
 - EG4 monitoring account credentials
 - SRP account credentials
-- (Optional) SMTP server credentials for email alerts
+- Gmail integration for email alerts (see Email Setup below)
 
 ## Quick Start
 
@@ -114,8 +114,12 @@ eg4-srp-monitor/
    SRP_PASSWORD=your_srp_password
    ```
 
-3. **Build and run with Docker**
+3. **Setup Gmail integration and build**
    ```bash
+   # Setup gmail integration for Docker
+   ./setup-gmail.sh
+   
+   # Build and run with Docker
    docker compose build
    docker compose up -d
    ```
@@ -138,13 +142,35 @@ Configure alerts through the web interface:
 
 ### Email Configuration
 
-To enable email alerts, configure the following in the web interface:
+Email alerts use the `gmail-send` integration which must be installed separately:
 
-- Email recipient address
-- Email sender address
-- SMTP server (default: smtp.gmail.com)
-- SMTP port (default: 587)
-- SMTP username and password
+1. **Install Gmail Integration**
+   ```bash
+   # Install from the local gmail_integration directory
+   pip install -e ../gmail_integration
+   ```
+
+2. **Configure Gmail Credentials**
+   The gmail integration should already be configured in `../gmail_integration/.env`:
+   ```env
+   GMAIL_ADDRESS=your-gmail@gmail.com
+   GMAIL_APP_PASSWORD=your-16-char-app-password
+   ```
+
+   If not configured, run:
+   ```bash
+   gmail-auth-setup
+   ```
+
+3. **Set Email Recipients**
+   In the web interface (http://localhost:8085):
+   - Enable email alerts
+   - Add recipient email addresses (comma-separated for multiple)
+   - Click "Save Configuration"
+   - Use "Test Email" button to verify setup
+
+**Note**: Gmail App Passwords are required (not regular passwords). Create one at:
+https://myaccount.google.com/apppasswords
 
 ### Data Collection Intervals
 
@@ -160,6 +186,9 @@ To enable email alerts, configure the following in the web interface:
 # Install Python dependencies
 pip install -r requirements.txt
 
+# Install Gmail integration
+pip install -e ../gmail_integration
+
 # Install Playwright browsers
 playwright install chromium
 
@@ -172,6 +201,18 @@ export SRP_PASSWORD=your_password
 # Run the application
 python app.py
 ```
+
+### Docker Installation with Gmail Integration
+
+Since the gmail-send integration is installed locally, you'll need to either:
+
+1. **Option 1: Install on Host** (Recommended)
+   - Install gmail-send on the host system
+   - The container will use the host's email sending capability via the command line
+
+2. **Option 2: Build Custom Image**
+   - Modify the Dockerfile to include the gmail_integration directory
+   - Build a custom image with the integration included
 
 ### Dependencies
 

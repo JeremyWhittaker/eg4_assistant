@@ -37,6 +37,12 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy gmail integration directory
+COPY gmail_integration_temp /tmp/gmail_integration
+
+# Install gmail integration
+RUN pip install -e /tmp/gmail_integration
+
 # Install Playwright browsers
 RUN playwright install chromium
 

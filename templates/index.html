@@ -225,28 +225,15 @@
                 <div>
                     <h3 style="margin-bottom: 1rem; color: #f1f5f9;">Email Settings</h3>
                     <div class="form-group">
-                        <label>Email To</label>
-                        <input type="email" id="email-to" placeholder="recipient@example.com">
+                        <label>Email Recipients (comma-separated)</label>
+                        <input type="text" id="email-to" placeholder="user1@example.com, user2@example.com">
                     </div>
-                    <div class="form-group">
-                        <label>Email From</label>
-                        <input type="email" id="email-from" placeholder="sender@example.com">
-                    </div>
-                    <div class="form-group">
-                        <label>SMTP Server</label>
-                        <input type="text" id="smtp-server" value="smtp.gmail.com">
-                    </div>
-                    <div class="form-group">
-                        <label>SMTP Port</label>
-                        <input type="number" id="smtp-port" value="587">
-                    </div>
-                    <div class="form-group">
-                        <label>SMTP Username</label>
-                        <input type="text" id="smtp-username">
-                    </div>
-                    <div class="form-group">
-                        <label>SMTP Password</label>
-                        <input type="password" id="smtp-password">
+                    <div class="form-group" style="background: #334155; padding: 1rem; border-radius: 0.25rem;">
+                        <p style="margin: 0; color: #94a3b8; font-size: 0.875rem;">
+                            <strong>Note:</strong> Email alerts are sent using the gmail-send integration. 
+                            Make sure gmail-send is installed and configured with valid Gmail credentials.
+                            Multiple recipients can be separated by commas.
+                        </p>
                     </div>
                 </div>
                 
@@ -333,12 +320,7 @@
             const config = await response.json();
             
             document.getElementById('email-enabled').checked = config.email_enabled;
-            document.getElementById('email-to').value = config.email_to;
-            document.getElementById('email-from').value = config.email_from;
-            document.getElementById('smtp-server').value = config.smtp_server;
-            document.getElementById('smtp-port').value = config.smtp_port;
-            document.getElementById('smtp-username').value = config.smtp_username;
-            document.getElementById('smtp-password').value = config.smtp_password;
+            document.getElementById('email-to').value = config.email_to || '';
             
             document.getElementById('battery-low').value = config.thresholds.battery_low;
             document.getElementById('battery-high').value = config.thresholds.battery_high;
@@ -351,11 +333,6 @@
             const config = {
                 email_enabled: document.getElementById('email-enabled').checked,
                 email_to: document.getElementById('email-to').value,
-                email_from: document.getElementById('email-from').value,
-                smtp_server: document.getElementById('smtp-server').value,
-                smtp_port: parseInt(document.getElementById('smtp-port').value),
-                smtp_username: document.getElementById('smtp-username').value,
-                smtp_password: document.getElementById('smtp-password').value,
                 thresholds: {
                     battery_low: parseInt(document.getElementById('battery-low').value),
                     battery_high: parseInt(document.getElementById('battery-high').value),
@@ -380,6 +357,9 @@
             const response = await fetch('/api/test-email');
             if (response.ok) {
                 alert('Test email sent! Check your inbox.');
+            } else {
+                const error = await response.json();
+                alert('Error: ' + (error.message || 'Failed to send test email'));
             }
         }
         

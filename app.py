@@ -10,9 +10,7 @@ from playwright.async_api import async_playwright
 from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import subprocess
 import threading
 import time
 import logging
@@ -44,12 +42,7 @@ monitor_data = {
 
 alert_config = {
     'email_enabled': False,
-    'email_to': '',
-    'email_from': '',
-    'smtp_server': 'smtp.gmail.com',
-    'smtp_port': 587,
-    'smtp_username': '',
-    'smtp_password': '',
+    'email_to': '',  # Comma-separated list of recipients
     'thresholds': {
         'battery_low': 20,
         'battery_high': 95,
@@ -210,16 +203,12 @@ class SRPMonitor:
             await self.playwright.stop()
 
 def send_alert_email(subject, message):
-    """Send email alert"""
-    if not alert_config['email_enabled']:
+    """Send email alert using gmail-send integration"""
+    if not alert_config['email_enabled'] or not alert_config['email_to']:
         return
         
     try:
-        msg = MIMEMultipart()
-        msg['From'] = alert_config['email_from']
-        msg['To'] = alert_config['email_to']
-        msg['Subject'] = f"EG4-SRP Alert: {subject}"
-        
+        # Format HTML body
         body = f"""
         <html>
         <body>
@@ -230,8 +219,11 @@ def send_alert_email(subject, message):
             <p>Current Status:</p>
             <ul>
                 <li>Battery SOC: {monitor_data['eg4'].get('battery', {}).get('soc', 'N/A')}%</li>
+                <li>Battery Power: {monitor_data['eg4'].get('battery', {}).get('power', 'N/A')}W</li>
+                <li>Battery Voltage: {monitor_data['eg4'].get('battery', {}).get('voltage', 'N/A')}V</li>
                 <li>PV Power: {monitor_data['eg4'].get('pv', {}).get('power', 'N/A')}W</li>
                 <li>Grid Power: {monitor_data['eg4'].get('grid', {}).get('power', 'N/A')}W</li>
+                <li>Grid Voltage: {monitor_data['eg4'].get('grid', {}).get('voltage', 'N/A')}V</li>
                 <li>Load Power: {monitor_data['eg4'].get('load', {}).get('power', 'N/A')}W</li>
                 <li>SRP Peak Demand: {monitor_data['srp'].get('demand', 'N/A')}kW</li>
             </ul>
@@ -239,15 +231,21 @@ def send_alert_email(subject, message):
         </html>
         """
         
-        msg.attach(MIMEText(body, 'html'))
+        # Use gmail-send command
+        cmd = [
+            'send-gmail',
+            '--to', alert_config['email_to'],
+            '--subject', f"EG4-SRP Alert: {subject}",
+            '--body', body,
+            '--html'
+        ]
         
-        server = smtplib.SMTP(alert_config['smtp_server'], alert_config['smtp_port'])
-        server.starttls()
-        server.login(alert_config['smtp_username'], alert_config['smtp_password'])
-        server.send_message(msg)
-        server.quit()
+        result = subprocess.run(cmd, capture_output=True, text=True)
         
-        logger.info(f"Alert email sent: {subject}")
+        if result.returncode == 0:
+            logger.info(f"Alert email sent: {subject}")
+        else:
+            logger.error(f"Failed to send alert email: {result.stderr}")
         
     except Exception as e:
         logger.error(f"Failed to send alert email: {e}")
@@ -414,10 +412,7 @@ def config():
     global alert_config
     
     if request.method == 'GET':
-        # Don't send passwords
-        config_copy = alert_config.copy()
-        config_copy['smtp_password'] = '***' if config_copy['smtp_password'] else ''
-        return jsonify(config_copy)
+        return jsonify(alert_config)
     
     elif request.method == 'POST':
         data = request.json
@@ -431,21 +426,13 @@ def config():
             alert_config['email_enabled'] = data['email_enabled']
         if 'email_to' in data:
             alert_config['email_to'] = data['email_to']
-        if 'email_from' in data:
-            alert_config['email_from'] = data['email_from']
-        if 'smtp_server' in data:
-            alert_config['smtp_server'] = data['smtp_server']
-        if 'smtp_port' in data:
-            alert_config['smtp_port'] = data['smtp_port']
-        if 'smtp_username' in data:
-            alert_config['smtp_username'] = data['smtp_username']
-        if 'smtp_password' in data and data['smtp_password'] != '***':
-            alert_config['smtp_password'] = data['smtp_password']
         
         return jsonify({'status': 'success'})
 
 @app.route('/api/test-email')
 def test_email():
+    if not alert_config['email_to']:
+        return jsonify({'status': 'error', 'message': 'No recipient email configured'}), 400
     send_alert_email('Test Alert', 'This is a test alert from EG4-SRP Monitor')
     return jsonify({'status': 'success'})
 

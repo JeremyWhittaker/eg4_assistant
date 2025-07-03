@@ -12,7 +12,8 @@ This is a monitoring application for EG4 solar inverters and SRP (Salt River Pro
 - Flask web server with Socket.IO for real-time updates
 - Two monitor classes: `EG4Monitor` and `SRPMonitor` 
 - Background thread runs continuous monitoring loop
-- Email alert system with configurable thresholds
+- Email alert system using gmail-send integration
+- Simplified email configuration (recipients only, no SMTP settings)
 
 ### Web Interface (templates/index.html)
 - Single-page application with real-time WebSocket updates
@@ -61,6 +62,24 @@ docker compose logs -f eg4-srp-monitor
 # Stop container
 docker compose down
 ```
+
+## Gmail Integration
+
+### Setup Process
+1. Run `./setup-gmail.sh` to copy gmail_integration for Docker build
+2. The Dockerfile will automatically include and install the integration
+3. Gmail credentials are managed by the gmail-send tool, not the app
+
+### How It Works
+- Uses `send-gmail` command via subprocess
+- Sends HTML-formatted emails with system status
+- Supports multiple recipients (comma-separated)
+- No SMTP configuration needed in the app
+
+### Email Alert Configuration
+- Only requires recipient email addresses
+- Gmail sender credentials managed externally
+- Test email button to verify setup
 
 ## Important Patterns
 
