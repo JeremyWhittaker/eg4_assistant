@@ -6,3 +6,4 @@ logs/
 .DS_Store
 gmail_integration_temp/
 config/
+gmail_config/

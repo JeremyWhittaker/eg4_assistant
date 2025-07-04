@@ -20,20 +20,29 @@ This is a monitoring application for EG4 solar inverters and SRP (Salt River Pro
 - **Timezone selector with Phoenix as default**
 - **All alert times use selected timezone instead of UTC**
 - **Container automatically restarts when timezone changes**
+- **Volume mounts for live code updates (no rebuild needed)**
+- **Comprehensive logging system with web viewer**
+- **Gmail credentials persistence across container rebuilds**
+- **SRP updates only once daily at configured time**
+- **EG4 auto-refresh with configurable intervals**
+- **SRP CSV data export capability**
 - All features tested and working in production
 
 ## Key Components
 
-### Main Application (app.py) - 765 lines
+### Main Application (app.py) - 952 lines
 - Flask web server with Socket.IO for real-time updates
 - Two monitor classes: `EG4Monitor` and `SRPMonitor` 
 - Background thread runs continuous monitoring loop
 - Email alert system using gmail-send integration via subprocess
 - Web-based Gmail configuration with automatic credential setup
-- Manual refresh endpoint for immediate data updates
+- Manual refresh endpoints for both EG4 and SRP data
 - Configurable alert check times for battery and peak demand
+- Comprehensive logging system with rotation (10MB max, 3 backups)
+- In-memory log buffer for web interface (last 1000 entries)
+- SRP daily update logic (once per day at configured time)
 
-### Web Interface (templates/index.html) - 762 lines
+### Web Interface (templates/index.html) - 972 lines
 - Single-page application with real-time WebSocket updates
 - Dark theme dashboard showing inverter and utility data
 - Timezone selector at top of configuration (defaults to America/Phoenix)
@@ -43,12 +52,19 @@ This is a monitoring application for EG4 solar inverters and SRP (Salt River Pro
   - Peak demand alerts with configurable check time
   - Grid import alerts with time window
 - Gmail configuration modal for easy setup
-- Manual refresh button with 30-second cooldown
+- EG4 auto-refresh controls (30s, 60s, 2m, 5m intervals)
+- SRP next update time display
+- System logs viewer with filtering and download
 - Last update timestamp for data freshness
 
 ### Docker Setup
-- **Dockerfile** (60 lines): Installs Playwright, Chrome dependencies, and tzdata
-- **docker-compose.yml** (24 lines): Service orchestration with timezone support
+- **Dockerfile** (61 lines): Installs Playwright, Chrome dependencies, and tzdata
+- **docker-compose.yml** (33 lines): Service orchestration with:
+  - Volume mounts for live code updates
+  - Gmail credentials persistence
+  - Configuration persistence
+  - Timezone data mounts
+  - Development mode with auto-reload
 - **setup-gmail.sh** (23 lines): Prepares gmail integration for Docker build
 - Requires environment variables for EG4 and SRP credentials
 - Default port mapping: 8085:5000 (external:internal)
@@ -210,6 +226,29 @@ docker compose down
   - Timezone setting persists across container restarts
   - Added pytz library for proper timezone handling
   - Current time display updates every second
+- **Live Code Updates (July 2025)**:
+  - Volume mounts for app.py and templates directory
+  - Flask development mode with auto-reload
+  - No container rebuild needed for code changes
+  - FLASK_ENV=development for auto-reload
+  - Changes reflect immediately on save
+- **Logging System (July 2025)**:
+  - Dual output to Docker logs and file
+  - Rotating file handler (10MB max, 3 rotations)
+  - In-memory buffer for web interface
+  - Log viewer with level filtering
+  - Download full log functionality
+  - Auto-refresh every 5 seconds
+- **SRP Improvements (July 2025)**:
+  - Daily update only (once at configured time)
+  - Shows next update time in UI
+  - Manual refresh endpoint for testing
+  - CSV export functionality (srp_csv_downloader.py)
+- **EG4 Auto-Refresh (July 2025)**:
+  - Toggle for auto-refresh on/off
+  - Configurable intervals (30s, 60s, 2m, 5m)
+  - Default 60 seconds with checkbox checked
+  - Manual refresh still available
 
 ### Changing Default Port
 1. Edit `docker-compose.yml` ports section
@@ -257,30 +296,33 @@ The application has been thoroughly tested and is running in production:
 ## Complete File Inventory
 
 ### Core Application Files
-- `app.py` (765 lines) - Main Flask application with monitoring logic and timezone support
-- `templates/index.html` (762 lines) - Web dashboard UI with timezone selector
+- `app.py` (952 lines) - Main Flask application with monitoring, logging, and timezone support
+- `templates/index.html` (972 lines) - Web dashboard UI with auto-refresh and logs viewer
+- `srp_csv_downloader.py` (142 lines) - Standalone script for SRP CSV export
 - `requirements.txt` (8 lines) - Python dependencies including pytz
 - `requirements-dev.txt` (7 lines) - Development dependencies
 
 ### Docker Configuration
-- `Dockerfile` (60 lines) - Container image with tzdata support
-- `docker-compose.yml` (24 lines) - Service orchestration with timezone configuration
+- `Dockerfile` (61 lines) - Container image with tzdata support
+- `docker-compose.yml` (33 lines) - Service orchestration with volume mounts
 - `setup-gmail.sh` (23 lines) - Gmail integration setup script
 - `update_timezone.sh` (19 lines) - Helper script for timezone updates
 
 ### Configuration Files
-- `.env` (4 lines) - Environment variables (gitignored)
-- `.env.example` (14 lines) - Template for credentials
-- `.gitignore` (7 lines) - Git exclusions
+- `.env` - Environment variables (gitignored)
+- `.env.example` (15 lines) - Template for credentials
+- `.gitignore` (9 lines) - Git exclusions
 
 ### Documentation
-- `README.md` (399 lines) - User documentation
-- `CLAUDE.md` (262 lines) - This development guide
-- `FILE_STRUCTURE.md` (216 lines) - Detailed file documentation
+- `README.md` (415 lines) - User documentation
+- `CLAUDE.md` (342 lines) - This development guide
+- `FILE_STRUCTURE.md` (239 lines) - Detailed file documentation
 
 ### Runtime Directories
 - `logs/` - Container log volume mount
 - `config/` - Persistent configuration storage
+- `gmail_config/` - Gmail credentials persistence
+- `downloads/` - SRP CSV downloads
 - `gmail_integration_temp/` - Temporary build directory (gitignored)
 
 ## Future Enhancements

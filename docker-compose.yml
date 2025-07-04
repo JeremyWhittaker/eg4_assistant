@@ -10,10 +10,19 @@ services:
       - SRP_USERNAME=${SRP_USERNAME}
       - SRP_PASSWORD=${SRP_PASSWORD}
       - TZ=America/Phoenix
+      - FLASK_ENV=development
+      - PYTHONUNBUFFERED=1
     volumes:
+      # Application code - mounted for live updates
+      - ./app.py:/app/app.py
+      - ./templates:/app/templates
+      # Configuration and data
       - ./logs:/var/log
       - ./.env:/app/.env:ro
       - ./config:/app/config
+      # Gmail credentials persistence
+      - ./gmail_config:/root/.gmail_send
+      # Timezone data
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     restart: unless-stopped

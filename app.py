@@ -3,7 +3,7 @@
 EG4-SRP Monitor - Simplified monitoring and alerting system
 """
 
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, make_response
 from flask_socketio import SocketIO, emit
 import asyncio
 from playwright.async_api import async_playwright
@@ -17,17 +17,55 @@ import logging
 import sys
 import json
 import pytz
+from logging.handlers import RotatingFileHandler
+from collections import deque
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler('/tmp/eg4_srp_monitor.log')
-    ]
+# Configure logging with rotation
+LOG_FILE = '/tmp/eg4_srp_monitor.log'
+LOG_MAX_SIZE = 10 * 1024 * 1024  # 10MB
+LOG_BACKUP_COUNT = 3
+
+# Create formatters
+log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# Set up root logger
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+
+# Console handler (for Docker logs)
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(log_formatter)
+root_logger.addHandler(console_handler)
+
+# Rotating file handler (for web interface)
+file_handler = RotatingFileHandler(
+    LOG_FILE,
+    maxBytes=LOG_MAX_SIZE,
+    backupCount=LOG_BACKUP_COUNT
 )
+file_handler.setFormatter(log_formatter)
+root_logger.addHandler(file_handler)
+
+# Get logger for this module
 logger = logging.getLogger(__name__)
+
+# In-memory log buffer for web interface (last 1000 lines)
+log_buffer = deque(maxlen=1000)
+
+class WebLogHandler(logging.Handler):
+    """Custom handler to store logs in memory for web interface"""
+    def emit(self, record):
+        log_entry = self.format(record)
+        log_buffer.append({
+            'timestamp': record.created,
+            'level': record.levelname,
+            'message': log_entry
+        })
+
+# Add web handler to root logger
+web_handler = WebLogHandler()
+web_handler.setFormatter(log_formatter)
+root_logger.addHandler(web_handler)
 
 load_dotenv()
 
@@ -118,14 +156,20 @@ class EG4Monitor:
         
     async def login(self):
         try:
+            logger.info("Attempting EG4 login")
             await self.page.goto('https://monitor.eg4electronics.com/WManage/web/login', wait_until='domcontentloaded')
             await self.page.fill('input[name="account"]', self.username)
             await self.page.fill('input[name="password"]', self.password)
             await self.page.press('input[name="password"]', 'Enter')
             await asyncio.sleep(3)
-            return 'login' not in self.page.url
+            success = 'login' not in self.page.url
+            if success:
+                logger.info("EG4 login successful")
+            else:
+                logger.warning("EG4 login failed - still on login page")
+            return success
         except Exception as e:
-            logger.error(f"EG4 login error: {e}")
+            logger.error(f"EG4 login error: {e}", exc_info=True)
             return False
     
     async def get_data(self):
@@ -493,6 +537,9 @@ async def monitor_loop():
             # Reset retry count on successful connection
             retry_count = 0
             
+            # Track last SRP update date
+            last_srp_update_date = None
+            
             # Main monitoring loop
             consecutive_failures = 0
             while True:
@@ -508,12 +555,33 @@ async def monitor_loop():
                         consecutive_failures += 1
                         logger.warning(f"Failed to get EG4 data (attempt {consecutive_failures})")
                     
-                    # Get SRP data (less frequently)
-                    if srp_logged_in and datetime.now().minute % 5 == 0:
-                        srp_data = await srp.get_peak_demand()
-                        if srp_data:
-                            monitor_data['srp'] = srp_data
-                            socketio.emit('srp_update', srp_data)
+                    # Get SRP data once per day at configured time
+                    if srp_logged_in:
+                        # Get timezone-aware current time
+                        tz_name = alert_config.get('timezone', 'UTC')
+                        try:
+                            tz = pytz.timezone(tz_name)
+                            now = datetime.now(tz)
+                        except:
+                            now = datetime.now(pytz.UTC)
+                        
+                        # Check if it's time to update SRP (default 6 AM)
+                        srp_update_hour = alert_config['thresholds'].get('peak_demand_check_hour', 6)
+                        srp_update_minute = alert_config['thresholds'].get('peak_demand_check_minute', 0)
+                        current_date = now.date()
+                        
+                        if (now.hour == srp_update_hour and 
+                            now.minute == srp_update_minute and 
+                            last_srp_update_date != current_date):
+                            
+                            logger.info(f"Updating SRP peak demand data at {srp_update_hour:02d}:{srp_update_minute:02d} {tz_name}")
+                            srp_data = await srp.get_peak_demand()
+                            if srp_data:
+                                monitor_data['srp'] = srp_data
+                                monitor_data['srp']['last_daily_update'] = now.isoformat()
+                                socketio.emit('srp_update', srp_data)
+                                last_srp_update_date = current_date
+                                logger.info(f"SRP peak demand updated: {srp_data.get('demand', 0)}kW")
                     
                     # Check thresholds
                     check_thresholds()
@@ -687,6 +755,48 @@ def refresh_eg4():
     
     return jsonify({'status': 'success', 'message': 'Refresh requested'})
 
+@app.route('/api/refresh-srp', methods=['POST'])
+def refresh_srp():
+    """Manual refresh of SRP data (for initial load or testing)"""
+    try:
+        # Run async function in new event loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        async def get_srp_data():
+            srp = SRPMonitor()
+            await srp.start()
+            if await srp.login():
+                data = await srp.get_peak_demand()
+                await srp.close()
+                return data
+            await srp.close()
+            return None
+        
+        srp_data = loop.run_until_complete(get_srp_data())
+        loop.close()
+        
+        if srp_data:
+            # Get timezone-aware current time
+            tz_name = alert_config.get('timezone', 'UTC')
+            try:
+                tz = pytz.timezone(tz_name)
+                now = datetime.now(tz)
+            except:
+                now = datetime.now(pytz.UTC)
+            
+            monitor_data['srp'] = srp_data
+            monitor_data['srp']['last_daily_update'] = now.isoformat()
+            socketio.emit('srp_update', srp_data)
+            logger.info(f"SRP data manually refreshed: {srp_data.get('demand', 0)}kW")
+            return jsonify({'status': 'success', 'data': srp_data})
+        else:
+            return jsonify({'status': 'error', 'message': 'Failed to get SRP data'}), 500
+            
+    except Exception as e:
+        logger.error(f"Failed to refresh SRP data: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 @app.route('/api/timezone', methods=['POST'])
 def update_timezone():
     """Update container timezone"""
@@ -737,6 +847,69 @@ def update_timezone():
     
     return jsonify({'status': 'success', 'message': f'Timezone updated to {timezone}. Container restarting...'})
 
+@app.route('/api/logs')
+def get_logs():
+    """Get recent logs for display in web interface"""
+    # Get parameters
+    lines = request.args.get('lines', 100, type=int)
+    level = request.args.get('level', 'ALL')
+    
+    # Filter logs by level if specified
+    logs = list(log_buffer)
+    if level != 'ALL':
+        logs = [log for log in logs if log['level'] == level]
+    
+    # Get last N lines
+    logs = logs[-lines:]
+    
+    # Add system info
+    log_info = {
+        'logs': logs,
+        'total_buffered': len(log_buffer),
+        'log_file': LOG_FILE,
+        'max_size_mb': LOG_MAX_SIZE / 1024 / 1024,
+        'rotation_count': LOG_BACKUP_COUNT
+    }
+    
+    return jsonify(log_info)
+
+@app.route('/api/logs/download')
+def download_logs():
+    """Download the current log file"""
+    try:
+        # Force flush of all handlers
+        for handler in root_logger.handlers:
+            handler.flush()
+        
+        # Check if log file exists
+        if not os.path.exists(LOG_FILE):
+            return jsonify({'error': 'Log file not found'}), 404
+        
+        # Read the log file
+        with open(LOG_FILE, 'r') as f:
+            content = f.read()
+        
+        # Create response with proper headers
+        response = make_response(content)
+        response.headers['Content-Type'] = 'text/plain'
+        response.headers['Content-Disposition'] = f'attachment; filename=eg4_srp_monitor_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
+        
+        return response
+    except Exception as e:
+        logger.error(f"Failed to download logs: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/logs/clear', methods=['POST'])
+def clear_logs():
+    """Clear the in-memory log buffer"""
+    try:
+        log_buffer.clear()
+        logger.info("Log buffer cleared by user request")
+        return jsonify({'status': 'success', 'message': 'Log buffer cleared'})
+    except Exception as e:
+        logger.error(f"Failed to clear logs: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @socketio.on('connect')
 def handle_connect():
     emit('connected', {'data': 'Connected to EG4-SRP Monitor'})
@@ -747,6 +920,10 @@ def handle_connect():
         emit('srp_update', monitor_data['srp'])
 
 if __name__ == '__main__':
+    logger.info("=== EG4-SRP Monitor Starting ===")
+    logger.info(f"Log file: {LOG_FILE}")
+    logger.info(f"Max log size: {LOG_MAX_SIZE / 1024 / 1024}MB with {LOG_BACKUP_COUNT} rotations")
+    
     # Load saved configuration
     load_config()
     
@@ -756,11 +933,21 @@ if __name__ == '__main__':
         try:
             time.tzset()
             logger.info(f"Timezone set to {alert_config['timezone']}")
-        except:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to set timezone: {e}")
     
     # Start monitoring on startup if credentials exist
     if os.getenv('EG4_USERNAME') and os.getenv('EG4_PASSWORD'):
+        logger.info("Credentials found, starting monitoring thread")
         start_monitoring()
+    else:
+        logger.warning("No EG4 credentials found in environment")
     
-    socketio.run(app, host='0.0.0.0', port=5000, debug=False, allow_unsafe_werkzeug=True)
+    # Check if we're in development mode
+    debug_mode = os.getenv('FLASK_ENV') == 'development'
+    if debug_mode:
+        logger.info("Starting Flask application in DEVELOPMENT mode on port 5000 (auto-reload enabled)")
+    else:
+        logger.info("Starting Flask application in PRODUCTION mode on port 5000")
+    
+    socketio.run(app, host='0.0.0.0', port=5000, debug=debug_mode, allow_unsafe_werkzeug=True)

@@ -4,7 +4,7 @@ This document provides a detailed explanation of each file in the project direct
 
 ## Root Directory Files
 
-### `app.py` (766 lines)
+### `app.py` (952 lines)
 The main application file containing the Flask web server and monitoring logic.
 
 **Key Components:**
@@ -27,17 +27,24 @@ The main application file containing the Flask web server and monitoring logic.
 - Manual refresh endpoint for immediate data updates
 - Timezone configuration endpoint with container restart
 
-### `docker-compose.yml` (25 lines)
+### `docker-compose.yml` (33 lines)
 Docker Compose configuration for container orchestration.
 
 **Features:**
 - Port mapping: 8085:5000 (external:internal)
 - Environment variable injection from .env file
-- Volume mounts for logs, .env file, config directory, and timezone data
+- Volume mounts:
+  - Application code for live updates (./app.py and ./templates)
+  - Gmail credentials persistence (./gmail_config)
+  - Logs directory (./logs)
+  - Configuration directory (./config)
+  - Environment file (./.env)
+  - Timezone data (/etc/localtime and /etc/timezone)
 - Default timezone set to America/Phoenix
 - Health check configuration
 - 2GB shared memory for Playwright browser operations
 - Automatic restart policy
+- Flask development mode with auto-reload
 
 ### `Dockerfile` (61 lines)
 Container image definition for the application.
@@ -96,17 +103,19 @@ Specifies files to exclude from version control:
 - `gmail_integration_temp/` - Temporary build directory
 - `config/` - Configuration directory
 
-### `README.md` (409 lines)
+### `README.md` (454 lines)
 Main project documentation including:
 - Project overview and features
 - Quick start guide
 - Configuration instructions
+- Timezone configuration
 - API documentation
 - Development guidelines
 - Security notes
 - Troubleshooting
+- SRP CSV data export utility
 
-### `CLAUDE.md` (318 lines)
+### `CLAUDE.md` (384 lines)
 AI development guide containing:
 - Project patterns and conventions
 - Development commands
@@ -114,8 +123,9 @@ AI development guide containing:
 - Implementation status
 - Known limitations
 - Future enhancements
+- Recent changes (July 2025)
 
-### `FILE_STRUCTURE.md` (This file - 240 lines)
+### `FILE_STRUCTURE.md` (This file - 290 lines)
 Detailed documentation of all project files and their purposes.
 
 ### `setup-gmail.sh` (23 lines, Executable script)
@@ -134,12 +144,39 @@ Helper script for updating container timezone:
 - Example usage: `./update_timezone.sh America/Phoenix`
 - Note: Timezone can also be changed through web interface
 
+### `srp_csv_downloader.py` (142 lines)
+Standalone utility script for downloading SRP energy usage data in CSV format.
+
+**Features:**
+- Automated login to SRP account using Playwright
+- Navigates to usage page and clicks "Export to Excel" button
+- Downloads CSV file with daily energy usage data
+- Saves files to `downloads/` directory with timestamp
+- Prints CSV content to console for verification
+
+**CSV Data Includes:**
+- Meter read date and usage date
+- Off-peak kWh (positive = consumption, negative = export)
+- On-peak kWh (positive = consumption, negative = export)
+- Daily high/low temperatures (F)
+- Combined total net energy summary
+
+**Usage:**
+```bash
+python3 srp_csv_downloader.py
+```
+
+**Requirements:**
+- SRP_USERNAME and SRP_PASSWORD environment variables
+- Playwright with Chromium browser installed
+- Creates `downloads/` directory if not exists
+
 ## Subdirectories
 
 ### `templates/` Directory
 Contains HTML templates for the web interface.
 
-#### `templates/index.html` (762 lines)
+#### `templates/index.html` (972 lines)
 Single-page web dashboard application.
 
 **Features:**
@@ -159,11 +196,14 @@ Single-page web dashboard application.
    - Grid import/export with voltage
    - Load consumption
    - Battery and grid voltage displays
-   - Manual refresh button
+   - Auto-refresh controls with interval selection (30s, 60s, 2m, 5m)
+   - Manual refresh button with 30-second cooldown
    - Last update timestamp
 2. SRP Peak Demand card
    - Current peak display
    - Last update timestamp
+   - Next scheduled update time
+   - Manual refresh available
 3. Alert Configuration section
    - Email recipients with Gmail status indicator
    - Battery alerts section with threshold and check time
@@ -173,6 +213,11 @@ Single-page web dashboard application.
    - Save/test functionality with error handling
    - Timezone selector with 6 US timezones (Phoenix default)
    - Live current time display
+4. System Logs section
+   - Real-time log viewer with filtering by level
+   - Log download capability
+   - Clear logs button
+   - Shows last 1000 log entries
 
 ### `logs/` Directory (Created at runtime)
 Volume mount point for application logs.
@@ -183,6 +228,12 @@ Volume mount point for persistent configuration.
 - Contains `config.json` with email and alert settings
 - Automatically created on first save
 - Survives container restarts
+
+### `downloads/` Directory (Created by srp_csv_downloader.py)
+Storage location for downloaded SRP CSV files.
+- Contains timestamped CSV files (e.g., `srp_usage_20250703_215313.csv`)
+- Created automatically when running the SRP CSV downloader
+- Not included in Docker container (standalone script only)
 
 ## Data Flow
 

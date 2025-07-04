@@ -51,8 +51,9 @@ RUN playwright install chromium
 COPY app.py .
 COPY templates/ templates/
 
-# Create directories
-RUN mkdir -p /tmp /var/log
+# Create directories with proper permissions
+RUN mkdir -p /tmp /var/log /app/config && \
+    chmod 755 /tmp /var/log /app/config
 
 # Expose port
 EXPOSE 5000

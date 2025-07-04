@@ -36,12 +36,15 @@ This application provides automated monitoring of solar energy systems using EG4
   - Load consumption
   - Battery voltage monitoring
   - Grid voltage monitoring
+  - Auto-refresh with configurable intervals (30s, 60s, 2m, 5m)
   - Manual refresh button (30-second cooldown)
   - Last update timestamp display
 
 - **SRP Peak Demand Tracking**
-  - Automated peak demand monitoring
-  - Updates every 5 minutes during monitoring
+  - Daily update at configured time (default 6 AM)
+  - Shows next scheduled update time
+  - Manual refresh available for initial load
+  - CSV data export capability
   - Current billing cycle peak display
 
 - **Alert System**
@@ -57,12 +60,21 @@ This application provides automated monitoring of solar energy systems using EG4
   - Dark theme optimized for monitoring
   - Mobile-responsive design
   - Configuration interface for alerts
+  - System logs viewer with filtering
+  - Timezone selector with live time display
 
 - **Automatic Recovery**
   - Retry logic for login failures (3 attempts)
   - Connection recovery with exponential backoff
   - Handles data fetch failures gracefully
   - Maximum 5 retry attempts before giving up
+
+- **Developer Features**
+  - Live code updates without container rebuild
+  - Comprehensive logging to file and Docker logs
+  - Log rotation (10MB max, 3 backups)
+  - Web-based log viewer with download
+  - Flask development mode with auto-reload
 
 ### Planned Features
 
@@ -80,15 +92,18 @@ eg4-srp-monitor/
 ├── app.py              # Main Flask application with monitoring logic
 ├── templates/
 │   └── index.html      # Web dashboard interface
+├── srp_csv_downloader.py # SRP CSV export utility
 ├── requirements.txt    # Python dependencies
 ├── requirements-dev.txt # Development dependencies (testing, linting)
 ├── Dockerfile         # Container configuration
 ├── docker-compose.yml # Docker Compose setup
+├── setup-gmail.sh     # Gmail integration setup
 ├── update_timezone.sh # Timezone update helper script
 ├── .env.example       # Environment variable template
 ├── .gitignore         # Git ignore rules
 ├── CLAUDE.md          # Development guide
-└── README.md          # This file
+├── README.md          # This file
+└── FILE_STRUCTURE.md  # Detailed file documentation
 ```
 
 ## Prerequisites
@@ -301,6 +316,28 @@ Since the gmail-send integration is installed locally, you'll need to either:
 5. Thresholds are checked and alerts sent if needed
 6. Web interface updates in real-time
 
+## SRP CSV Data Export
+
+A standalone script `srp_csv_downloader.py` is included for exporting SRP energy usage data:
+
+```bash
+# Run the script
+python3 srp_csv_downloader.py
+
+# Output includes:
+# - Daily off-peak and on-peak kWh usage
+# - High/low temperatures
+# - Net energy totals
+# - Data saved to downloads/ directory
+```
+
+The CSV contains columns:
+- Meter read date
+- Usage date
+- Off-peak kWh (positive = consumption, negative = export)
+- On-peak kWh (positive = consumption, negative = export)
+- High/Low temperatures (F)
+
 ## Troubleshooting
 
 ### Container Health Checks
@@ -391,11 +428,12 @@ flake8 app.py      # Style guide enforcement
 For detailed information about each file in the project, see [FILE_STRUCTURE.md](FILE_STRUCTURE.md).
 
 ### Key Files
-- `app.py` - Main application (766 lines)
-- `templates/index.html` - Web dashboard (762 lines)
+- `app.py` - Main application (952 lines)
+- `templates/index.html` - Web dashboard (972 lines)
+- `srp_csv_downloader.py` - SRP data export (142 lines)
+- `docker-compose.yml` - Container configuration (33 lines)
 - `setup-gmail.sh` - Gmail integration setup (23 lines)
-- `docker-compose.yml` - Container configuration (25 lines)
-- `requirements.txt` - Python dependencies (9 lines)
+- `requirements.txt` - Python dependencies (8 lines)
 
 ## Contributing
 
