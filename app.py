@@ -1009,10 +1009,22 @@ def refresh_eg4():
     # Check if we've refreshed recently (within 30 seconds)
     if last_manual_refresh:
         try:
-            current_time = datetime.now()
-            # Ensure both datetimes are timezone-naive for comparison
-            if hasattr(last_manual_refresh, 'tzinfo') and last_manual_refresh.tzinfo is not None:
-                last_manual_refresh = last_manual_refresh.replace(tzinfo=None)
+            # Use timezone-aware current time for consistency
+            tz_name = alert_config.get('timezone', 'UTC')
+            tz = pytz.timezone(tz_name)
+            current_time = datetime.now(tz)
+            
+            # Ensure both datetimes have the same timezone awareness
+            if isinstance(last_manual_refresh, str):
+                # If stored as string, parse it
+                last_manual_refresh = datetime.fromisoformat(last_manual_refresh)
+            
+            # Make last_manual_refresh timezone-aware if it's naive
+            if last_manual_refresh.tzinfo is None:
+                last_manual_refresh = tz.localize(last_manual_refresh)
+            elif last_manual_refresh.tzinfo != current_time.tzinfo:
+                # Convert to current timezone if different
+                last_manual_refresh = last_manual_refresh.astimezone(tz)
             
             time_since_refresh = (current_time - last_manual_refresh).total_seconds()
             if time_since_refresh < 30:
@@ -1024,9 +1036,15 @@ def refresh_eg4():
             logger.warning(f"Error checking manual refresh time: {e}")
             # Continue with refresh if we can't compare times
     
-    # Set the refresh flag
+    # Set the refresh flag with timezone-aware timestamp
     manual_refresh_requested = True
-    last_manual_refresh = datetime.now()
+    try:
+        tz_name = alert_config.get('timezone', 'UTC')
+        tz = pytz.timezone(tz_name)
+        last_manual_refresh = datetime.now(tz)
+    except Exception as e:
+        logger.warning(f"Error setting timezone-aware manual refresh time: {e}")
+        last_manual_refresh = datetime.now()  # Fallback to naive datetime
     
     return jsonify({'status': 'success', 'message': 'Refresh requested'})
 
