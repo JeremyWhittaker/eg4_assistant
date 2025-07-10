@@ -671,9 +671,21 @@ def check_thresholds():
                 # Check if we haven't sent this alert recently (within 15 minutes)
                 last_grid_alert = alert_config['last_alerts'].get('grid_import_last_alert')
                 if last_grid_alert:
-                    last_alert_time = datetime.fromisoformat(last_grid_alert)
-                    if (now - last_alert_time).total_seconds() < 900:  # 15 minutes
-                        return  # Skip alert if sent recently
+                    try:
+                        last_alert_time = datetime.fromisoformat(last_grid_alert)
+                        # Make sure both datetimes have the same timezone awareness
+                        if last_alert_time.tzinfo is None and now.tzinfo is not None:
+                            # Convert naive datetime to timezone-aware
+                            last_alert_time = tz.localize(last_alert_time)
+                        elif last_alert_time.tzinfo is not None and now.tzinfo is None:
+                            # Convert timezone-aware to naive (shouldn't happen, but safe fallback)
+                            last_alert_time = last_alert_time.replace(tzinfo=None)
+                        
+                        if (now - last_alert_time).total_seconds() < 900:  # 15 minutes
+                            return  # Skip alert if sent recently
+                    except Exception as e:
+                        logger.warning(f"Error parsing last grid alert time: {e}")
+                        # Continue with alert if we can't parse the time
                 
                 alerts.append(('High Grid Import', f'Grid import is {grid_power}W during peak hours ({start_hour}:00-{end_hour}:00 {tz_name}, threshold: {alert_config["thresholds"]["grid_import"]}W)'))
                 alert_config['last_alerts']['grid_import_last_alert'] = now.isoformat()
@@ -755,7 +767,14 @@ async def monitor_loop():
                     eg4_data = await eg4.get_data()
                     if eg4_data and is_valid_eg4_data(eg4_data):
                         monitor_data['eg4'] = eg4_data
-                        monitor_data['last_update'] = datetime.now().isoformat()
+                        # Use timezone-aware timestamp for consistency
+                        tz_name = alert_config.get('timezone', 'UTC')
+                        try:
+                            tz = pytz.timezone(tz_name)
+                            current_time = datetime.now(tz)
+                        except:
+                            current_time = datetime.now(pytz.UTC)
+                        monitor_data['last_update'] = current_time.isoformat()
                         monitor_data['eg4_connected'] = True
                         socketio.emit('eg4_update', eg4_data)
                         consecutive_failures = 0
@@ -821,7 +840,10 @@ async def monitor_loop():
                                 logger.warning("Failed to get SRP peak demand data")
                     
                     # Check thresholds
-                    check_thresholds()
+                    try:
+                        check_thresholds()
+                    except Exception as e:
+                        logger.error(f"Error in check_thresholds(): {e}", exc_info=True)
                     
                     # If too many consecutive failures, restart
                     if consecutive_failures >= 5:
@@ -986,12 +1008,21 @@ def refresh_eg4():
     
     # Check if we've refreshed recently (within 30 seconds)
     if last_manual_refresh:
-        time_since_refresh = (datetime.now() - last_manual_refresh).total_seconds()
-        if time_since_refresh < 30:
-            return jsonify({
-                'status': 'error', 
-                'message': f'Please wait {int(30 - time_since_refresh)} seconds before refreshing again'
-            }), 429
+        try:
+            current_time = datetime.now()
+            # Ensure both datetimes are timezone-naive for comparison
+            if hasattr(last_manual_refresh, 'tzinfo') and last_manual_refresh.tzinfo is not None:
+                last_manual_refresh = last_manual_refresh.replace(tzinfo=None)
+            
+            time_since_refresh = (current_time - last_manual_refresh).total_seconds()
+            if time_since_refresh < 30:
+                return jsonify({
+                    'status': 'error', 
+                    'message': f'Please wait {int(30 - time_since_refresh)} seconds before refreshing again'
+                }), 429
+        except Exception as e:
+            logger.warning(f"Error checking manual refresh time: {e}")
+            # Continue with refresh if we can't compare times
     
     # Set the refresh flag
     manual_refresh_requested = True

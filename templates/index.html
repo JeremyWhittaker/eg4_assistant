@@ -281,7 +281,12 @@
             <!-- EG4 Status -->
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                    <h2 style="margin: 0;">EG4 Inverter Status</h2>
+                    <div>
+                        <h2 style="margin: 0;">EG4 Inverter Status</h2>
+                        <div style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem;">
+                            Last updated: <span id="eg4-last-update">--</span>
+                        </div>
+                    </div>
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
                         <label style="display: flex; align-items: center; gap: 0.5rem; margin: 0;">
                             <input type="checkbox" id="auto-refresh" checked style="cursor: pointer;">
@@ -332,10 +337,6 @@
                     <span class="value" id="grid-voltage">--</span>
                 </div>
                 <div class="metric">
-                    <span>Last Update</span>
-                    <span class="value" id="eg4-update">--</span>
-                </div>
-                <div class="metric">
                     <span>Status</span>
                     <span><span class="status-indicator offline" id="eg4-status"></span><span id="eg4-status-text">Offline</span></span>
                 </div>
@@ -343,14 +344,15 @@
             
             <!-- SRP Status -->
             <div class="card">
-                <h2>SRP Peak Demand</h2>
-                <div class="metric">
+                <div>
+                    <h2 style="margin: 0;">SRP Peak Demand</h2>
+                    <div style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem;">
+                        Last updated: <span id="srp-last-update">--</span>
+                    </div>
+                </div>
+                <div class="metric" style="margin-top: 1rem;">
                     <span>Current Peak</span>
                     <span class="value warning" id="peak-demand" style="font-size: 1.5rem;">-- kW</span>
-                </div>
-                <div class="metric">
-                    <span>Last Update</span>
-                    <span class="value" id="srp-update">--</span>
                 </div>
                 <div class="metric">
                     <span>Next Update</span>
@@ -371,7 +373,12 @@
         <!-- SRP Energy Usage Chart -->
         <div class="card" style="margin-top: 1.5rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h2 style="margin: 0;">SRP Energy Usage</h2>
+                <div>
+                    <h2 style="margin: 0;">SRP Energy Usage</h2>
+                    <div style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem;">
+                        Chart data: <span id="chart-last-update">--</span>
+                    </div>
+                </div>
                 <button onclick="loadSRPChart()" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Refresh Chart</button>
             </div>
             <!-- Chart Type Selector -->
@@ -685,13 +692,16 @@
             document.getElementById('eg4-status-text').textContent = 'Online';
             
             // Update last update time
-            document.getElementById('eg4-update').textContent = new Date().toLocaleTimeString();
+            const now = new Date();
+            document.getElementById('eg4-last-update').textContent = now.toLocaleString();
         });
         
         // Update SRP data
         socket.on('srp_update', (data) => {
             document.getElementById('peak-demand').textContent = data.demand.toFixed(1) + ' kW';
-            document.getElementById('srp-update').textContent = new Date(data.timestamp).toLocaleTimeString();
+            
+            const updateTime = new Date(data.timestamp);
+            document.getElementById('srp-last-update').textContent = updateTime.toLocaleString();
             
             document.getElementById('srp-status').className = 'status-indicator online';
             document.getElementById('srp-status-text').textContent = 'Online';
@@ -1370,6 +1380,9 @@
                 // Create new chart
                 const ctx = document.getElementById('srpChart').getContext('2d');
                 srpChart = new Chart(ctx, config);
+                
+                // Update chart last update timestamp
+                document.getElementById('chart-last-update').textContent = new Date().toLocaleString();
                 
             } catch (error) {
                 console.error('Failed to load SRP chart:', error);
