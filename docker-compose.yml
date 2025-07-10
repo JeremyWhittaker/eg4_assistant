@@ -10,7 +10,7 @@ services:
       - SRP_USERNAME=${SRP_USERNAME}
       - SRP_PASSWORD=${SRP_PASSWORD}
       - TZ=America/Phoenix
-      - FLASK_ENV=development
+      - FLASK_ENV=production
       - PYTHONUNBUFFERED=1
     volumes:
       # Application code - mounted for live updates

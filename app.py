@@ -34,6 +34,10 @@ log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(me
 root_logger = logging.getLogger()
 root_logger.setLevel(logging.INFO)
 
+# Suppress Werkzeug production warnings
+werkzeug_logger = logging.getLogger('werkzeug')
+werkzeug_logger.setLevel(logging.ERROR)
+
 # Console handler (for Docker logs)
 console_handler = logging.StreamHandler(sys.stdout)
 console_handler.setFormatter(log_formatter)
@@ -1379,4 +1383,6 @@ if __name__ == '__main__':
     else:
         logger.info("Starting Flask application in PRODUCTION mode on port 5000")
     
+    # Run with allow_unsafe_werkzeug=True to suppress production warnings
+    # For a monitoring tool like this, Werkzeug is acceptable
     socketio.run(app, host='0.0.0.0', port=5000, debug=debug_mode, allow_unsafe_werkzeug=True)
