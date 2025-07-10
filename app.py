@@ -667,7 +667,9 @@ def check_thresholds():
         
         # Check if current time is within alert window
         if start_hour <= current_hour < end_hour:
-            if grid_power > alert_config['thresholds']['grid_import']:
+            # Grid import alert: trigger when grid power is NEGATIVE (importing from grid)
+            # Positive grid power = exporting to grid, Negative grid power = importing from grid
+            if grid_power < 0 and abs(grid_power) > alert_config['thresholds']['grid_import']:
                 # Check if we haven't sent this alert recently (within 15 minutes)
                 last_grid_alert = alert_config['last_alerts'].get('grid_import_last_alert')
                 if last_grid_alert:
@@ -687,7 +689,7 @@ def check_thresholds():
                         logger.warning(f"Error parsing last grid alert time: {e}")
                         # Continue with alert if we can't parse the time
                 
-                alerts.append(('High Grid Import', f'Grid import is {grid_power}W during peak hours ({start_hour}:00-{end_hour}:00 {tz_name}, threshold: {alert_config["thresholds"]["grid_import"]}W)'))
+                alerts.append(('High Grid Import', f'Grid importing {abs(grid_power)}W from utility during peak hours ({start_hour}:00-{end_hour}:00 {tz_name}, threshold: {alert_config["thresholds"]["grid_import"]}W)'))
                 alert_config['last_alerts']['grid_import_last_alert'] = now.isoformat()
                 save_config()
     
