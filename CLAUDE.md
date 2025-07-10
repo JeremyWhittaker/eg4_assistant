@@ -1,142 +1,178 @@
-# EG4-SRP Monitor - Claude Development Guide
+# CLAUDE.md - Development Guide for EG4-SRP Monitor
 
 ## Project Overview
+EG4-SRP Monitor is a comprehensive real-time monitoring system for EG4 inverters with Salt River Project (SRP) utility integration. Built with Flask, Socket.IO, and Playwright for reliable web automation.
 
-This is a monitoring application for EG4 solar inverters and SRP (Salt River Project) peak demand tracking. It uses web scraping to collect data and provides real-time monitoring with email alerts.
+**Latest Update (July 2025):** Complete rewrite with enhanced features:
+- **Multi-MPPT PV Monitoring**: Individual string tracking with automatic totaling
+- **Complete SRP Integration**: All 4 chart types (Net Energy, Generation, Usage, Demand)
+- **Smart Alert Protection**: Prevents false alerts when systems are offline  
+- **Enhanced Error Recovery**: Robust connection validation and retry logic
+- **Real-time Dashboard**: Live WebSocket updates with detailed system status
+- **Comprehensive Documentation**: Full user and developer guides
 
-**Latest Update (July 2025):** The application is fully functional with:
-- Automatic retry logic and error recovery
-- Web-based Gmail configuration (no command line needed)
-- Port 8085 by default
-- Battery and grid voltage monitoring
-- Time-based grid import alerts (only during configured hours)
-- Battery high alert removed (unnecessary)
-- Configuration persistence to disk (survives container restarts)
-- Time-based battery checks (once daily at configured time)
-- Configurable peak demand check time (default 6 AM)
-- Manual refresh button for EG4 data
-- Support for Google Workspace custom domains
-- Improved UI with logical alert grouping
-- **Timezone selector with Phoenix as default**
-- **All alert times use selected timezone instead of UTC**
-- **Container automatically restarts when timezone changes**
-- **Volume mounts for live code updates (no rebuild needed)**
-- **Comprehensive logging system with web viewer**
-- **Gmail credentials persistence across container rebuilds**
-- **SRP updates only once daily at configured time**
-- **EG4 auto-refresh with configurable intervals**
-- **SRP CSV data export capability**
-- All features tested and working in production
+## Architecture
 
-## Key Components
+### Core Components
+1. **Flask Application** (`app.py`) - Main server with 1,400+ lines
+2. **Web Interface** (`templates/index.html`) - Real-time dashboard with 700+ lines
+3. **Docker Environment** - Containerized deployment with volume persistence
+4. **Playwright Automation** - Headless browser for EG4 and SRP data extraction
 
-### Main Application (app.py) - 952 lines
-- Flask web server with Socket.IO for real-time updates
-- Two monitor classes: `EG4Monitor` and `SRPMonitor` 
-- Background thread runs continuous monitoring loop
-- Email alert system using gmail-send integration via subprocess
-- Web-based Gmail configuration with automatic credential setup
-- Manual refresh endpoints for both EG4 and SRP data
-- Configurable alert check times for battery and peak demand
-- Comprehensive logging system with rotation (10MB max, 3 backups)
-- In-memory log buffer for web interface (last 1000 entries)
-- SRP daily update logic (once per day at configured time)
+### Key Technologies
+- **Backend**: Flask + Socket.IO for real-time WebSocket communication
+- **Automation**: Playwright for reliable web scraping with retry logic
+- **Containerization**: Docker with health checks and auto-restart
+- **Data Processing**: CSV parsing for SRP energy usage analytics
+- **Alerting**: Gmail integration using gmail-send package
 
-### Web Interface (templates/index.html) - 972 lines
-- Single-page application with real-time WebSocket updates
-- Dark theme dashboard showing inverter and utility data
-- Timezone selector at top of configuration (defaults to America/Phoenix)
-- Live current time display in selected timezone
-- Alert configuration organized into logical sections:
-  - Battery alerts with configurable check time
-  - Peak demand alerts with configurable check time
-  - Grid import alerts with time window
-- Gmail configuration modal for easy setup
-- EG4 auto-refresh controls (30s, 60s, 2m, 5m intervals)
-- SRP next update time display
-- System logs viewer with filtering and download
-- Last update timestamp for data freshness
+## Development Setup
 
-### Docker Setup
-- **Dockerfile** (61 lines): Installs Playwright, Chrome dependencies, and tzdata
-- **docker-compose.yml** (33 lines): Service orchestration with:
-  - Volume mounts for live code updates
-  - Gmail credentials persistence
-  - Configuration persistence
-  - Timezone data mounts
-  - Development mode with auto-reload
-- **setup-gmail.sh** (23 lines): Prepares gmail integration for Docker build
-- Requires environment variables for EG4 and SRP credentials
-- Default port mapping: 8085:5000 (external:internal)
-- 2GB shared memory allocation for browser stability
-- Volume mounts for logs, configuration persistence, and timezone data
-- Default timezone set to America/Phoenix
-
-## Development Commands
-
-### Running Tests
+### Local Development
 ```bash
-# Install development dependencies first
-pip install -r requirements-dev.txt
+# Install dependencies
+pip install -r requirements.txt
+playwright install chromium
 
-# Run tests
-pytest
-pytest --cov=app  # With coverage
+# Set environment variables
+cp .env.example .env
+# Edit .env with your credentials
+
+# Run locally
+python app.py
 ```
 
-### Linting and Type Checking
+### Docker Development
 ```bash
-# Development tools are in requirements-dev.txt
-black app.py       # Format code
-pylint app.py      # Lint code  
-mypy app.py        # Type checking
-flake8 app.py      # Style guide enforcement
-```
-
-### Building and Running
-```bash
-# Build Docker image
-docker compose build
-
-# Start container
-docker compose up -d
+# Build and run
+docker-compose up -d
 
 # View logs
-docker compose logs -f eg4-srp-monitor
+docker logs eg4-srp-monitor -f
 
-# Stop container
-docker compose down
+# Rebuild after changes
+docker-compose build
 ```
 
-## Gmail Integration
+## Key Features & Implementation
 
-### Web-Based Configuration
-- Gmail can now be configured entirely through the web interface
-- No command line access required for users
-- Configuration stored securely on the host system at ~/.gmail_send/.env
+### 1. Multi-MPPT PV Monitoring
+**Location**: `app.py:extract_eg4_data()` function
+**Enhancement**: Individual PV string tracking with automatic totaling
 
-### Setup Process
-1. Run `./setup-gmail.sh` to copy gmail_integration for Docker build
-2. The Dockerfile will automatically include and install the integration
-3. Users configure Gmail through the web interface:
-   - Click "Configure" button when Gmail Status shows "Not configured"
-   - Enter Gmail address and App Password
-   - System automatically creates ~/.gmail_send/.env file
-   - Test email sent to verify configuration
+```javascript
+// Enhanced PV extraction (in extract_eg4_data)
+const pv1Power = parseInt(cleanText(rawPv1Power)) || 0;
+const pv2Power = parseInt(cleanText(rawPv2Power)) || 0;
+const pv3Power = parseInt(cleanText(rawPv3Power)) || 0;
+const totalPvPower = pv1Power + pv2Power + pv3Power;
 
-### How It Works
-- Uses `send-gmail` command via subprocess
-- Sends HTML-formatted emails with system status
-- Supports multiple recipients (comma-separated)
-- No SMTP configuration needed in the app
-- Requires gmail-send to be installed on host system
+return {
+    pv_power: totalPvPower,
+    pv1_power: pv1Power,
+    pv1_voltage: parseFloat(cleanText(rawPv1Voltage)) || 0,
+    // ... similar for PV2, PV3
+};
+```
 
-### Email Alert Configuration
-- Only requires recipient email addresses
-- Gmail sender credentials managed externally on host
-- Test email button to verify setup
-- Web interface shows Gmail configuration status
-- Detailed error messages guide setup process
+### 2. Connection Validation System
+**Location**: `app.py:is_valid_eg4_data()` function
+**Purpose**: Prevents false alerts when EG4 system is offline
+
+```python
+def is_valid_eg4_data(data):
+    """Validate that EG4 data represents a real connection"""
+    if not data:
+        return False
+    
+    # Check for all-zero condition (system offline)
+    critical_values = [
+        data.get('battery_soc', 0),
+        data.get('battery_power', 0),
+        data.get('pv_power', 0),
+        data.get('grid_power', 0)
+    ]
+    
+    # If all critical values are zero, system is likely offline
+    return any(abs(value) > 0.1 for value in critical_values)
+```
+
+### 3. SRP Chart Data Processing
+**Location**: `app.py:fetch_srp_chart_data()` function
+**Enhancement**: Support for all 4 SRP chart types with different CSV structures
+
+```python
+# Chart type specific column mapping
+if chart_type == 'generation':
+    # Generation CSV: Off-peak kWh + On-peak kWh columns
+    off_peak = float(row.get('Off-peak kWh', 0) or 0)
+    on_peak = float(row.get('On-peak kWh', 0) or 0)
+    
+elif chart_type == 'demand':
+    # Demand CSV: On-peak kW column for peak demand
+    demand_value = float(row.get('On-peak kW', 0) or 0)
+```
+
+### 4. Smart Alert System
+**Location**: `app.py:check_alerts()` function
+**Features**: Time-based scheduling, anti-spam, connection-aware
+
+```python
+def should_send_alert(alert_type, current_time):
+    """Determine if alert should be sent based on timing and cooldowns"""
+    last_sent = last_alerts.get(alert_type)
+    
+    if alert_type == 'battery':
+        # Daily check at configured hour
+        target_hour = alert_config['thresholds']['battery_check_hour']
+        return (current_time.hour == target_hour and 
+                current_time.minute < 5 and
+                (not last_sent or last_sent.date() < current_time.date()))
+```
+
+## File Structure & Responsibilities
+
+```
+eg4-srp-monitor/
+├── app.py                 # Main Flask application
+│   ├── Data extraction functions (EG4/SRP)
+│   ├── Alert logic and email integration
+│   ├── API endpoints for configuration
+│   ├── WebSocket handlers for real-time updates
+│   └── Background monitoring threads
+│
+├── templates/index.html   # Web dashboard
+│   ├── Real-time data display with Socket.IO
+│   ├── Interactive SRP charts with Chart.js
+│   ├── Configuration forms and validation
+│   └── PV string breakdown display
+│
+├── docker-compose.yml     # Container orchestration
+├── Dockerfile            # Container build instructions
+├── requirements.txt      # Python dependencies
+├── .env                  # Environment variables (credentials)
+└── README.md             # User documentation
+```
+
+## Common Development Tasks
+
+### Adding New Alerts
+1. **Define threshold** in `alert_config['thresholds']`
+2. **Add check logic** in `check_alerts()` function
+3. **Update configuration form** in `index.html`
+4. **Test with test email** endpoint
+
+### Modifying Data Extraction
+1. **EG4 changes**: Update `extract_eg4_data()` JavaScript execution
+2. **SRP changes**: Modify `fetch_srp_chart_data()` or `fetch_srp_peak_demand()`
+3. **Test thoroughly** with real accounts in development
+4. **Add error handling** for new failure modes
+
+### Updating Web Interface
+1. **Real-time updates**: Modify Socket.IO emit in monitoring thread
+2. **Static elements**: Update `index.html` template
+3. **Charts**: Modify Chart.js configuration in JavaScript section
+4. **Styling**: Update CSS in `<style>` section
 
 ## Important Patterns
 

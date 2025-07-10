@@ -19,6 +19,8 @@ import json
 import pytz
 from logging.handlers import RotatingFileHandler
 from collections import deque
+import csv
+import glob
 
 # Configure logging with rotation
 LOG_FILE = '/tmp/eg4_srp_monitor.log'
@@ -82,6 +84,7 @@ monitor_data = {
 
 # Track manual refresh requests
 manual_refresh_requested = False
+manual_srp_refresh_requested = False
 last_manual_refresh = None
 
 # Configuration file path
@@ -177,14 +180,20 @@ class EG4Monitor:
             await self.page.goto('https://monitor.eg4electronics.com/WManage/web/monitor/inverter', wait_until='networkidle')
             await asyncio.sleep(3)
             
-            # Wait for data to load
-            for _ in range(10):
+            # Wait for data to load with better debugging
+            data_loaded = False
+            for i in range(10):
                 soc = await self.page.evaluate("() => document.querySelector('.socText')?.textContent")
                 if soc and soc != '--':
+                    data_loaded = True
                     break
+                logger.debug(f"Waiting for EG4 data to load... attempt {i+1}/10, SOC: {soc}")
                 await asyncio.sleep(1)
             
-            # Extract data
+            if not data_loaded:
+                logger.warning("EG4 data did not load after 10 seconds")
+            
+            # Extract data with debug info
             data = await self.page.evaluate("""
                 () => {
                     const cleanText = (text) => {
@@ -192,30 +201,85 @@ class EG4Monitor:
                         return text.trim().replace(/[^0-9.-]/g, '');
                     };
                     
+                    // Get raw values for debugging
+                    const rawSoc = document.querySelector('.socText')?.textContent;
+                    const rawBatteryPower = document.querySelector('.batteryPowerText')?.textContent;
+                    const rawBatteryVoltage = document.querySelector('.vbatText')?.textContent;
+                    const rawGridPower = document.querySelector('.gridPowerText')?.textContent;
+                    const rawGridVoltage = document.querySelector('.vacText')?.textContent;
+                    const rawLoadPower = document.querySelector('.consumptionPowerText')?.textContent;
+                    
+                    // Get individual PV string data
+                    const rawPv1Power = document.querySelector('.pv1PowerText')?.textContent;
+                    const rawPv1Voltage = document.querySelector('.vpv1Text')?.textContent;
+                    const rawPv2Power = document.querySelector('.pv2PowerText')?.textContent;
+                    const rawPv2Voltage = document.querySelector('.vpv2Text')?.textContent;
+                    const rawPv3Power = document.querySelector('.pv3PowerText')?.textContent;
+                    const rawPv3Voltage = document.querySelector('.vpv3Text')?.textContent;
+                    
+                    // Calculate individual string values
+                    const pv1Power = parseInt(cleanText(rawPv1Power)) || 0;
+                    const pv1Voltage = parseFloat(cleanText(rawPv1Voltage)) || 0;
+                    const pv2Power = parseInt(cleanText(rawPv2Power)) || 0;
+                    const pv2Voltage = parseFloat(cleanText(rawPv2Voltage)) || 0;
+                    const pv3Power = parseInt(cleanText(rawPv3Power)) || 0;
+                    const pv3Voltage = parseFloat(cleanText(rawPv3Voltage)) || 0;
+                    
+                    // Calculate total PV power
+                    const totalPvPower = pv1Power + pv2Power + pv3Power;
+                    
                     return {
                         battery: {
-                            soc: parseInt(cleanText(document.querySelector('.socText')?.textContent)) || 0,
-                            power: parseInt(cleanText(document.querySelector('.batteryPowerText')?.textContent)) || 0,
-                            voltage: parseFloat(cleanText(document.querySelector('.vbatText')?.textContent)) || 0
+                            soc: parseInt(cleanText(rawSoc)) || 0,
+                            power: parseInt(cleanText(rawBatteryPower)) || 0,
+                            voltage: parseFloat(cleanText(rawBatteryVoltage)) || 0
                         },
                         pv: {
-                            power: parseInt(cleanText(document.querySelector('.pvPowerText')?.textContent)) || 0
+                            total_power: totalPvPower,
+                            power: totalPvPower, // Keep for backward compatibility
+                            strings: {
+                                pv1: { power: pv1Power, voltage: pv1Voltage },
+                                pv2: { power: pv2Power, voltage: pv2Voltage },
+                                pv3: { power: pv3Power, voltage: pv3Voltage }
+                            }
                         },
                         grid: {
-                            power: parseInt(cleanText(document.querySelector('.gridPowerText')?.textContent)) || 0,
-                            voltage: parseFloat(cleanText(document.querySelector('.vacText')?.textContent)) || 0
+                            power: parseInt(cleanText(rawGridPower)) || 0,
+                            voltage: parseFloat(cleanText(rawGridVoltage)) || 0
                         },
                         load: {
-                            power: parseInt(cleanText(document.querySelector('.consumptionPowerText')?.textContent)) || 0
+                            power: parseInt(cleanText(rawLoadPower)) || 0
+                        },
+                        debug: {
+                            rawSoc: rawSoc,
+                            rawBatteryPower: rawBatteryPower,
+                            rawBatteryVoltage: rawBatteryVoltage,
+                            rawPv1Power: rawPv1Power,
+                            rawPv1Voltage: rawPv1Voltage,
+                            rawPv2Power: rawPv2Power,
+                            rawPv2Voltage: rawPv2Voltage,
+                            rawPv3Power: rawPv3Power,
+                            rawPv3Voltage: rawPv3Voltage,
+                            rawGridPower: rawGridPower,
+                            rawGridVoltage: rawGridVoltage,
+                            rawLoadPower: rawLoadPower
                         }
                     };
                 }
             """)
             
+            # Log debug info if all values are zero
+            if data and is_valid_eg4_data(data):
+                pv_strings = data['pv']['strings']
+                pv_details = f"PV1:{pv_strings['pv1']['power']}W, PV2:{pv_strings['pv2']['power']}W, PV3:{pv_strings['pv3']['power']}W"
+                logger.debug(f"EG4 data extracted successfully: SOC={data['battery']['soc']}%, PV Total={data['pv']['total_power']}W ({pv_details})")
+            elif data:
+                logger.warning(f"EG4 data all zeros - raw values: {data.get('debug', {})}")
+            
             return data
             
         except Exception as e:
-            logger.error(f"EG4 data extraction error: {e}")
+            logger.error(f"EG4 data extraction error: {e}", exc_info=True)
             return None
     
     async def close(self):
@@ -288,6 +352,125 @@ class SRPMonitor:
         except Exception as e:
             logger.error(f"SRP data error: {e}")
             return {'demand': 0}
+    
+    async def download_csv_data(self):
+        """Download all CSV chart types from SRP"""
+        chart_types = {
+            'net': 'Net energy',
+            'generation': 'Generation', 
+            'usage': 'Usage',
+            'demand': 'Demand'
+        }
+        
+        downloaded_files = {}
+        downloads_dir = os.path.join(os.path.dirname(__file__), 'downloads')
+        os.makedirs(downloads_dir, exist_ok=True)
+        
+        try:
+            # Navigate to the usage page first to ensure we're in the right place
+            logger.info("Navigating to SRP usage page for CSV downloads...")
+            await self.page.goto('https://myaccount.srpnet.com/power/myaccount/usage', wait_until='networkidle')
+            await asyncio.sleep(3)
+            
+            # Log current page for debugging
+            current_url = self.page.url
+            logger.info(f"Current page: {current_url}")
+            
+            logger.info("Starting SRP CSV download for all chart types")
+            
+            for chart_key, chart_name in chart_types.items():
+                try:
+                    logger.info(f"Downloading {chart_name} data...")
+                    
+                    # Look for and click the chart type button using the correct classes
+                    # First try the specific button with chart-type-btn class
+                    chart_selector = f'button.chart-type-btn:has-text("{chart_name}")'
+                    chart_button = await self.page.query_selector(chart_selector)
+                    
+                    if not chart_button:
+                        # Try alternative selectors
+                        alt_selectors = [
+                            f'button.chart-type-btn.button-focus:has-text("{chart_name}")',
+                            f'button:has-text("{chart_name}")',
+                            f'a:has-text("{chart_name}")',
+                            f'[title*="{chart_name}"]',
+                            f'[data-chart-type="{chart_key}"]',
+                            f'[data-view="{chart_key}"]'
+                        ]
+                        for selector in alt_selectors:
+                            chart_button = await self.page.query_selector(selector)
+                            if chart_button:
+                                break
+                    
+                    if chart_button:
+                        # Log which selector worked for debugging
+                        button_text = await chart_button.text_content()
+                        logger.info(f"Found {chart_name} button with text '{button_text}', clicking...")
+                        await chart_button.click()
+                        await asyncio.sleep(3)  # Wait for chart to load
+                        logger.info(f"Successfully clicked {chart_name} button, chart should be loading...")
+                    else:
+                        logger.warning(f"Could not find {chart_name} button with any selector, trying to export anyway...")
+                        # Log available buttons for debugging
+                        try:
+                            all_buttons = await self.page.query_selector_all('button')
+                            button_texts = []
+                            for btn in all_buttons[:10]:  # Just first 10 buttons
+                                text = await btn.text_content()
+                                if text and text.strip():
+                                    button_texts.append(text.strip())
+                            logger.debug(f"Available buttons on page: {button_texts}")
+                        except:
+                            pass
+                    
+                    # Look for the Export to Excel button with multiple selectors
+                    export_selectors = [
+                        'button:has-text("Export to Excel")',
+                        'button.btn.srp-btn.btn-lightblue:has-text("Export")',
+                        'button:has-text("Export")',
+                        'a:has-text("Export to Excel")',
+                        'a:has-text("Export")'
+                    ]
+                    
+                    export_button = None
+                    for selector in export_selectors:
+                        export_button = await self.page.query_selector(selector)
+                        if export_button:
+                            logger.info(f"Found export button using selector: {selector}")
+                            break
+                    
+                    if not export_button:
+                        logger.error(f"Export button not found for {chart_name} with any selector! Skipping...")
+                        continue
+                    
+                    # Set up download handler
+                    async with self.page.expect_download(timeout=30000) as download_info:
+                        await export_button.click()
+                        logger.info(f"Clicked export button for {chart_name}, waiting for download...")
+                        download = await download_info.value
+                    
+                    # Save the download with chart type in filename
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    filename = f'srp_{chart_key}_{timestamp}.csv'
+                    filepath = os.path.join(downloads_dir, filename)
+                    await download.save_as(filepath)
+                    
+                    downloaded_files[chart_key] = filepath
+                    logger.info(f"{chart_name} file downloaded successfully: {filepath}")
+                    
+                    # Wait a bit before next download
+                    await asyncio.sleep(2)
+                    
+                except Exception as e:
+                    logger.error(f"Failed to download {chart_name}: {e}")
+                    continue
+            
+            logger.info(f"SRP CSV download complete. Downloaded {len(downloaded_files)} files")
+            return downloaded_files
+            
+        except Exception as e:
+            logger.error(f"Error during CSV download: {e}")
+            return downloaded_files
     
     async def close(self):
         if self.browser:
@@ -420,6 +603,29 @@ def send_alert_email(subject, message):
         logger.error(f"Failed to send alert email: {e}")
         return False, f"Error sending email: {str(e)}"
 
+def is_valid_eg4_data(data):
+    """Check if EG4 data represents a real connection (not all zeros)"""
+    if not data or not isinstance(data, dict):
+        return False
+    
+    # Check if we have valid battery data (SOC should be reasonable)
+    battery = data.get('battery', {})
+    soc = battery.get('soc', 0)
+    
+    # SOC of 0 is suspicious unless battery is truly empty
+    # Also check for any non-zero power readings
+    pv_power = data.get('pv', {}).get('power', 0)
+    battery_voltage = battery.get('voltage', 0)
+    
+    # Valid connection indicators:
+    # - SOC > 0 (battery has some charge)
+    # - OR battery voltage > 0 (battery is connected)
+    # - OR PV power > 0 (system is active)
+    if soc > 0 or battery_voltage > 10 or pv_power > 0:
+        return True
+    
+    return False
+
 def check_thresholds():
     """Check if any thresholds are exceeded"""
     alerts = []
@@ -434,7 +640,8 @@ def check_thresholds():
     
     today_str = now.strftime('%Y-%m-%d')
     
-    if 'eg4' in monitor_data and monitor_data['eg4']:
+    # Check if EG4 data is valid before processing alerts
+    if 'eg4' in monitor_data and monitor_data['eg4'] and is_valid_eg4_data(monitor_data['eg4']):
         # Battery SOC alert - only check at specific time
         battery_check_hour = alert_config['thresholds'].get('battery_check_hour', 6)
         battery_check_minute = alert_config['thresholds'].get('battery_check_minute', 0)
@@ -546,16 +753,22 @@ async def monitor_loop():
                 try:
                     # Get EG4 data
                     eg4_data = await eg4.get_data()
-                    if eg4_data:
+                    if eg4_data and is_valid_eg4_data(eg4_data):
                         monitor_data['eg4'] = eg4_data
                         monitor_data['last_update'] = datetime.now().isoformat()
+                        monitor_data['eg4_connected'] = True
                         socketio.emit('eg4_update', eg4_data)
                         consecutive_failures = 0
+                        logger.debug(f"EG4 data updated - SOC: {eg4_data.get('battery', {}).get('soc', 0)}%")
                     else:
                         consecutive_failures += 1
-                        logger.warning(f"Failed to get EG4 data (attempt {consecutive_failures})")
+                        monitor_data['eg4_connected'] = False
+                        if eg4_data:
+                            logger.warning(f"EG4 data invalid (all zeros) - connection issue (attempt {consecutive_failures})")
+                        else:
+                            logger.warning(f"Failed to get EG4 data (attempt {consecutive_failures})")
                     
-                    # Get SRP data once per day at configured time
+                    # Get SRP data once per day at configured time OR on manual refresh OR if missing
                     if srp_logged_in:
                         # Get timezone-aware current time
                         tz_name = alert_config.get('timezone', 'UTC')
@@ -570,11 +783,25 @@ async def monitor_loop():
                         srp_update_minute = alert_config['thresholds'].get('peak_demand_check_minute', 0)
                         current_date = now.date()
                         
-                        if (now.hour == srp_update_hour and 
-                            now.minute == srp_update_minute and 
-                            last_srp_update_date != current_date):
-                            
-                            logger.info(f"Updating SRP peak demand data at {srp_update_hour:02d}:{srp_update_minute:02d} {tz_name}")
+                        # Check for manual refresh request
+                        global manual_srp_refresh_requested
+                        should_update_srp = False
+                        
+                        if manual_srp_refresh_requested:
+                            should_update_srp = True
+                            manual_srp_refresh_requested = False
+                            logger.info("Manual SRP refresh requested")
+                        elif (now.hour == srp_update_hour and 
+                              now.minute == srp_update_minute and 
+                              last_srp_update_date != current_date):
+                            should_update_srp = True
+                            logger.info(f"Scheduled SRP update at {srp_update_hour:02d}:{srp_update_minute:02d} {tz_name}")
+                        elif not monitor_data.get('srp') and last_srp_update_date is None:
+                            should_update_srp = True
+                            logger.info("No SRP data found, fetching initial data")
+                        
+                        if should_update_srp:
+                            logger.info("Updating SRP peak demand data...")
                             srp_data = await srp.get_peak_demand()
                             if srp_data:
                                 monitor_data['srp'] = srp_data
@@ -582,6 +809,16 @@ async def monitor_loop():
                                 socketio.emit('srp_update', srp_data)
                                 last_srp_update_date = current_date
                                 logger.info(f"SRP peak demand updated: {srp_data.get('demand', 0)}kW")
+                                
+                                # Download CSV data files after getting peak demand
+                                logger.info("Downloading SRP CSV data files...")
+                                csv_files = await srp.download_csv_data()
+                                if csv_files:
+                                    logger.info(f"Successfully downloaded {len(csv_files)} CSV files")
+                                else:
+                                    logger.warning("Failed to download some or all CSV files")
+                            else:
+                                logger.warning("Failed to get SRP peak demand data")
                     
                     # Check thresholds
                     check_thresholds()
@@ -700,6 +937,13 @@ def test_email():
     else:
         return jsonify({'status': 'error', 'message': msg}), 400
 
+@app.route('/api/refresh-srp')
+def refresh_srp():
+    """Manually refresh SRP peak demand data"""
+    global manual_srp_refresh_requested
+    manual_srp_refresh_requested = True
+    return jsonify({'status': 'success', 'message': 'SRP refresh requested'})
+
 @app.route('/api/gmail-status')
 def gmail_status():
     """Check if gmail-send is properly configured"""
@@ -755,47 +999,6 @@ def refresh_eg4():
     
     return jsonify({'status': 'success', 'message': 'Refresh requested'})
 
-@app.route('/api/refresh-srp', methods=['POST'])
-def refresh_srp():
-    """Manual refresh of SRP data (for initial load or testing)"""
-    try:
-        # Run async function in new event loop
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        
-        async def get_srp_data():
-            srp = SRPMonitor()
-            await srp.start()
-            if await srp.login():
-                data = await srp.get_peak_demand()
-                await srp.close()
-                return data
-            await srp.close()
-            return None
-        
-        srp_data = loop.run_until_complete(get_srp_data())
-        loop.close()
-        
-        if srp_data:
-            # Get timezone-aware current time
-            tz_name = alert_config.get('timezone', 'UTC')
-            try:
-                tz = pytz.timezone(tz_name)
-                now = datetime.now(tz)
-            except:
-                now = datetime.now(pytz.UTC)
-            
-            monitor_data['srp'] = srp_data
-            monitor_data['srp']['last_daily_update'] = now.isoformat()
-            socketio.emit('srp_update', srp_data)
-            logger.info(f"SRP data manually refreshed: {srp_data.get('demand', 0)}kW")
-            return jsonify({'status': 'success', 'data': srp_data})
-        else:
-            return jsonify({'status': 'error', 'message': 'Failed to get SRP data'}), 500
-            
-    except Exception as e:
-        logger.error(f"Failed to refresh SRP data: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/timezone', methods=['POST'])
 def update_timezone():
@@ -908,6 +1111,181 @@ def clear_logs():
         return jsonify({'status': 'success', 'message': 'Log buffer cleared'})
     except Exception as e:
         logger.error(f"Failed to clear logs: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/srp-chart-data')
+def get_srp_chart_data():
+    """Get SRP CSV data for charting"""
+    try:
+        # Get chart type from query parameter
+        chart_type = request.args.get('type', 'net')
+        valid_types = ['net', 'generation', 'usage', 'demand']
+        
+        if chart_type not in valid_types:
+            return jsonify({'error': 'Invalid chart type'}), 400
+        
+        # Look for the most recent CSV file in downloads directory
+        downloads_dir = os.path.join(os.path.dirname(__file__), 'downloads')
+        if not os.path.exists(downloads_dir):
+            os.makedirs(downloads_dir, exist_ok=True)
+        
+        # Find CSV files for the specific chart type
+        # First try new naming convention (with chart type)
+        csv_files = glob.glob(os.path.join(downloads_dir, f'srp_{chart_type}_*.csv'))
+        
+        # If not found, try old naming convention (for backward compatibility)
+        if not csv_files and chart_type == 'net':
+            csv_files = glob.glob(os.path.join(downloads_dir, 'srp_usage_*.csv'))
+        
+        if not csv_files:
+            # No CSV files found - trigger a download if we have SRP credentials
+            logger.info(f"No {chart_type} CSV files found, checking if we can download...")
+            
+            # Check if we have any CSV files at all
+            any_csv = glob.glob(os.path.join(downloads_dir, 'srp_*.csv'))
+            if not any_csv:
+                # No CSV files at all - suggest running the downloader
+                return jsonify({
+                    'error': f'No SRP data available',
+                    'message': 'SRP data will be downloaded automatically at the next scheduled update, or you can run srp_csv_downloader.py manually.',
+                    'needsDownload': True
+                }), 404
+            else:
+                # We have some CSV files but not this type
+                return jsonify({
+                    'error': f'No {chart_type} data found',
+                    'message': f'Data for {chart_type} chart type is not available. It will be downloaded at the next scheduled update.',
+                    'needsDownload': True
+                }), 404
+        
+        # Get the most recent file
+        latest_csv = max(csv_files, key=os.path.getctime)
+        logger.info(f"Reading SRP {chart_type} CSV data from: {latest_csv}")
+        
+        # Read CSV data - structure depends on chart type
+        data = {
+            'labels': [],
+            'datasets': [],
+            'chartType': chart_type
+        }
+        
+        with open(latest_csv, 'r', encoding='utf-8-sig') as f:
+            reader = csv.DictReader(f)
+            headers = reader.fieldnames
+            logger.info(f"CSV headers for {chart_type}: {headers}")
+            
+            # Initialize data arrays based on chart type
+            if chart_type in ['net', 'usage']:
+                # Net energy and Usage have off-peak/on-peak structure
+                data['offPeak'] = []
+                data['onPeak'] = []
+                data['highTemp'] = []
+                data['lowTemp'] = []
+            elif chart_type == 'generation':
+                # Generation shows total solar generation
+                data['generation'] = []
+                data['consumption'] = []
+                data['highTemp'] = []
+                data['lowTemp'] = []
+            elif chart_type == 'demand':
+                # Demand shows peak demand values
+                data['demand'] = []
+                data['peakTime'] = []
+                data['highTemp'] = []
+                data['lowTemp'] = []
+            
+            for row in reader:
+                # Skip the combined total row
+                if any('Combined total' in str(val) for val in row.values()):
+                    continue
+                
+                # Get date - try different date column names
+                date_str = row.get('Usage date') or row.get('Date') or row.get('Meter read date', '')
+                if date_str:
+                    # Parse and format date
+                    try:
+                        # Try different date formats
+                        for fmt in ['%m/%d/%Y', '%Y-%m-%d', '%m/%d/%y']:
+                            try:
+                                date_obj = datetime.strptime(date_str, fmt)
+                                data['labels'].append(date_obj.strftime('%b %d'))
+                                break
+                            except:
+                                continue
+                        else:
+                            data['labels'].append(date_str)
+                    except:
+                        data['labels'].append(date_str)
+                    
+                    # Parse data based on chart type
+                    if chart_type in ['net', 'usage']:
+                        # Get energy values (remove quotes and convert to float)
+                        off_peak = row.get('Off-peak kWh', '0').replace('"', '')
+                        on_peak = row.get('On-peak kWh', '0').replace('"', '')
+                        
+                        try:
+                            data['offPeak'].append(float(off_peak))
+                            data['onPeak'].append(float(on_peak))
+                        except ValueError:
+                            data['offPeak'].append(0)
+                            data['onPeak'].append(0)
+                        
+                        # Get temperature values if available
+                        try:
+                            data['highTemp'].append(float(row.get('High temperature (F)', '0')))
+                            data['lowTemp'].append(float(row.get('Low temperature (F)', '0')))
+                        except ValueError:
+                            data['highTemp'].append(0)
+                            data['lowTemp'].append(0)
+                    
+                    elif chart_type == 'generation':
+                        # Generation CSV has same structure as net/usage: Off-peak kWh, On-peak kWh
+                        # For solar generation, we typically want to show total generation (off+on peak)
+                        off_peak = row.get('Off-peak kWh', '0').replace('"', '')
+                        on_peak = row.get('On-peak kWh', '0').replace('"', '')
+                        
+                        try:
+                            off_val = float(off_peak) if off_peak else 0
+                            on_val = float(on_peak) if on_peak else 0
+                            total_gen = off_val + on_val
+                            
+                            data['generation'].append(total_gen)
+                            data['consumption'].append(0)  # Generation chart doesn't show consumption
+                        except ValueError:
+                            data['generation'].append(0)
+                            data['consumption'].append(0)
+                        
+                        # Get temperature values
+                        try:
+                            data['highTemp'].append(float(row.get('High temperature (F)', '0')))
+                            data['lowTemp'].append(float(row.get('Low temperature (F)', '0')))
+                        except ValueError:
+                            data['highTemp'].append(0)
+                            data['lowTemp'].append(0)
+                    
+                    elif chart_type == 'demand':
+                        # Demand CSV has On-peak kW column for peak demand
+                        demand_val = row.get('On-peak kW', '0').replace('"', '')
+                        
+                        try:
+                            data['demand'].append(float(demand_val) if demand_val else 0)
+                            data['peakTime'].append('')  # Time not available in this CSV format
+                        except ValueError:
+                            data['demand'].append(0)
+                            data['peakTime'].append('')
+                        
+                        # Get temperature values
+                        try:
+                            data['highTemp'].append(float(row.get('High temperature (F)', '0')))
+                            data['lowTemp'].append(float(row.get('Low temperature (F)', '0')))
+                        except ValueError:
+                            data['highTemp'].append(0)
+                            data['lowTemp'].append(0)
+        
+        return jsonify(data)
+        
+    except Exception as e:
+        logger.error(f"Failed to get SRP chart data: {e}")
         return jsonify({'error': str(e)}), 500
 
 @socketio.on('connect')

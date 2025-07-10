@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SRP CSV Downloader - Downloads energy usage data from SRP
+SRP CSV Downloader - Downloads energy usage data from SRP for all chart types
 """
 
 import asyncio
@@ -13,8 +13,8 @@ import sys
 # Load environment variables
 load_dotenv()
 
-async def download_srp_csv():
-    """Download CSV data from SRP"""
+async def download_srp_csvs():
+    """Download all CSV data types from SRP"""
     username = os.getenv('SRP_USERNAME', '')
     password = os.getenv('SRP_PASSWORD', '')
     
@@ -24,6 +24,16 @@ async def download_srp_csv():
     
     playwright = None
     browser = None
+    
+    # Chart types to download
+    chart_types = {
+        'net': 'Net energy',
+        'generation': 'Generation', 
+        'usage': 'Usage',
+        'demand': 'Demand'
+    }
+    
+    downloaded_files = {}
     
     try:
         print("Starting browser...")
@@ -70,50 +80,66 @@ async def download_srp_csv():
         print("Waiting for usage data to load...")
         await page.wait_for_selector('.srp-red-text strong', timeout=10000)
         
-        # Look for the Export to Excel button
-        print("Looking for Export to Excel button...")
-        export_button = await page.query_selector('button.btn.srp-btn.btn-lightblue.text-white:has-text("Export to Excel")')
-        
-        if not export_button:
-            # Try alternative selectors
+        # Download each chart type
+        for chart_key, chart_name in chart_types.items():
+            print(f"\n=== Downloading {chart_name} data ===")
+            
+            # Look for and click the chart type button/link
+            chart_selector = f'button:has-text("{chart_name}"), a:has-text("{chart_name}"), [title*="{chart_name}"]'
+            chart_button = await page.query_selector(chart_selector)
+            
+            if not chart_button:
+                # Try alternative: look for the chart navigation
+                chart_button = await page.query_selector(f'[data-chart-type="{chart_key}"], [data-view="{chart_key}"]')
+            
+            if chart_button:
+                print(f"Found {chart_name} button, clicking...")
+                await chart_button.click()
+                await asyncio.sleep(2)  # Wait for chart to load
+            else:
+                print(f"Warning: Could not find {chart_name} button, trying to export anyway...")
+            
+            # Look for the Export to Excel button
+            print(f"Looking for Export to Excel button for {chart_name}...")
             export_button = await page.query_selector('button:has-text("Export to Excel")')
+            
+            if not export_button:
+                print(f"Export button not found for {chart_name}! Skipping...")
+                continue
+            
+            print(f"Found Export to Excel button for {chart_name}, clicking...")
+            
+            try:
+                # Start waiting for download before clicking
+                async with page.expect_download(timeout=30000) as download_info:
+                    await export_button.click()
+                    print(f"Clicked export button for {chart_name}, waiting for download...")
+                    download = await download_info.value
+                
+                # Save the download with chart type in filename
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f'srp_{chart_key}_{timestamp}.csv'
+                filepath = os.path.join(downloads_dir, filename)
+                await download.save_as(filepath)
+                
+                downloaded_files[chart_key] = filepath
+                print(f"{chart_name} file downloaded successfully: {filepath}")
+                
+                # Read and display first few lines
+                with open(filepath, 'r') as f:
+                    lines = f.readlines()
+                    print(f"\nFirst 5 lines of {chart_name} CSV:")
+                    for line in lines[:5]:
+                        print(line.strip())
+                
+            except Exception as e:
+                print(f"Failed to download {chart_name}: {e}")
+                continue
+            
+            # Wait a bit before next download
+            await asyncio.sleep(2)
         
-        if not export_button:
-            print("Export button not found! Let me check what's on the page...")
-            # Debug: print all buttons
-            buttons = await page.query_selector_all('button')
-            print(f"Found {len(buttons)} buttons on page")
-            for i, btn in enumerate(buttons):
-                text = await btn.text_content()
-                classes = await btn.get_attribute('class')
-                print(f"Button {i}: '{text}' with classes: {classes}")
-            return None
-        
-        print("Found Export to Excel button, clicking...")
-        
-        # Start waiting for download before clicking
-        async with page.expect_download() as download_info:
-            await export_button.click()
-            print("Clicked export button, waiting for download...")
-            download = await download_info.value
-        
-        # Save the download
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f'srp_usage_{timestamp}.csv'
-        filepath = os.path.join(downloads_dir, filename)
-        await download.save_as(filepath)
-        
-        print(f"File downloaded successfully: {filepath}")
-        
-        # Read and print the CSV content
-        with open(filepath, 'r') as f:
-            content = f.read()
-        
-        print("\n=== CSV Content ===")
-        print(content)
-        print("=== End of CSV ===\n")
-        
-        return filepath
+        return downloaded_files
         
     except Exception as e:
         print(f"Error: {e}")
@@ -129,15 +155,17 @@ async def download_srp_csv():
 
 async def main():
     """Main function"""
-    print("SRP CSV Downloader")
+    print("SRP CSV Downloader - All Chart Types")
     print("-" * 50)
     
-    result = await download_srp_csv()
+    result = await download_srp_csvs()
     
     if result:
-        print(f"\nSuccess! CSV saved to: {result}")
+        print(f"\n\nSuccess! Downloaded {len(result)} CSV files:")
+        for chart_type, filepath in result.items():
+            print(f"  {chart_type}: {filepath}")
     else:
-        print("\nFailed to download CSV")
+        print("\nFailed to download CSV files")
 
 if __name__ == "__main__":
     asyncio.run(main())
