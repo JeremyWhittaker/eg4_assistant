@@ -152,6 +152,9 @@ class EG4Monitor:
         self.browser = None
         self.page = None
         self.playwright = None
+        self.logged_in = False
+        self.session_start_time = None
+        self.max_session_duration = 3600  # Re-login every hour to prevent stale sessions
         
     async def start(self):
         self.playwright = await async_playwright().start()
@@ -160,6 +163,22 @@ class EG4Monitor:
             args=['--no-sandbox', '--disable-setuid-sandbox', '--single-process']
         )
         self.page = await self.browser.new_page()
+        self.session_start_time = time.time()
+        
+    async def is_logged_in(self):
+        """Check if we're still logged in by looking at the current URL"""
+        try:
+            current_url = self.page.url
+            # If we're on login page or session expired, we're not logged in
+            if 'login' in current_url or 'expired' in current_url:
+                return False
+            # Also check if session is too old (prevent stale sessions)
+            if self.session_start_time and (time.time() - self.session_start_time) > self.max_session_duration:
+                logger.info("Session too old, forcing re-login")
+                return False
+            return self.logged_in
+        except:
+            return False
         
     async def login(self):
         try:
@@ -172,17 +191,36 @@ class EG4Monitor:
             success = 'login' not in self.page.url
             if success:
                 logger.info("EG4 login successful")
+                self.logged_in = True
+                self.session_start_time = time.time()
             else:
                 logger.warning("EG4 login failed - still on login page")
+                self.logged_in = False
             return success
         except Exception as e:
             logger.error(f"EG4 login error: {e}", exc_info=True)
+            self.logged_in = False
             return False
     
     async def get_data(self):
         try:
-            await self.page.goto('https://monitor.eg4electronics.com/WManage/web/monitor/inverter', wait_until='networkidle')
-            await asyncio.sleep(3)
+            # Check if we need to login first
+            if not await self.is_logged_in():
+                logger.info("Not logged in or session expired, attempting login")
+                if not await self.login():
+                    logger.error("Failed to login to EG4")
+                    return None
+            
+            # If already on the monitor page, just refresh instead of full navigation
+            current_url = self.page.url
+            if 'monitor/inverter' in current_url:
+                logger.debug("Already on monitor page, refreshing data")
+                await self.page.reload(wait_until='networkidle')
+            else:
+                logger.debug("Navigating to monitor page")
+                await self.page.goto('https://monitor.eg4electronics.com/WManage/web/monitor/inverter', wait_until='networkidle')
+            
+            await asyncio.sleep(2)  # Shorter wait since we're often just refreshing
             
             # Wait for data to load with better debugging
             data_loaded = False
@@ -283,7 +321,13 @@ class EG4Monitor:
             return data
             
         except Exception as e:
-            logger.error(f"EG4 data extraction error: {e}", exc_info=True)
+            error_msg = str(e).lower()
+            # Check if it's a session/navigation error that requires re-login
+            if 'timeout' in error_msg or 'navigation' in error_msg or 'login' in error_msg:
+                logger.warning(f"Session appears to have expired: {e}")
+                self.logged_in = False
+            else:
+                logger.error(f"EG4 data extraction error: {e}", exc_info=True)
             return None
     
     async def close(self):
@@ -726,38 +770,37 @@ async def monitor_loop():
     
     retry_count = 0
     max_retries = 5
+    eg4_started = False
+    srp_started = False
     
     while True:
         try:
-            # Start browsers
-            await eg4.start()
-            await srp.start()
+            # Start browsers if not already started
+            if not eg4_started:
+                await eg4.start()
+                eg4_started = True
+                logger.info("EG4 browser started")
             
-            # Login with retries
-            eg4_logged_in = False
-            for attempt in range(3):
-                if await eg4.login():
-                    eg4_logged_in = True
-                    logger.info("EG4 login successful")
-                    break
-                logger.warning(f"EG4 login attempt {attempt + 1} failed")
-                await asyncio.sleep(5)
+            if not srp_started:
+                await srp.start()
+                srp_started = True
+                logger.info("SRP browser started")
             
-            if not eg4_logged_in:
-                logger.error("EG4 login failed after 3 attempts")
-                raise Exception("EG4 login failed")
-            
+            # Check if we need to login to SRP (it doesn't have persistent session yet)
             srp_logged_in = False
-            for attempt in range(3):
-                if await srp.login():
-                    srp_logged_in = True
-                    logger.info("SRP login successful")
-                    break
-                logger.warning(f"SRP login attempt {attempt + 1} failed")
-                await asyncio.sleep(5)
-            
-            if not srp_logged_in:
-                logger.warning("SRP login failed - continuing without SRP data")
+            if not hasattr(srp, 'logged_in') or not srp.logged_in:
+                for attempt in range(3):
+                    if await srp.login():
+                        srp_logged_in = True
+                        logger.info("SRP login successful")
+                        break
+                    logger.warning(f"SRP login attempt {attempt + 1} failed")
+                    await asyncio.sleep(5)
+                
+                if not srp_logged_in:
+                    logger.warning("SRP login failed - continuing without SRP data")
+            else:
+                srp_logged_in = True
             
             # Reset retry count on successful connection
             retry_count = 0
@@ -769,7 +812,7 @@ async def monitor_loop():
             consecutive_failures = 0
             while True:
                 try:
-                    # Get EG4 data
+                    # Get EG4 data (login handled internally if needed)
                     eg4_data = await eg4.get_data()
                     if eg4_data and is_valid_eg4_data(eg4_data):
                         monitor_data['eg4'] = eg4_data
@@ -879,20 +922,32 @@ async def monitor_loop():
                 logger.error(f"Max retries ({max_retries}) reached. Giving up.")
                 break
             
+            # Check if it's a critical error that requires browser restart
+            error_msg = str(e).lower()
+            if 'browser' in error_msg or 'closed' in error_msg or 'crashed' in error_msg:
+                logger.info("Browser error detected, will restart browsers")
+                # Close browsers for restart
+                try:
+                    await eg4.close()
+                    eg4_started = False
+                    eg4.logged_in = False
+                except:
+                    pass
+                try:
+                    await srp.close()
+                    srp_started = False
+                except:
+                    pass
+            else:
+                # For other errors, just mark as not logged in to trigger re-login
+                logger.info("Non-browser error, will attempt re-login")
+                eg4.logged_in = False
+                if hasattr(srp, 'logged_in'):
+                    srp.logged_in = False
+            
             wait_time = min(60 * retry_count, 300)  # Max 5 minute wait
             logger.info(f"Retrying in {wait_time} seconds (attempt {retry_count}/{max_retries})")
             await asyncio.sleep(wait_time)
-            
-        finally:
-            # Always cleanup
-            try:
-                await eg4.close()
-            except:
-                pass
-            try:
-                await srp.close()
-            except:
-                pass
     
     logger.error("Monitor loop exited unexpectedly")
 
