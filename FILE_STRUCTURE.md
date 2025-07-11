@@ -1,6 +1,14 @@
-# EG4-SRP Monitor File Structure Documentation
+# EG4-SRP Monitor - File Structure Documentation
 
-This document provides a detailed explanation of each file in the project directory.
+## Project Overview  
+Complete file inventory and documentation for the EG4-SRP Monitor project (Version 2.1, July 11, 2025). This documentation provides detailed information about each file's purpose, functionality, and recent updates.
+
+**Key Updates in Version 2.1:**
+- Fixed SRP data update issues (yesterday's data now appears in charts)
+- Corrected peak demand display (now shows accurate 0.5kW)
+- Enhanced grid import/export alert logic  
+- Eliminated production deployment warnings
+- Improved timezone handling and error recovery
 
 ## Root Directory Files
 

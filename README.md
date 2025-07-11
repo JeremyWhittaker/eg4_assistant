@@ -235,6 +235,14 @@ curl http://localhost:8085/api/status | python3 -m json.tool
 
 ## 🔧 Recent Improvements
 
+### Version 2.1 (July 11, 2025)
+- **Fixed SRP Data Updates**: Resolved issue where yesterday's data wasn't appearing in charts
+- **Peak Demand Accuracy**: Fixed peak demand display showing 0 instead of actual values (now shows correct 0.5kW)
+- **Daily CSV Refresh**: Automated daily SRP CSV downloads now working reliably
+- **Grid Alert Logic**: Fixed false grid import alerts when exporting power to grid
+- **Production Deployment**: Eliminated Werkzeug development warnings in production
+- **Timezone Handling**: Enhanced timezone-aware datetime processing for alerts
+
 ### Version 2.0 (July 2025)
 - **Enhanced PV Monitoring**: Multi-MPPT string support with individual power/voltage display
 - **Improved SRP Integration**: All 4 chart types (Net Energy, Generation, Usage, Demand)
@@ -242,11 +250,13 @@ curl http://localhost:8085/api/status | python3 -m json.tool
 - **Better Error Handling**: Robust connection validation and retry logic
 - **Real-time Charts**: Interactive SRP usage charts with historical data
 
-### Bug Fixes
-- Fixed PV power reporting to sum all MPPT strings instead of showing single string
-- Resolved SRP chart data parsing for Generation and Demand CSV formats
-- Enhanced connection validation to prevent false low battery alerts
-- Improved CSV download automation for all SRP chart types
+### Key Bug Fixes (July 11, 2025)
+- **SRP Chart Data**: Fixed yesterday's usage data not appearing in dashboard charts
+- **Peak Demand Display**: Corrected peak demand showing 0 when actual demand was 0.5kW
+- **Grid Import Alerts**: Fixed logic to alert on importing FROM grid, not exporting TO grid
+- **Timezone Errors**: Resolved "can't subtract offset-naive and offset-aware datetimes" errors
+- **Production Logging**: Configured Flask production mode to eliminate development warnings
+- **CSV Updates**: Ensured daily SRP CSV files download automatically and update charts
 
 ## 🤝 Contributing
 

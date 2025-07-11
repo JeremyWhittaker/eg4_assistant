@@ -298,6 +298,36 @@ eg4-srp-monitor/
 - Consider adding API key for production use
 - Email recipients stored in plain text in config file
 
+## Latest Bug Fixes (July 11, 2025)
+
+### 1. SRP Data Update Issues ✅ FIXED
+- **Problem**: Dashboard showing yesterday's data wasn't updating, peak demand stuck at 0
+- **Root Cause**: SRP CSV files from July 10th not refreshing daily
+- **Solution**: Fixed daily SRP refresh mechanism and CSV download automation
+- **Result**: Peak demand now shows correct 0.5kW, charts include July 10th data
+- **Files Updated**: `app.py` SRP monitoring logic, CSV download functions
+
+### 2. Timezone Datetime Errors ✅ FIXED  
+- **Problem**: "can't subtract offset-naive and offset-aware datetimes"
+- **Root Cause**: Mixed timezone-aware and naive datetime objects in refresh_eg4()
+- **Solution**: Enhanced timezone handling for consistent datetime awareness
+- **Location**: `app.py` line ~820 in refresh_eg4() function
+- **Impact**: Eliminated timezone comparison crashes
+
+### 3. False Grid Import Alerts ✅ FIXED
+- **Problem**: Receiving alerts when exporting power TO grid instead of importing FROM grid  
+- **Root Cause**: Incorrect condition `grid_power > threshold` triggered on export (positive values)
+- **Solution**: Changed to `grid_power < 0 and abs(grid_power) > threshold`
+- **Logic**: Positive = export to grid, Negative = import from grid
+- **Impact**: Only alerts on actual grid imports now
+
+### 4. Production Deployment Warnings ✅ FIXED
+- **Problem**: Werkzeug development server warnings in production logs
+- **Root Cause**: Flask running in development mode with debug enabled
+- **Solution**: Set FLASK_ENV=production and suppressed Werkzeug logger warnings
+- **Location**: `docker-compose.yml` environment and `app.py` logging config
+- **Result**: Clean production logs without development warnings
+
 ## Current Implementation Status
 
 ### Working Features ✅
