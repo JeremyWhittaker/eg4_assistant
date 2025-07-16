@@ -381,19 +381,67 @@ class SRPMonitor:
             # Extract peak demand
             demand_data = await self.page.evaluate("""
                 () => {
-                    const srpRedText = document.querySelector('.srp-red-text strong');
+                    // Try multiple selectors for peak demand
                     let demandValue = '0';
+                    let debugInfo = {};
                     
+                    // Primary selector
+                    const srpRedText = document.querySelector('.srp-red-text strong');
                     if (srpRedText) {
                         demandValue = srpRedText.textContent.trim();
+                        debugInfo.foundWith = 'srp-red-text strong';
+                    } else {
+                        // Try alternative selectors
+                        const altSelectors = [
+                            '.peak-demand-value',
+                            '.demand-value',
+                            '.current-peak strong',
+                            '[data-testid="peak-demand"]',
+                            '.usage-summary .value'
+                        ];
+                        
+                        for (const selector of altSelectors) {
+                            const elem = document.querySelector(selector);
+                            if (elem) {
+                                demandValue = elem.textContent.trim();
+                                debugInfo.foundWith = selector;
+                                break;
+                            }
+                        }
+                        
+                        // If still not found, look for any element containing "kW"
+                        if (demandValue === '0') {
+                            const allElements = document.querySelectorAll('*');
+                            for (const elem of allElements) {
+                                if (elem.textContent && elem.textContent.includes('kW') && 
+                                    !elem.textContent.includes('Peak') && 
+                                    elem.children.length === 0) {
+                                    const match = elem.textContent.match(/(\d+\.?\d*)\s*kW/);
+                                    if (match) {
+                                        demandValue = match[1];
+                                        debugInfo.foundWith = 'kW text search';
+                                        debugInfo.elementText = elem.textContent;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
                     }
+                    
+                    // Clean the value - remove 'kW' if present
+                    demandValue = demandValue.replace(/kW/gi, '').trim();
                     
                     return {
                         demand: parseFloat(demandValue) || 0,
-                        timestamp: new Date().toISOString()
+                        timestamp: new Date().toISOString(),
+                        debug: debugInfo
                     };
                 }
             """)
+            
+            # Log debug info if available
+            if 'debug' in demand_data and demand_data['debug']:
+                logger.info(f"SRP peak demand debug: {demand_data['debug']}")
             
             return demand_data
             
@@ -816,14 +864,15 @@ async def monitor_loop():
                     eg4_data = await eg4.get_data()
                     if eg4_data and is_valid_eg4_data(eg4_data):
                         monitor_data['eg4'] = eg4_data
-                        # Use timezone-aware timestamp for consistency
+                        # Use timezone-aware timestamp for consistency - only on successful update
                         tz_name = alert_config.get('timezone', 'UTC')
                         try:
                             tz = pytz.timezone(tz_name)
                             current_time = datetime.now(tz)
                         except:
                             current_time = datetime.now(pytz.UTC)
-                        monitor_data['last_update'] = current_time.isoformat()
+                        monitor_data['eg4']['last_update'] = current_time.isoformat()
+                        monitor_data['last_update'] = current_time.isoformat()  # Keep for backward compatibility
                         monitor_data['eg4_connected'] = True
                         socketio.emit('eg4_update', eg4_data)
                         consecutive_failures = 0
@@ -831,6 +880,7 @@ async def monitor_loop():
                     else:
                         consecutive_failures += 1
                         monitor_data['eg4_connected'] = False
+                        # Don't update timestamp on failure
                         if eg4_data:
                             logger.warning(f"EG4 data invalid (all zeros) - connection issue (attempt {consecutive_failures})")
                         else:
@@ -883,6 +933,9 @@ async def monitor_loop():
                                 csv_files = await srp.download_csv_data()
                                 if csv_files:
                                     logger.info(f"Successfully downloaded {len(csv_files)} CSV files")
+                                    # Store CSV download timestamp
+                                    monitor_data['srp']['csv_last_update'] = now.isoformat()
+                                    monitor_data['srp']['csv_files_count'] = len(csv_files)
                                 else:
                                     logger.warning("Failed to download some or all CSV files")
                             else:
@@ -1268,8 +1321,9 @@ def get_srp_chart_data():
                     'needsDownload': True
                 }), 404
         
-        # Get the most recent file
-        latest_csv = max(csv_files, key=os.path.getctime)
+        # Get the most recent file by filename (timestamp in filename)
+        # Docker volumes can have unreliable file creation times
+        latest_csv = max(csv_files)  # This works because filenames have YYYYMMDD_HHMMSS format
         logger.info(f"Reading SRP {chart_type} CSV data from: {latest_csv}")
         
         # Read CSV data - structure depends on chart type
