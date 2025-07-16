@@ -235,9 +235,15 @@ curl http://localhost:8085/api/status | python3 -m json.tool
 
 ## 🔧 Recent Improvements
 
+### Version 2.2 (July 15, 2025)
+- **Persistent EG4 Sessions**: Reduced login frequency from every minute to once per hour
+- **Docker Volume Fix**: Resolved SRP charts showing old data due to file timestamp issues
+- **Session Management**: Smart detection of expired sessions with automatic re-login
+- **Performance Boost**: Page refresh instead of full navigation for faster updates
+
 ### Version 2.1 (July 11, 2025)
 - **Fixed SRP Data Updates**: Resolved issue where yesterday's data wasn't appearing in charts
-- **Peak Demand Accuracy**: Fixed peak demand display showing 0 instead of actual values (now shows correct 0.5kW)
+- **Peak Demand Accuracy**: Fixed peak demand display showing 0 instead of actual values
 - **Daily CSV Refresh**: Automated daily SRP CSV downloads now working reliably
 - **Grid Alert Logic**: Fixed false grid import alerts when exporting power to grid
 - **Production Deployment**: Eliminated Werkzeug development warnings in production
@@ -250,13 +256,11 @@ curl http://localhost:8085/api/status | python3 -m json.tool
 - **Better Error Handling**: Robust connection validation and retry logic
 - **Real-time Charts**: Interactive SRP usage charts with historical data
 
-### Key Bug Fixes (July 11, 2025)
-- **SRP Chart Data**: Fixed yesterday's usage data not appearing in dashboard charts
-- **Peak Demand Display**: Corrected peak demand showing 0 when actual demand was 0.5kW
-- **Grid Import Alerts**: Fixed logic to alert on importing FROM grid, not exporting TO grid
-- **Timezone Errors**: Resolved "can't subtract offset-naive and offset-aware datetimes" errors
-- **Production Logging**: Configured Flask production mode to eliminate development warnings
-- **CSV Updates**: Ensured daily SRP CSV files download automatically and update charts
+### Key Bug Fixes (July 15, 2025)
+- **SRP File Selection**: Fixed Docker volume timestamp issue causing old CSV files to be used
+- **Persistent Sessions**: EG4 browser stays logged in, reducing authentication overhead
+- **Chart Data Currency**: All SRP charts now show the most recent data available
+- **Session Recovery**: Graceful handling of session timeouts with automatic re-authentication
 
 ## 🤝 Contributing
 

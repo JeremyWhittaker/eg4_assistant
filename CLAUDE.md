@@ -298,34 +298,46 @@ eg4-srp-monitor/
 - Consider adding API key for production use
 - Email recipients stored in plain text in config file
 
-## Latest Bug Fixes (July 11, 2025)
+## Latest Bug Fixes (July 15, 2025)
 
-### 1. SRP Data Update Issues ✅ FIXED
+### 1. Persistent EG4 Browser Sessions ✅ NEW
+- **Problem**: EG4 system logging in every 60 seconds, causing unnecessary overhead
+- **Solution**: Implemented session persistence with smart re-login detection
+- **Benefits**: 
+  - Login frequency reduced from ~1,440/day to ~24/day
+  - Faster data collection using page refresh instead of full navigation
+  - Automatic session recovery on timeout or errors
+- **Implementation**: `is_logged_in()` method, 1-hour session timeout, graceful error handling
+
+### 2. Docker Volume Timestamp Issue ✅ FIXED
+- **Problem**: SRP charts showing old data despite new CSV files being downloaded
+- **Root Cause**: Docker volumes reset file creation times, causing `os.path.getctime()` to return same time for all files
+- **Solution**: Changed to lexicographic max on filenames (which contain YYYYMMDD_HHMMSS timestamps)
+- **Result**: Charts now always show the most recent data available
+- **Location**: `app.py` line ~1326 in get_srp_chart_data()
+
+### Previous Fixes (July 11, 2025)
+
+### 3. SRP Data Update Issues ✅ FIXED
 - **Problem**: Dashboard showing yesterday's data wasn't updating, peak demand stuck at 0
 - **Root Cause**: SRP CSV files from July 10th not refreshing daily
 - **Solution**: Fixed daily SRP refresh mechanism and CSV download automation
-- **Result**: Peak demand now shows correct 0.5kW, charts include July 10th data
-- **Files Updated**: `app.py` SRP monitoring logic, CSV download functions
+- **Result**: Peak demand now shows correct values, charts include current data
 
-### 2. Timezone Datetime Errors ✅ FIXED  
+### 4. Timezone Datetime Errors ✅ FIXED  
 - **Problem**: "can't subtract offset-naive and offset-aware datetimes"
-- **Root Cause**: Mixed timezone-aware and naive datetime objects in refresh_eg4()
+- **Root Cause**: Mixed timezone-aware and naive datetime objects
 - **Solution**: Enhanced timezone handling for consistent datetime awareness
-- **Location**: `app.py` line ~820 in refresh_eg4() function
 - **Impact**: Eliminated timezone comparison crashes
 
-### 3. False Grid Import Alerts ✅ FIXED
+### 5. False Grid Import Alerts ✅ FIXED
 - **Problem**: Receiving alerts when exporting power TO grid instead of importing FROM grid  
-- **Root Cause**: Incorrect condition `grid_power > threshold` triggered on export (positive values)
 - **Solution**: Changed to `grid_power < 0 and abs(grid_power) > threshold`
 - **Logic**: Positive = export to grid, Negative = import from grid
-- **Impact**: Only alerts on actual grid imports now
 
-### 4. Production Deployment Warnings ✅ FIXED
+### 6. Production Deployment Warnings ✅ FIXED
 - **Problem**: Werkzeug development server warnings in production logs
-- **Root Cause**: Flask running in development mode with debug enabled
 - **Solution**: Set FLASK_ENV=production and suppressed Werkzeug logger warnings
-- **Location**: `docker-compose.yml` environment and `app.py` logging config
 - **Result**: Clean production logs without development warnings
 
 ## Current Implementation Status

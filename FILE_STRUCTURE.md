@@ -1,39 +1,55 @@
 # EG4-SRP Monitor - File Structure Documentation
 
 ## Project Overview  
-Complete file inventory and documentation for the EG4-SRP Monitor project (Version 2.1, July 11, 2025). This documentation provides detailed information about each file's purpose, functionality, and recent updates.
+Complete file inventory and documentation for the EG4-SRP Monitor project (Version 2.2, July 15, 2025). This documentation provides detailed information about each file's purpose, functionality, and recent updates.
 
-**Key Updates in Version 2.1:**
-- Fixed SRP data update issues (yesterday's data now appears in charts)
-- Corrected peak demand display (now shows accurate 0.5kW)
+**Key Updates in Version 2.2:**
+- Persistent EG4 browser sessions (login once per hour instead of every minute)
+- Fixed Docker volume timestamp issue causing old CSV files to be used
+- Smart session management with automatic re-login on timeout
+- Performance improvements with page refresh instead of full navigation
+
+**Previous Updates (Version 2.1):**
+- Fixed SRP data update issues and peak demand display
 - Enhanced grid import/export alert logic  
 - Eliminated production deployment warnings
 - Improved timezone handling and error recovery
 
 ## Root Directory Files
 
-### `app.py` (952 lines)
-The main application file containing the Flask web server and monitoring logic.
+### `app.py` (1,500+ lines)
+The main application file containing the Flask web server and comprehensive monitoring logic.
 
 **Key Components:**
-- Flask application setup with Socket.IO for real-time WebSocket communication
-- `EG4Monitor` class: Handles EG4 inverter data collection via web scraping
-  - Uses Playwright to automate browser interactions
-  - Logs into EG4 monitoring portal
-  - Extracts battery SOC, power, voltage, PV generation, grid status, and load data
-- `SRPMonitor` class: Collects Salt River Project peak demand data
-  - Similar browser automation approach
-  - Updates every 5 minutes during peak hours
-- Background monitoring thread with automatic retry logic
-- Email alert system using gmail-send integration (subprocess calls)
-- RESTful API endpoints for configuration and status
-- Alert thresholds:
-  - Battery low warning with configurable check time
-  - SRP peak demand alerts with configurable check time
-  - Time-based grid import alerts (only during configured hours)
-- Web-based Gmail configuration endpoint
-- Manual refresh endpoint for immediate data updates
-- Timezone configuration endpoint with container restart
+- **Flask + Socket.IO**: Real-time WebSocket communication for live dashboard updates
+- **EG4Monitor Class**: Advanced EG4 inverter data collection with persistent sessions
+  - Playwright browser automation with smart login management
+  - Session persistence reduces logins from 1,440/day to 24/day
+  - Extracts: battery SOC/power/voltage, PV generation (3 strings), grid status, load data
+  - Automatic session recovery on timeout or errors
+- **SRPMonitor Class**: Salt River Project data collection and CSV management
+  - Downloads 4 chart types: Net Energy, Generation, Usage, Demand
+  - Daily updates at configurable time (default 6 AM)
+  - CSV file management with proper timestamp handling
+- **Monitoring Thread**: Background data collection with intelligent recovery
+  - Retry logic with exponential backoff
+  - Browser crash detection and recovery
+  - Session validation before data fetching
+- **Alert System**: Configurable email alerts via gmail-send
+  - Battery low warnings with daily check
+  - Peak demand alerts at specified time
+  - Grid import alerts during peak hours only
+  - Anti-spam protection with cooldown periods
+- **RESTful API Endpoints**:
+  - `/api/status`: Current system data
+  - `/api/config`: Alert configuration
+  - `/api/refresh-srp`: Manual SRP data refresh
+  - `/api/srp-chart-data`: Chart data with proper file selection
+  - `/api/test-email`: Email configuration testing
+- **Recent Optimizations**:
+  - Persistent browser sessions for reduced overhead
+  - Fixed Docker volume timestamp issues
+  - Enhanced timezone-aware datetime handling
 
 ### `docker-compose.yml` (33 lines)
 Docker Compose configuration for container orchestration.
@@ -229,19 +245,42 @@ Single-page web dashboard application.
 
 ### `logs/` Directory (Created at runtime)
 Volume mount point for application logs.
-- Contains `eg4_srp_monitor.log` when running
+- **Main log**: `eg4_srp_monitor.log` with rotation (10MB max, 3 backups)
+- **Contents**: INFO, WARNING, ERROR messages with timestamps
+- **Access**: Available through web interface log viewer
 
 ### `config/` Directory (Created at runtime)
-Volume mount point for persistent configuration.
-- Contains `config.json` with email and alert settings
-- Automatically created on first save
-- Survives container restarts
+Volume mount point for persistent configuration storage.
+- **config.json**: Alert thresholds, email settings, timezone configuration
+  ```json
+  {
+    "thresholds": {
+      "battery_low": 20,
+      "peak_demand": 5.0,
+      "grid_import": 10000,
+      "battery_check_hour": 6,
+      "grid_import_start_hour": 14,
+      "grid_import_end_hour": 20
+    },
+    "timezone": "America/Phoenix",
+    "email_enabled": true,
+    "email_to": "user@example.com"
+  }
+  ```
+- **gmail_credentials/**: OAuth tokens for email integration
+- **Persistence**: Survives container restarts and updates
 
-### `downloads/` Directory (Created by srp_csv_downloader.py)
-Storage location for downloaded SRP CSV files.
-- Contains timestamped CSV files (e.g., `srp_usage_20250703_215313.csv`)
-- Created automatically when running the SRP CSV downloader
-- Not included in Docker container (standalone script only)
+### `downloads/` Directory (Docker volume)
+Storage for SRP CSV data files with automatic management.
+- **File naming**: `srp_{type}_YYYYMMDD_HHMMSS.csv`
+- **Types**: net, generation, usage, demand
+- **Updates**: Daily at 6 AM (configurable) or manual refresh
+- **File selection**: Uses filename timestamps (Docker volume timestamp fix)
+- **Example files**:
+  - `srp_net_20250715_224307.csv` - Net energy import/export
+  - `srp_generation_20250715_224312.csv` - Solar generation
+  - `srp_usage_20250715_224317.csv` - Energy consumption
+  - `srp_demand_20250715_224323.csv` - Peak demand data
 
 ## Data Flow
 
