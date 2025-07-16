@@ -539,8 +539,8 @@ class SRPMonitor:
                         logger.error(f"Export button not found for {chart_name} with any selector! Skipping...")
                         continue
                     
-                    # Set up download handler
-                    async with self.page.expect_download(timeout=30000) as download_info:
+                    # Set up download handler with longer timeout for slow SRP exports
+                    async with self.page.expect_download(timeout=60000) as download_info:
                         await export_button.click()
                         logger.info(f"Clicked export button for {chart_name}, waiting for download...")
                         download = await download_info.value
