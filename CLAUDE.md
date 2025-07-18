@@ -403,6 +403,29 @@ The application has been thoroughly tested and is running in production:
 - `downloads/` - SRP CSV downloads
 - `gmail_integration_temp/` - Temporary build directory (gitignored)
 
+## Recent Updates (July 18, 2025)
+
+### Gmail Integration Fix
+- **Problem**: Alert emails failing with "send-gmail command not found" error
+- **Solution**: Created custom `send-gmail` utility script that:
+  - Reads configuration from `~/.gmail_send/.env` file
+  - Supports both plain text and HTML email formats (with `--html` flag)
+  - Compatible with the app's existing Gmail integration
+- **Location**: `/usr/local/bin/send-gmail` in container
+
+### SRP CSV Download Timeout Fix
+- **Problem**: SRP CSV downloads failing with "Timeout 30000ms exceeded" at 6:00 AM scheduled downloads
+- **Root Cause**: Default Playwright page timeout of 30 seconds was too short for SRP's slow export process
+- **Solution**: 
+  - Set page default timeout to 120000ms (2 minutes) for both EG4 and SRP monitors
+  - Added manual CSV download endpoint `/api/download-srp-csv` for testing
+- **Impact**: Daily SRP data downloads should now complete successfully
+
+### New API Endpoints
+- `GET /api/download-srp-csv` - Manually trigger SRP CSV downloads
+  - Useful for testing or recovering from failed scheduled downloads
+  - Returns status of download request
+
 ## Future Enhancements
 - Add historical data storage (SQLite/PostgreSQL)
 - Implement data export functionality (CSV/JSON)

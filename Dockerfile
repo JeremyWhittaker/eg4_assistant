@@ -51,6 +51,10 @@ RUN playwright install chromium
 COPY app.py .
 COPY templates/ templates/
 
+# Copy send-gmail utility (if it exists)
+COPY send-gmail /usr/local/bin/send-gmail || true
+RUN chmod +x /usr/local/bin/send-gmail || true
+
 # Create directories with proper permissions
 RUN mkdir -p /tmp /var/log /app/config && \
     chmod 755 /tmp /var/log /app/config
