@@ -160,8 +160,6 @@ eg4-srp-monitor/
 ├── templates/
 │   └── index.html        # Web interface template (700+ lines)
 ├── requirements.txt      # Python dependencies
-├── Dockerfile           # Container build instructions
-├── docker-compose.yml   # Docker orchestration
 ├── downloads/           # SRP CSV data storage
 ├── config/             # Configuration persistence
 ├── logs/               # Application logs
