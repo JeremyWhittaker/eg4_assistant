@@ -101,7 +101,7 @@ A comprehensive monitoring and alerting system for EG4 inverters with Salt River
 ## ⚙️ Configuration
 
 ### Alert Thresholds
-Configure in the web interface under "Alert Configuration":
+Configure in the web interface under "Configuration" tab:
 
 - **Battery SOC Alerts**:
   - Low battery threshold (default: 20%)
