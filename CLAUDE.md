@@ -184,29 +184,24 @@ def should_send_alert(alert_type, current_time):
 3. **Real-time updates**: Use `socketio.emit()` to broadcast changes to web clients
 4. **Configuration**: Add settings to `alert_config` dict and persist to `config.json`
 
-## Important Patterns
+## Critical Patterns & Data Flow
 
-### Data Collection
-- Uses Playwright for browser automation
-- Logs into EG4 and SRP websites
-- Scrapes data using CSS selectors
-- Handles login failures with 3 retry attempts
-- Automatic reconnection with exponential backoff
-- Maximum 5 connection retries before giving up
-- EG4 updates every 60 seconds
-- SRP updates every 5 minutes (at :00, :05, :10, etc.)
+### Monitoring Loop Architecture
+- **EG4 Thread**: Continuous 60-second polling with persistent browser sessions
+- **SRP Thread**: Daily updates at configured time (default 6 AM)
+- **Alert Thread**: Runs every 5 minutes, checks thresholds based on timezone
+- **WebSocket Broadcasting**: Live data pushed to all connected web clients
 
-### Real-time Updates
-- Socket.IO broadcasts updates to all connected clients
-- Separate events for EG4 and SRP data
-- Alert events sent when thresholds exceeded
-- No authentication on WebSocket connections
+### Session Management
+- EG4 browser sessions persist ~1 hour to reduce login overhead
+- Login retry logic: 3 attempts with exponential backoff
+- Connection validation prevents false alerts when systems offline
 
-### Configuration Storage
-- Alert configuration persisted to disk in ./config/config.json
-- Settings survive container restarts
-- Email recipients and all thresholds are saved
-- Alert state tracking prevents duplicate notifications
+### Alert Logic
+- **Time-based scheduling**: Battery/peak demand checked daily at specific hours
+- **Grid import alerts**: Only during configured time windows (e.g., 2 PM - 8 PM)
+- **Anti-spam protection**: Cooldown periods prevent duplicate notifications
+- **HTML email formatting**: Rich emails with full system status
 
 ## Common Tasks
 
