@@ -189,10 +189,10 @@ eg4-srp-monitor/
    - Test with "Test Email" button
    - Verify recipient email is correct
 
-4. **Container Won't Start**:
+4. **Application Won't Start**:
    - Check port 5000 isn't in use: `netstat -an | grep 5000`
-   - Verify Docker and docker-compose are installed
-   - Check container logs for specific errors
+   - Verify virtual environment is activated
+   - Check application logs for specific errors
 
 ### Viewing Logs
 ```bash
