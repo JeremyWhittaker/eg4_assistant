@@ -153,8 +153,8 @@ def save_config():
 
 class EG4Monitor:
     def __init__(self):
-        self.username = os.getenv('EG4_USERNAME', '')
-        self.password = os.getenv('EG4_PASSWORD', '')
+        self.username = alert_config['credentials'].get('eg4_username', '') or os.getenv('EG4_USERNAME', '')
+        self.password = alert_config['credentials'].get('eg4_password', '') or os.getenv('EG4_PASSWORD', '')
         self.browser = None
         self.page = None
         self.playwright = None
