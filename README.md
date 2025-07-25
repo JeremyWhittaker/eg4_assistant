@@ -261,7 +261,7 @@ curl http://localhost:5000/api/status | python3 -m json.tool
 - **Real-time Charts**: Interactive SRP usage charts with historical data
 
 ### Key Bug Fixes (July 15, 2025)
-- **SRP File Selection**: Fixed Docker volume timestamp issue causing old CSV files to be used
+- **SRP File Selection**: Fixed timestamp issue causing old CSV files to be used
 - **Persistent Sessions**: EG4 browser stays logged in, reducing authentication overhead
 - **Chart Data Currency**: All SRP charts now show the most recent data available
 - **Session Recovery**: Graceful handling of session timeouts with automatic re-authentication
