@@ -830,14 +830,49 @@
                 }
             };
             
-            const response = await fetch('/api/config', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(config)
-            });
-            
-            if (response.ok) {
-                alert('Configuration saved successfully!');
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(config)
+                });
+                
+                if (response.ok) {
+                    // Show success feedback
+                    feedbackEl.style.background = '#059669';
+                    feedbackEl.textContent = '✓ Configuration saved successfully! Credentials will be used for next data refresh.';
+                    
+                    // Hide feedback after 5 seconds
+                    setTimeout(() => {
+                        feedbackEl.style.display = 'none';
+                    }, 5000);
+                    
+                    // If credentials were updated, restart monitoring
+                    if (config.credentials.eg4_username || config.credentials.eg4_password || 
+                        config.credentials.srp_username || config.credentials.srp_password) {
+                        // Trigger a manual refresh to use new credentials
+                        setTimeout(() => {
+                            refreshEG4Data();
+                        }, 1000);
+                    }
+                } else {
+                    // Show error feedback
+                    const error = await response.json();
+                    feedbackEl.style.background = '#dc2626';
+                    feedbackEl.textContent = '✗ Failed to save: ' + (error.message || 'Unknown error');
+                    
+                    setTimeout(() => {
+                        feedbackEl.style.display = 'none';
+                    }, 5000);
+                }
+            } catch (error) {
+                // Show error feedback
+                feedbackEl.style.background = '#dc2626';
+                feedbackEl.textContent = '✗ Failed to save: ' + error.message;
+                
+                setTimeout(() => {
+                    feedbackEl.style.display = 'none';
+                }, 5000);
             }
         }
         
