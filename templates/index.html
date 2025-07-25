@@ -990,7 +990,7 @@
         }
         
         // Refresh EG4 data manually
-        async function refreshEG4() {
+        async function refreshEG4(event) {
             const button = event.target;
             button.disabled = true;
             button.textContent = 'Refreshing...';
