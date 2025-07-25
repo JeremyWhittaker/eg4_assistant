@@ -416,7 +416,7 @@ class SRPMonitor:
                                 if (elem.textContent && elem.textContent.includes('kW') && 
                                     !elem.textContent.includes('Peak') && 
                                     elem.children.length === 0) {
-                                    const match = elem.textContent.match(/(\d+\.?\d*)\s*kW/);
+                                    const match = elem.textContent.match(/(\\d+\\.?\\d*)\\s*kW/);
                                     if (match) {
                                         demandValue = match[1];
                                         debugInfo.foundWith = 'kW text search';
