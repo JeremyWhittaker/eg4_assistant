@@ -23,7 +23,7 @@ import csv
 import glob
 
 # Configure logging with rotation
-LOG_FILE = '/tmp/eg4_srp_monitor.log'
+LOG_FILE = './logs/eg4_srp_monitor.log'
 LOG_MAX_SIZE = 10 * 1024 * 1024  # 10MB
 LOG_BACKUP_COUNT = 3
 
