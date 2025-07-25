@@ -355,6 +355,11 @@ class SRPMonitor:
         self.browser = None
         self.page = None
         self.playwright = None
+    
+    def update_credentials(self, username, password):
+        """Update credentials"""
+        self.username = username
+        self.password = password
         
     async def start(self):
         self.playwright = await async_playwright().start()
