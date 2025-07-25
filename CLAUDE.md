@@ -154,7 +154,7 @@ def should_send_alert(alert_type, current_time):
 
 ## Critical File Locations
 
-### Core Application (Volume Mounted for Live Updates)
+### Core Application
 - `app.py`: Main Flask server - all Python logic lives here
 - `templates/index.html`: Complete web interface - HTML, CSS, JavaScript in one file
 
