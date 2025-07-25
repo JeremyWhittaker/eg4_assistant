@@ -852,7 +852,8 @@
                         config.credentials.srp_username || config.credentials.srp_password) {
                         // Trigger a manual refresh to use new credentials
                         setTimeout(() => {
-                            refreshEG4Data();
+                            fetch('/api/refresh', { method: 'POST' })
+                                .then(() => console.log('Triggered manual refresh with new credentials'));
                         }, 1000);
                     }
                 } else {
