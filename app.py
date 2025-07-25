@@ -99,6 +99,12 @@ alert_config = {
     'email_enabled': False,
     'email_to': '',  # Comma-separated list of recipients
     'timezone': 'America/Phoenix',  # Default to Phoenix timezone
+    'credentials': {
+        'eg4_username': '',
+        'eg4_password': '',
+        'srp_username': '',
+        'srp_password': ''
+    },
     'thresholds': {
         'battery_low': 20,
         'battery_check_hour': 6,  # Check battery at 6 AM
