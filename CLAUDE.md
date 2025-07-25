@@ -30,33 +30,40 @@ EG4-SRP Monitor is a comprehensive real-time monitoring system for EG4 inverters
 - **Data Processing**: CSV parsing for SRP energy usage analytics
 - **Alerting**: Gmail integration using gmail-send package
 
-## Development Setup
+## Essential Commands
 
-### Local Development
+### Development Workflow
 ```bash
-# Install dependencies
-pip install -r requirements.txt
-playwright install chromium
-
-# Set environment variables
-cp .env.example .env
-# Edit .env with your credentials
-
-# Run locally
-python app.py
-```
-
-### Docker Development
-```bash
-# Build and run
+# Start development environment (with live reload)
 docker-compose up -d
 
-# View logs
+# View live logs
 docker logs eg4-srp-monitor -f
 
-# Rebuild after changes
-docker-compose build
+# Access container for debugging
+docker exec -it eg4-srp-monitor bash
+
+# Restart after Docker config changes
+docker-compose down && docker-compose up -d
+
+# View application logs inside container
+docker exec eg4-srp-monitor cat /tmp/eg4_srp_monitor.log
 ```
+
+### Testing & Debugging
+```bash
+# Local development (without Docker)
+pip install -r requirements.txt
+playwright install chromium
+cp .env.example .env
+python app.py
+
+# Access web interface
+curl http://localhost:8085/api/status
+```
+
+### No Build/Lint/Test Commands
+This project uses live code mounting - changes to `app.py` and `templates/` automatically reload in the container. No build step required.
 
 ## Key Features & Implementation
 
