@@ -151,29 +151,24 @@ def should_send_alert(alert_type, current_time):
                 (not last_sent or last_sent.date() < current_time.date()))
 ```
 
-## File Structure & Responsibilities
+## Critical File Locations
 
-```
-eg4-srp-monitor/
-├── app.py                 # Main Flask application
-│   ├── Data extraction functions (EG4/SRP)
-│   ├── Alert logic and email integration
-│   ├── API endpoints for configuration
-│   ├── WebSocket handlers for real-time updates
-│   └── Background monitoring threads
-│
-├── templates/index.html   # Web dashboard
-│   ├── Real-time data display with Socket.IO
-│   ├── Interactive SRP charts with Chart.js
-│   ├── Configuration forms and validation
-│   └── PV string breakdown display
-│
-├── docker-compose.yml     # Container orchestration
-├── Dockerfile            # Container build instructions
-├── requirements.txt      # Python dependencies
-├── .env                  # Environment variables (credentials)
-└── README.md             # User documentation
-```
+### Core Application (Volume Mounted for Live Updates)
+- `app.py`: Main Flask server - all Python logic lives here
+- `templates/index.html`: Complete web interface - HTML, CSS, JavaScript in one file
+
+### Key Functions in app.py
+- `extract_eg4_data()` (~line 400): Playwright script for EG4 data scraping  
+- `fetch_srp_chart_data()` (~line 800): SRP CSV processing and chart data
+- `check_alerts()` (~line 1200): Alert logic with timezone-aware scheduling
+- `monitor_eg4()` (~line 1400): Background thread for EG4 monitoring
+- `is_valid_eg4_data()` (~line 300): Connection validation to prevent false alerts
+
+### Configuration & Data
+- `.env`: EG4_USERNAME, EG4_PASSWORD, SRP_USERNAME, SRP_PASSWORD
+- `config/config.json`: Persistent alert settings, email recipients, thresholds
+- `downloads/`: SRP CSV files (YYYYMMDD_HHMMSS format)
+- `logs/`: Application logs accessible via web interface
 
 ## Common Development Tasks
 
