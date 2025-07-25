@@ -49,12 +49,21 @@ A comprehensive monitoring and alerting system for EG4 inverters with Salt River
    SRP_PASSWORD=your_srp_password
    ```
 
-3. **Start the Application**:
+3. **Create Virtual Environment and Install Dependencies**:
    ```bash
-   docker-compose up -d
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   pip install -e ./gmail_integration_temp
+   playwright install chromium
    ```
 
-4. **Access Dashboard**: Open http://localhost:8085
+4. **Start the Application**:
+   ```bash
+   python app.py
+   ```
+
+5. **Access Dashboard**: Open http://localhost:5000
 
 ## 📊 Dashboard Overview
 
