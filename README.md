@@ -209,10 +209,10 @@ grep -i error logs/eg4_srp_monitor.log
 ### Manual Refresh
 ```bash
 # Trigger SRP data refresh
-curl http://localhost:8085/api/refresh-srp
+curl http://localhost:5000/api/refresh-srp
 
 # Check current status
-curl http://localhost:8085/api/status | python3 -m json.tool
+curl http://localhost:5000/api/status | python3 -m json.tool
 ```
 
 ## 🔄 Monitoring Schedule
