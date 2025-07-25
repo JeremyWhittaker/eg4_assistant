@@ -38,16 +38,22 @@ A comprehensive monitoring and alerting system for EG4 inverters with Salt River
    cp .env.example .env
    ```
 
-2. **Configure Credentials** (edit `.env`):
-   ```bash
-   # EG4 IoTOS Cloud Credentials
-   EG4_USERNAME=your_eg4_username
-   EG4_PASSWORD=your_eg4_password
+2. **Configure Credentials**:
+   - **Option 1**: Via Web Interface (Recommended)
+     - Start the application and go to Configuration tab
+     - Enter EG4 and SRP credentials in the web interface
+     - Credentials are securely saved and persist across restarts
    
-   # SRP Account Credentials  
-   SRP_USERNAME=your_srp_username
-   SRP_PASSWORD=your_srp_password
-   ```
+   - **Option 2**: Via Environment Variables (edit `.env`):
+     ```bash
+     # EG4 IoTOS Cloud Credentials
+     EG4_USERNAME=your_eg4_username
+     EG4_PASSWORD=your_eg4_password
+     
+     # SRP Account Credentials  
+     SRP_USERNAME=your_srp_username
+     SRP_PASSWORD=your_srp_password
+     ```
 
 3. **Create Virtual Environment and Install Dependencies**:
    ```bash
