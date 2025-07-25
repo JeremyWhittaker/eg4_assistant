@@ -802,6 +802,12 @@
                 email_enabled: document.getElementById('email-enabled').checked,
                 email_to: document.getElementById('email-to').value,
                 timezone: document.getElementById('timezone-select').value,
+                credentials: {
+                    eg4_username: document.getElementById('eg4-username').value,
+                    eg4_password: document.getElementById('eg4-password').value,
+                    srp_username: document.getElementById('srp-username').value,
+                    srp_password: document.getElementById('srp-password').value
+                },
                 thresholds: {
                     battery_low: parseInt(document.getElementById('battery-low').value),
                     battery_check_hour: parseInt(document.getElementById('battery-check-hour').value),
