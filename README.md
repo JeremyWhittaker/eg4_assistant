@@ -249,6 +249,13 @@ curl http://localhost:5000/api/status | python3 -m json.tool
 
 ## 🔧 Recent Improvements
 
+### Version 2.3 (July 25, 2025)
+- **Web-based Credential Management**: Complete credential setup through Configuration tab
+- **Docker Removal**: Migrated from containerized to native Python virtual environment
+- **UI Redesign**: Consolidated System Logs into Configuration tab, removed separate tabs
+- **Enhanced Security**: Secure credential storage with environment variable fallback
+- **Migration Support**: Fixed all hard-coded Docker paths for seamless server migration
+
 ### Version 2.2 (July 15, 2025)
 - **Persistent EG4 Sessions**: Reduced login frequency from every minute to once per hour
 - **File Timestamp Fix**: Resolved SRP charts showing old data due to file timestamp issues
