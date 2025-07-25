@@ -175,7 +175,7 @@ eg4-srp-monitor/
 1. **EG4 Shows All Zeros**:
    - Check EG4 credentials in `.env`
    - Verify EG4 cloud service is accessible
-   - Check container logs: `docker logs eg4-srp-monitor`
+   - Check application logs: `tail -f logs/eg4_srp_monitor.log`
 
 2. **SRP Data Not Loading**:
    - Verify SRP credentials in web interface
