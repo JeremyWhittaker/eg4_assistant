@@ -197,13 +197,13 @@ eg4-srp-monitor/
 ### Viewing Logs
 ```bash
 # Real-time logs
-docker logs eg4-srp-monitor -f
+tail -f logs/eg4_srp_monitor.log
 
 # Recent logs only
-docker logs eg4-srp-monitor --tail 50
+tail -50 logs/eg4_srp_monitor.log
 
 # Filter for specific issues
-docker logs eg4-srp-monitor 2>&1 | grep -i error
+grep -i error logs/eg4_srp_monitor.log
 ```
 
 ### Manual Refresh
