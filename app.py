@@ -344,8 +344,8 @@ class EG4Monitor:
 
 class SRPMonitor:
     def __init__(self):
-        self.username = os.getenv('SRP_USERNAME', '')
-        self.password = os.getenv('SRP_PASSWORD', '')
+        self.username = alert_config['credentials'].get('srp_username', '') or os.getenv('SRP_USERNAME', '')
+        self.password = alert_config['credentials'].get('srp_password', '') or os.getenv('SRP_PASSWORD', '')
         self.browser = None
         self.page = None
         self.playwright = None
