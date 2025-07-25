@@ -160,6 +160,13 @@ class EG4Monitor:
         self.playwright = None
         self.logged_in = False
         self.session_start_time = None
+    
+    def update_credentials(self, username, password):
+        """Update credentials and reset login state"""
+        self.username = username
+        self.password = password
+        self.logged_in = False
+        self.session_start_time = None
         self.max_session_duration = 3600  # Re-login every hour to prevent stale sessions
         
     async def start(self):
