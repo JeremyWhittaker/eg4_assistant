@@ -691,20 +691,40 @@
             document.getElementById('eg4-status').className = 'status-indicator online';
             document.getElementById('eg4-status-text').textContent = 'Online';
             
-            // Update last update time
-            const now = new Date();
-            document.getElementById('eg4-last-update').textContent = now.toLocaleString();
+            // Update last update time from data if available
+            if (data.last_update) {
+                const updateTime = new Date(data.last_update);
+                document.getElementById('eg4-last-update').textContent = updateTime.toLocaleString();
+            } else {
+                const now = new Date();
+                document.getElementById('eg4-last-update').textContent = now.toLocaleString();
+            }
         });
         
         // Update SRP data
         socket.on('srp_update', (data) => {
             document.getElementById('peak-demand').textContent = data.demand.toFixed(1) + ' kW';
             
-            const updateTime = new Date(data.timestamp);
-            document.getElementById('srp-last-update').textContent = updateTime.toLocaleString();
+            // Use last_daily_update if available, otherwise use timestamp
+            const timeField = data.last_daily_update || data.timestamp;
+            if (timeField) {
+                const updateTime = new Date(timeField);
+                document.getElementById('srp-last-update').textContent = updateTime.toLocaleString();
+            }
+            
+            // Update CSV data timestamp if available
+            if (data.csv_last_update) {
+                const csvTime = new Date(data.csv_last_update);
+                document.getElementById('chart-last-update').textContent = csvTime.toLocaleString();
+            }
             
             document.getElementById('srp-status').className = 'status-indicator online';
             document.getElementById('srp-status-text').textContent = 'Online';
+            
+            // Log debug info if available
+            if (data.debug) {
+                console.log('SRP debug info:', data.debug);
+            }
         });
         
         // Handle alerts
@@ -1381,8 +1401,7 @@
                 const ctx = document.getElementById('srpChart').getContext('2d');
                 srpChart = new Chart(ctx, config);
                 
-                // Update chart last update timestamp
-                document.getElementById('chart-last-update').textContent = new Date().toLocaleString();
+                // Don't update timestamp here - let it come from the server
                 
             } catch (error) {
                 console.error('Failed to load SRP chart:', error);

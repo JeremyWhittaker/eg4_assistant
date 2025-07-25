@@ -1,4 +1,8 @@
-# CLAUDE.md - Development Guide for EG4-SRP Monitor
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+# EG4-SRP Monitor Development Guide
 
 ## Project Overview
 EG4-SRP Monitor is a comprehensive real-time monitoring system for EG4 inverters with Salt River Project (SRP) utility integration. Built with Flask, Socket.IO, and Playwright for reliable web automation.
