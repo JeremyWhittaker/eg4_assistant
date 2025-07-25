@@ -799,6 +799,14 @@
         
         // Save configuration
         async function saveConfig() {
+            const feedbackEl = document.getElementById('save-feedback');
+            
+            // Show saving message
+            feedbackEl.style.display = 'block';
+            feedbackEl.style.background = '#3b82f6';
+            feedbackEl.style.color = '#ffffff';
+            feedbackEl.textContent = 'Saving configuration...';
+            
             const config = {
                 email_enabled: document.getElementById('email-enabled').checked,
                 email_to: document.getElementById('email-to').value,
