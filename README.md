@@ -138,21 +138,18 @@ Set up Gmail alerts through the web interface:
 - `GET /api/test-email` - Send test alert email
 - `GET /api/gmail-status` - Check Gmail configuration
 
-## 🐳 Docker Configuration
+## 💻 Local Development
 
-### Default Setup (docker-compose.yml)
-- **Port**: 8085 (configurable)
-- **Volumes**: Persistent logs, configuration, and CSV data
-- **Health Checks**: Automatic container monitoring
-- **Timezone**: Configurable timezone support
-- **Auto-restart**: Resilient to failures
-
-### Development Mode
+### Running the Application
 ```bash
-# Run locally without Docker
-pip install -r requirements.txt
-playwright install chromium
+# Activate virtual environment
+source venv/bin/activate
+
+# Start the application
 python app.py
+
+# View logs
+tail -f logs/eg4_srp_monitor.log
 ```
 
 ## 📁 Project Structure
