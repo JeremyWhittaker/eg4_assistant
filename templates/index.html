@@ -556,6 +556,35 @@
                 <button onclick="saveConfig()">Save Configuration</button>
                 <button onclick="testEmail()" style="background: #475569;">Test Email</button>
             </div>
+            
+            <!-- System Logs Section -->
+            <div style="margin-top: 2rem; border-top: 1px solid #334155; padding-top: 2rem;">
+                <h3 style="margin-bottom: 1rem; color: #f1f5f9;">System Logs</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <select id="log-level" onchange="loadLogs()" style="background: #1e293b; color: #e2e8f0; border: 1px solid #475569; padding: 0.5rem; border-radius: 0.25rem;">
+                            <option value="ALL">All Levels</option>
+                            <option value="ERROR">Errors Only</option>
+                            <option value="WARNING">Warnings & Errors</option>
+                            <option value="INFO">Info & Above</option>
+                        </select>
+                        <button onclick="loadLogs()" style="background: #475569; padding: 0.5rem 1rem;">Refresh</button>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button onclick="clearLogs()" style="background: #dc2626; padding: 0.5rem 1rem;">Clear Buffer</button>
+                        <button onclick="downloadLogs()" style="background: #059669; padding: 0.5rem 1rem;">Download Full Log</button>
+                    </div>
+                </div>
+                <div id="log-info" style="margin-bottom: 0.5rem; color: #64748b; font-size: 0.875rem;"></div>
+                <div id="log-container" style="background: #0f172a; border: 1px solid #334155; border-radius: 0.5rem; padding: 1rem; height: 400px; overflow-y: auto; font-family: monospace; font-size: 0.875rem; white-space: pre-wrap; word-wrap: break-word;">
+                    <div style="color: #64748b; text-align: center; padding: 2rem;">Loading logs...</div>
+                </div>
+                <div style="margin-top: 0.5rem; color: #64748b; font-size: 0.75rem;">
+                    <p>• Logs are rotated at 10MB with 3 backup files</p>
+                    <p>• In-memory buffer holds last 1000 log entries</p>
+                    <p>• Application logs: <code style="background: #334155; padding: 0.2rem 0.4rem; border-radius: 0.25rem;">tail -f logs/eg4_srp_monitor.log</code></p>
+                </div>
+            </div>
         </div>
     </div>
         </div>
