@@ -1068,6 +1068,22 @@ def config():
         if 'timezone' in data:
             alert_config['timezone'] = data['timezone']
         
+        # Update credentials
+        if 'credentials' in data:
+            alert_config['credentials'].update(data['credentials'])
+            # Update monitor instances with new credentials
+            global eg4_monitor, srp_monitor
+            if eg4_monitor and ('eg4_username' in data['credentials'] or 'eg4_password' in data['credentials']):
+                eg4_monitor.update_credentials(
+                    alert_config['credentials']['eg4_username'],
+                    alert_config['credentials']['eg4_password']
+                )
+            if srp_monitor and ('srp_username' in data['credentials'] or 'srp_password' in data['credentials']):
+                srp_monitor.update_credentials(
+                    alert_config['credentials']['srp_username'],
+                    alert_config['credentials']['srp_password']
+                )
+        
         # Save configuration to file
         save_config()
         
