@@ -170,25 +170,19 @@ def should_send_alert(alert_type, current_time):
 - `downloads/`: SRP CSV files (YYYYMMDD_HHMMSS format)
 - `logs/`: Application logs accessible via web interface
 
-## Common Development Tasks
+## Development Guidelines
 
-### Adding New Alerts
-1. **Define threshold** in `alert_config['thresholds']`
-2. **Add check logic** in `check_alerts()` function
-3. **Update configuration form** in `index.html`
-4. **Test with test email** endpoint
+### Data Extraction Changes
+- **EG4 modifications**: Update JavaScript in `extract_eg4_data()` function - uses CSS selectors
+- **SRP modifications**: Update CSV parsing in `fetch_srp_chart_data()` - handles different column structures
+- **Always test with real credentials** in development environment
+- **Add robust error handling** - connection failures are common
 
-### Modifying Data Extraction
-1. **EG4 changes**: Update `extract_eg4_data()` JavaScript execution
-2. **SRP changes**: Modify `fetch_srp_chart_data()` or `fetch_srp_peak_demand()`
-3. **Test thoroughly** with real accounts in development
-4. **Add error handling** for new failure modes
-
-### Updating Web Interface
-1. **Real-time updates**: Modify Socket.IO emit in monitoring thread
-2. **Static elements**: Update `index.html` template
-3. **Charts**: Modify Chart.js configuration in JavaScript section
-4. **Styling**: Update CSS in `<style>` section
+### Adding New Features
+1. **Backend changes**: All logic goes in `app.py` 
+2. **Frontend changes**: Update `templates/index.html` (single file contains HTML/CSS/JS)
+3. **Real-time updates**: Use `socketio.emit()` to broadcast changes to web clients
+4. **Configuration**: Add settings to `alert_config` dict and persist to `config.json`
 
 ## Important Patterns
 
