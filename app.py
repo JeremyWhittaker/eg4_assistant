@@ -79,6 +79,10 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24).hex()
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+# Monitor instances (initialized in monitor_loop)
+eg4_monitor = None
+srp_monitor = None
+
 # Global state
 monitor_data = {
     'eg4': {},
@@ -835,8 +839,11 @@ def check_thresholds():
 
 async def monitor_loop():
     """Main monitoring loop with automatic recovery"""
-    eg4 = EG4Monitor()
-    srp = SRPMonitor()
+    global eg4_monitor, srp_monitor
+    eg4_monitor = EG4Monitor()
+    srp_monitor = SRPMonitor()
+    eg4 = eg4_monitor
+    srp = srp_monitor
     
     retry_count = 0
     max_retries = 5
