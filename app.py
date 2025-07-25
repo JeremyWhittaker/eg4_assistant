@@ -167,7 +167,6 @@ class EG4Monitor:
         self.password = password
         self.logged_in = False
         self.session_start_time = None
-        self.max_session_duration = 3600  # Re-login every hour to prevent stale sessions
         
     async def start(self):
         self.playwright = await async_playwright().start()
