@@ -1112,12 +1112,12 @@
         loadConfig();
         checkGmailStatus();
         
-        // Auto-refresh logs every 5 seconds when on logs tab
+        // Auto-refresh logs every 5 seconds when on configuration tab
         let logRefreshInterval = null;
         function startLogRefresh() {
             if (logRefreshInterval) clearInterval(logRefreshInterval);
             logRefreshInterval = setInterval(() => {
-                if (document.getElementById('logs-tab').classList.contains('active')) {
+                if (document.getElementById('alerts-tab').classList.contains('active')) {
                     loadLogs();
                 }
             }, 5000);
