@@ -181,19 +181,21 @@ eg4-srp-monitor/
 ### Common Issues
 
 1. **EG4 Shows All Zeros**:
-   - Check EG4 credentials in `.env`
+   - Check EG4 credentials in Configuration tab (web interface)
+   - Alternative: Verify credentials in `.env` file
    - Verify EG4 cloud service is accessible
    - Check application logs: `tail -f logs/eg4_srp_monitor.log`
 
 2. **SRP Data Not Loading**:
-   - Verify SRP credentials in web interface
+   - **Primary**: Verify SRP credentials in Configuration tab (web interface)
+   - Alternative: Check SRP credentials in `.env` file
    - Check if it's past 6:00 AM update time
    - Use manual refresh button
    - Ensure SRP website is accessible
 
 3. **Email Alerts Not Working**:
+   - **Primary**: Configure Gmail in Configuration tab (web interface)
    - Use Gmail app-specific password (not regular password)
-   - Check Gmail configuration in web interface
    - Test with "Test Email" button
    - Verify recipient email is correct
 
