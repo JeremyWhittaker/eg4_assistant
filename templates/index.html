@@ -1071,8 +1071,11 @@
         
         // Log functions
         async function loadLogs() {
-            const level = document.getElementById('log-level').value;
-            const lines = document.getElementById('log-lines').value;
+            const levelElement = document.getElementById('log-level');
+            if (!levelElement) return; // Exit if element doesn't exist
+            
+            const level = levelElement.value;
+            const lines = 100; // Default to 100 lines
             
             try {
                 const response = await fetch(`/api/logs?level=${level}&lines=${lines}`);
