@@ -117,12 +117,13 @@ Configure in the web interface under "Configuration" tab:
   - Active hours (default: 2:00 PM - 8:00 PM)
   - 15-minute cooldown between alerts
 
-### Email Configuration
-Set up Gmail alerts through the web interface:
-1. Use Gmail app-specific password (not regular password)
-2. Configure sender and recipient addresses
-3. Test with the "Test Email" button
-4. Credentials are securely stored and persist across restarts
+### Credential Management
+**New Feature**: Manage all system credentials through the web interface:
+1. **EG4 Credentials**: IoTOS Cloud username and password
+2. **SRP Credentials**: Salt River Project account credentials
+3. **Gmail Setup**: Email alerts configuration with app-specific password
+4. **Secure Storage**: All credentials are encrypted and persist across restarts
+5. **Fallback Support**: Environment variables (.env) still supported for compatibility
 
 ### Timezone Settings
 - Default: America/Phoenix (Arizona time)
