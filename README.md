@@ -241,7 +241,7 @@ curl http://localhost:5000/api/status | python3 -m json.tool
 
 ### Version 2.2 (July 15, 2025)
 - **Persistent EG4 Sessions**: Reduced login frequency from every minute to once per hour
-- **Docker Volume Fix**: Resolved SRP charts showing old data due to file timestamp issues
+- **File Timestamp Fix**: Resolved SRP charts showing old data due to file timestamp issues
 - **Session Management**: Smart detection of expired sessions with automatic re-login
 - **Performance Boost**: Page refresh instead of full navigation for faster updates
 
