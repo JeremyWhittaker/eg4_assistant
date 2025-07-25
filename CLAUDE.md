@@ -15,20 +15,30 @@ EG4-SRP Monitor is a comprehensive real-time monitoring system for EG4 inverters
 - **Real-time Dashboard**: Live WebSocket updates with detailed system status
 - **Comprehensive Documentation**: Full user and developer guides
 
-## Architecture
+## Architecture Overview
+
+This is a **monolithic Flask application** with real-time web scraping and WebSocket communication.
 
 ### Core Components
-1. **Flask Application** (`app.py`) - Main server with 1,400+ lines
-2. **Web Interface** (`templates/index.html`) - Real-time dashboard with 700+ lines
-3. **Docker Environment** - Containerized deployment with volume persistence
-4. **Playwright Automation** - Headless browser for EG4 and SRP data extraction
+- **`app.py` (1,496 lines)**: Main Flask server containing all business logic
+  - EG4/SRP data extraction using Playwright browser automation
+  - Socket.IO WebSocket handlers for real-time updates  
+  - Background monitoring threads with retry logic
+  - Gmail alert system with smart scheduling
+  - API endpoints for configuration management
 
-### Key Technologies
-- **Backend**: Flask + Socket.IO for real-time WebSocket communication
-- **Automation**: Playwright for reliable web scraping with retry logic
-- **Containerization**: Docker with health checks and auto-restart
-- **Data Processing**: CSV parsing for SRP energy usage analytics
-- **Alerting**: Gmail integration using gmail-send package
+- **`templates/index.html` (1,479 lines)**: Single-page web dashboard
+  - Real-time updates via Socket.IO client
+  - Chart.js visualizations for SRP energy data
+  - Configuration forms and system status display
+  - Dark theme responsive design
+
+### Key Architectural Patterns
+- **Browser Automation**: Playwright handles EG4/SRP login and data scraping
+- **Real-time Communication**: Socket.IO broadcasts live data updates to web clients
+- **Background Processing**: Separate threads for EG4 (60s) and SRP (daily) monitoring
+- **Configuration Persistence**: JSON config stored in `./config/config.json`
+- **Session Management**: EG4 browser sessions persist for ~1 hour to reduce login overhead
 
 ## Essential Commands
 
