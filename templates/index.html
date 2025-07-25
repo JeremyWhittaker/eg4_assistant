@@ -784,6 +784,14 @@
                 document.getElementById('timezone-select').value = config.timezone;
             }
             
+            // Load credentials
+            if (config.credentials) {
+                document.getElementById('eg4-username').value = config.credentials.eg4_username || '';
+                document.getElementById('eg4-password').value = config.credentials.eg4_password || '';
+                document.getElementById('srp-username').value = config.credentials.srp_username || '';
+                document.getElementById('srp-password').value = config.credentials.srp_password || '';
+            }
+            
             // Update SRP next update display
             updateSRPNextUpdate();
         }
