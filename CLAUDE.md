@@ -169,7 +169,7 @@ def should_send_alert(alert_type, current_time):
 - `.env`: EG4_USERNAME, EG4_PASSWORD, SRP_USERNAME, SRP_PASSWORD
 - `config/config.json`: Persistent alert settings, email recipients, thresholds
 - `downloads/`: SRP CSV files (YYYYMMDD_HHMMSS format)
-- `logs/`: Application logs accessible via web interface
+- `logs/eg4_srp_monitor.log`: Application logs accessible via web interface
 
 ## Development Guidelines
 
