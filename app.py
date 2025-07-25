@@ -92,7 +92,7 @@ manual_srp_refresh_requested = False
 last_manual_refresh = None
 
 # Configuration file path
-CONFIG_FILE = '/app/config/config.json'
+CONFIG_FILE = './config/config.json'
 
 # Default configuration
 alert_config = {
