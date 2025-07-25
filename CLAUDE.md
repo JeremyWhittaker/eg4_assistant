@@ -44,36 +44,37 @@ This is a **monolithic Flask application** with real-time web scraping and WebSo
 
 ### Development Workflow
 ```bash
-# Start development environment (with live reload)
-docker-compose up -d
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate
 
-# View live logs
-docker logs eg4-srp-monitor -f
+# Install dependencies
+pip install -r requirements.txt
+pip install -e ./gmail_integration_temp
+playwright install chromium
 
-# Access container for debugging
-docker exec -it eg4-srp-monitor bash
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your credentials
 
-# Restart after Docker config changes
-docker-compose down && docker-compose up -d
-
-# View application logs inside container
-docker exec eg4-srp-monitor cat /tmp/eg4_srp_monitor.log
+# Start the application
+python app.py
 ```
 
 ### Testing & Debugging
 ```bash
-# Local development (without Docker)
-pip install -r requirements.txt
-playwright install chromium
-cp .env.example .env
-python app.py
+# View application logs
+tail -f logs/eg4_srp_monitor.log
 
 # Access web interface
-curl http://localhost:8085/api/status
+curl http://localhost:5000/api/status
+
+# Stop the application
+Ctrl+C
 ```
 
 ### No Build/Lint/Test Commands
-This project uses live code mounting - changes to `app.py` and `templates/` automatically reload in the container. No build step required.
+This is a simple Python Flask application - changes are reflected immediately when you restart the app.
 
 ## Key Features & Implementation
 
