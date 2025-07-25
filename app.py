@@ -89,6 +89,7 @@ monitor_data = {
 # Track manual refresh requests
 manual_refresh_requested = False
 manual_srp_refresh_requested = False
+manual_csv_download_requested = False
 last_manual_refresh = None
 
 # Configuration file path
@@ -175,6 +176,8 @@ class EG4Monitor:
             args=['--no-sandbox', '--disable-setuid-sandbox', '--single-process']
         )
         self.page = await self.browser.new_page()
+        # Set longer default timeout for all page operations (2 minutes)
+        self.page.set_default_timeout(120000)
         self.session_start_time = time.time()
         
     async def is_logged_in(self):
@@ -368,6 +371,8 @@ class SRPMonitor:
             args=['--no-sandbox', '--disable-setuid-sandbox', '--single-process']
         )
         self.page = await self.browser.new_page()
+        # Set longer default timeout for all page operations (2 minutes)
+        self.page.set_default_timeout(120000)
         
     async def login(self):
         try:
@@ -958,6 +963,22 @@ async def monitor_loop():
                             else:
                                 logger.warning("Failed to get SRP peak demand data")
                     
+                    # Check for manual CSV download request
+                    global manual_csv_download_requested
+                    if manual_csv_download_requested and srp:
+                        manual_csv_download_requested = False
+                        logger.info("Manual CSV download requested")
+                        try:
+                            csv_files = await srp.download_csv_data()
+                            if csv_files:
+                                logger.info(f"Manual download successful: {len(csv_files)} CSV files")
+                                monitor_data['srp']['csv_last_update'] = now.isoformat()
+                                monitor_data['srp']['csv_files_count'] = len(csv_files)
+                            else:
+                                logger.warning("Manual CSV download failed")
+                        except Exception as e:
+                            logger.error(f"Error in manual CSV download: {e}")
+                    
                     # Check thresholds
                     try:
                         check_thresholds()
@@ -1112,6 +1133,13 @@ def refresh_srp():
     global manual_srp_refresh_requested
     manual_srp_refresh_requested = True
     return jsonify({'status': 'success', 'message': 'SRP refresh requested'})
+
+@app.route('/api/download-srp-csv')
+def download_srp_csv():
+    """Manually trigger SRP CSV downloads"""
+    global manual_csv_download_requested
+    manual_csv_download_requested = True
+    return jsonify({'status': 'success', 'message': 'SRP CSV download requested'})
 
 @app.route('/api/gmail-status')
 def gmail_status():

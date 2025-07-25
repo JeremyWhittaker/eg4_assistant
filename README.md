@@ -132,6 +132,7 @@ Set up Gmail alerts through the web interface:
 
 ### SRP Integration  
 - `GET /api/refresh-srp` - Manual SRP data refresh
+- `GET /api/download-srp-csv` - Manually trigger SRP CSV downloads
 - `GET /api/srp-chart-data?type={net|generation|usage|demand}` - Chart data
 
 ### Email & Testing
@@ -260,8 +261,13 @@ curl http://localhost:5000/api/status | python3 -m json.tool
 - **Better Error Handling**: Robust connection validation and retry logic
 - **Real-time Charts**: Interactive SRP usage charts with historical data
 
-### Key Bug Fixes (July 15, 2025)
-- **SRP File Selection**: Fixed timestamp issue causing old CSV files to be used
+### Key Bug Fixes (July 18, 2025)
+- **Gmail Integration**: Fixed "send-gmail command not found" error by creating custom email utility
+- **SRP Download Timeouts**: Increased Playwright timeout from 30s to 120s for reliable CSV downloads
+- **Manual CSV Downloads**: Added `/api/download-srp-csv` endpoint for on-demand data updates
+
+### Previous Fixes (July 15, 2025)
+- **SRP File Selection**: Fixed Docker volume timestamp issue causing old CSV files to be used
 - **Persistent Sessions**: EG4 browser stays logged in, reducing authentication overhead
 - **Chart Data Currency**: All SRP charts now show the most recent data available
 - **Session Recovery**: Graceful handling of session timeouts with automatic re-authentication

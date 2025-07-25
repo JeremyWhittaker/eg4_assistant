@@ -168,6 +168,14 @@ Helper script for updating container timezone:
 - Example usage: `./update_timezone.sh America/Phoenix`
 - Note: Timezone can also be changed through web interface
 
+### `send-gmail` (84 lines, Executable script)
+Custom Gmail send utility for email alerts:
+- Reads configuration from ~/.gmail_send/.env file
+- Supports both plain text and HTML email formats
+- Compatible with gmail-send package API
+- Used by the alert system for sending notifications
+- Handles --to, --subject, --body, and --html flags
+
 ### `srp_csv_downloader.py` (142 lines)
 Standalone utility script for downloading SRP energy usage data in CSV format.
 

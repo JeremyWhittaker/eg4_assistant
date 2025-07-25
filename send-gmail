@@ -1,0 +1,84 @@
+#!/usr/local/bin/python3
+import sys
+import os
+import json
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+def main():
+    # Simple gmail send implementation
+    if "--help" in sys.argv:
+        print("Gmail send utility")
+        sys.exit(0)
+    
+    # Parse arguments
+    to_addr = None
+    subject = None
+    body = None
+    is_html = False
+    
+    i = 1
+    while i < len(sys.argv):
+        if sys.argv[i] == "--to" and i + 1 < len(sys.argv):
+            to_addr = sys.argv[i + 1]
+            i += 2
+        elif sys.argv[i] == "--subject" and i + 1 < len(sys.argv):
+            subject = sys.argv[i + 1]
+            i += 2
+        elif sys.argv[i] == "--body" and i + 1 < len(sys.argv):
+            body = sys.argv[i + 1]
+            i += 2
+        elif sys.argv[i] == "--html":
+            is_html = True
+            i += 1
+        else:
+            i += 1
+    
+    # Check for gmail config in .env file
+    env_file = os.path.expanduser("~/.gmail_send/.env")
+    if not os.path.exists(env_file):
+        print("Error: Gmail not configured. Run setup first.")
+        sys.exit(1)
+    
+    # Read config from .env file
+    config = {}
+    with open(env_file, "r") as f:
+        for line in f:
+            line = line.strip()
+            if "=" in line:
+                key, value = line.split("=", 1)
+                if key == "GMAIL_ADDRESS":
+                    config["email"] = value
+                elif key == "GMAIL_APP_PASSWORD":
+                    config["app_password"] = value
+    
+    if "email" not in config or "app_password" not in config:
+        print("Error: Gmail configuration incomplete.")
+        sys.exit(1)
+    
+    # Send email
+    msg = MIMEMultipart()
+    msg["From"] = config["email"]
+    msg["To"] = to_addr
+    msg["Subject"] = subject
+    
+    # Attach body as HTML or plain text
+    if is_html:
+        msg.attach(MIMEText(body or "Test email", "html"))
+    else:
+        msg.attach(MIMEText(body or "Test email", "plain"))
+    
+    try:
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()
+        server.login(config["email"], config["app_password"])
+        server.send_message(msg)
+        server.quit()
+        print("Email sent successfully")
+    except Exception as e:
+        print(f"Failed to send email: {e}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
