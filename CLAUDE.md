@@ -7,13 +7,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 EG4-SRP Monitor is a comprehensive real-time monitoring system for EG4 inverters with Salt River Project (SRP) utility integration. Built with Flask, Socket.IO, and Playwright for reliable web automation.
 
-**Latest Update (July 2025):** Complete rewrite with enhanced features:
+**Latest Update (July 25, 2025):** Native Python deployment with enhanced features:
+- **Docker Migration Complete**: Removed all Docker components, native Python virtual environment
+- **Web-based Credential Management**: Complete credential setup through Configuration tab
 - **Multi-MPPT PV Monitoring**: Individual string tracking with automatic totaling
 - **Complete SRP Integration**: All 4 chart types (Net Energy, Generation, Usage, Demand)
 - **Smart Alert Protection**: Prevents false alerts when systems are offline  
 - **Enhanced Error Recovery**: Robust connection validation and retry logic
 - **Real-time Dashboard**: Live WebSocket updates with detailed system status
-- **Comprehensive Documentation**: Full user and developer guides
+- **Comprehensive Logging**: 5-level logging system with web interface
 
 ## Architecture Overview
 
