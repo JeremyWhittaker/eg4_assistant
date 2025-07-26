@@ -399,11 +399,8 @@ The application has been thoroughly tested and is running in production:
 - `archive/deprecated-docs/FILE_STRUCTURE.md` - Old Docker-based documentation
 - `archive/deprecated-docs/README_GITWATCH.md` - Gitwatch automation docs
 
-### Docker Configuration
-- `Dockerfile` (61 lines) - Container image with tzdata support
-- `docker-compose.yml` (33 lines) - Service orchestration with volume mounts
-- `setup-gmail.sh` (23 lines) - Gmail integration setup script
-- `update_timezone.sh` (19 lines) - Helper script for timezone updates
+### Docker Configuration (Removed in v2.3)
+**Note**: All Docker components have been removed and archived. The application now runs natively with Python virtual environment.
 
 ### Configuration Files
 - `.env` - Environment variables (gitignored)
