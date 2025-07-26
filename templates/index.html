@@ -1163,6 +1163,11 @@
         // Auto-refresh logs every 5 seconds when on configuration tab
         let logRefreshInterval = null;
         function startLogRefresh() {
+            // Load logs immediately if on configuration tab
+            if (document.getElementById('alerts-tab').classList.contains('active')) {
+                loadLogs();
+            }
+            
             if (logRefreshInterval) clearInterval(logRefreshInterval);
             logRefreshInterval = setInterval(() => {
                 if (document.getElementById('alerts-tab').classList.contains('active')) {
