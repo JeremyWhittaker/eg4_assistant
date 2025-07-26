@@ -385,12 +385,19 @@ The application has been thoroughly tested and is running in production:
 
 ## Complete File Inventory
 
-### Core Application Files
-- `app.py` (952 lines) - Main Flask application with monitoring, logging, and timezone support
-- `templates/index.html` (972 lines) - Web dashboard UI with auto-refresh and logs viewer
-- `srp_csv_downloader.py` (142 lines) - Standalone script for SRP CSV export
+### Core Application Files (Active)
+- `app.py` (1,496 lines) - Main Flask application with monitoring, logging, and credential management
+- `templates/index.html` (1,479 lines) - Web dashboard UI with real-time updates and credential management
 - `requirements.txt` (8 lines) - Python dependencies including pytz
-- `requirements-dev.txt` (7 lines) - Development dependencies
+- `PROJECT_STRUCTURE.md` - Comprehensive project documentation
+- `CLAUDE.md` - This development guide
+
+### Archived Files (Deprecated)
+- `archive/deprecated-docs/srp_csv_downloader.py` - Standalone CSV export (integrated into main app)
+- `archive/deprecated-docs/requirements-dev.txt` - Development dependencies (no longer needed)
+- `archive/deprecated-docs/send-gmail` - Standalone email script (integrated into main app)
+- `archive/deprecated-docs/FILE_STRUCTURE.md` - Old Docker-based documentation
+- `archive/deprecated-docs/README_GITWATCH.md` - Gitwatch automation docs
 
 ### Docker Configuration
 - `Dockerfile` (61 lines) - Container image with tzdata support
