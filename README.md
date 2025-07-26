@@ -164,17 +164,24 @@ tail -f logs/eg4_srp_monitor.log
 
 ```
 eg4-srp-monitor/
-├── app.py                 # Main Flask application (1,400+ lines)
+├── app.py                 # Main Flask application (1,496 lines)
 ├── templates/
-│   └── index.html        # Web interface template (700+ lines)
+│   └── index.html        # Web interface template (1,479 lines)
 ├── requirements.txt      # Python dependencies
+├── venv/                 # Python virtual environment
 ├── downloads/           # SRP CSV data storage
 ├── config/             # Configuration persistence
 ├── logs/               # Application logs
-├── .env                # Environment variables (credentials)
+├── gmail_config/       # Gmail authentication
+├── gmail_integration_temp/ # Gmail functionality
+├── .env                # Environment variables (optional)
 ├── .env.example        # Example environment file
+├── PROJECT_STRUCTURE.md # Detailed file documentation
+├── CLAUDE.md           # Development guide
 └── README.md           # This documentation
 ```
+
+**Archived Components**: See `archive/` directory for deprecated Docker components and old documentation.
 
 ## 🔍 Troubleshooting
 
