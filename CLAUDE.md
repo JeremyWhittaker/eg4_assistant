@@ -361,9 +361,11 @@ def should_send_alert(alert_type, current_time):
   - Time-based grid import alerts (with hour configuration)
 - Automatic retry logic (3 login attempts, 5 reconnection attempts)
 - Battery and grid voltage display in UI
-- Docker containerization with health checks
+- Native Python virtual environment deployment
 - HTML formatted alert emails with full system status
 - Multiple email recipient support (comma-separated)
+- Web-based credential management (EG4, SRP, Gmail)
+- Comprehensive system logs with web interface
 
 ### Known Limitations ⚠️
 - No historical data persistence between restarts (only configuration is saved)
