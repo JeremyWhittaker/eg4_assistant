@@ -175,6 +175,16 @@ def should_send_alert(alert_type, current_time):
 
 ## Development Guidelines
 
+### Using AI Agents
+When working on this project, always check for available local and global AI agents that can assist with specific tasks. Use the appropriate specialized agents for:
+- **Testing and validation**: Look for agents that can test web interfaces, validate functionality, or check system health
+- **Code organization**: Utilize agents that help with file cleanup, documentation updates, or project structure improvements
+- **Data and storage**: Employ agents that can advise on data persistence, storage optimization, or database design
+- **UX and design**: Use agents that can review and improve user interface design and user experience
+- **Monitoring and troubleshooting**: Deploy agents that can analyze logs, diagnose issues, or monitor system health
+
+Always invoke relevant agents proactively when their capabilities match the task at hand. This ensures thorough analysis, better code quality, and comprehensive testing.
+
 ### Data Extraction Changes
 - **EG4 modifications**: Update JavaScript in `extract_eg4_data()` function - uses CSS selectors
 - **SRP modifications**: Update CSV parsing in `fetch_srp_chart_data()` - handles different column structures
