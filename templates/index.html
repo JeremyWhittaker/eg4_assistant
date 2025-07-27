@@ -1021,23 +1021,38 @@
         
         // Test email
         async function testEmail() {
-            const response = await fetch('/api/test-email');
-            const result = await response.json();
+            const button = event.target;
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.textContent = 'Sending...';
             
-            if (response.ok) {
-                alert('Test email sent! Check your inbox.');
-            } else {
-                // Show detailed error message
-                let errorMsg = result.message || 'Failed to send test email';
+            try {
+                const response = await fetch('/api/test-email');
+                const result = await response.json();
                 
-                // If gmail is not configured, offer to configure it
-                if (result.gmail_configured === false) {
-                    if (confirm(errorMsg + '\n\nWould you like to configure Gmail now?')) {
-                        showGmailConfig();
-                    }
+                if (response.ok) {
+                    showToast('Test email sent! Check your inbox.', 'success');
                 } else {
-                    alert(errorMsg);
+                    // Show detailed error message
+                    let errorMsg = result.message || 'Failed to send test email';
+                    
+                    // If gmail is not configured, offer to configure it
+                    if (result.gmail_configured === false) {
+                        showToast(errorMsg, 'error', 5000);
+                        setTimeout(() => {
+                            if (confirm('Gmail is not configured.\n\nWould you like to configure Gmail now?')) {
+                                showGmailConfig();
+                            }
+                        }, 1000);
+                    } else {
+                        showToast(errorMsg, 'error');
+                    }
                 }
+            } catch (error) {
+                showToast('Error sending test email: ' + error.message, 'error');
+            } finally {
+                button.disabled = false;
+                button.textContent = originalText;
             }
         }
         
