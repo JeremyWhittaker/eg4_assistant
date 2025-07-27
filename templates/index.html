@@ -994,13 +994,8 @@
                 
                 if (response.ok) {
                     // Show success feedback
-                    feedbackEl.style.background = '#059669';
-                    feedbackEl.textContent = '✓ Configuration saved successfully! Credentials will be used for next data refresh.';
-                    
-                    // Hide feedback after 5 seconds
-                    setTimeout(() => {
-                        feedbackEl.style.display = 'none';
-                    }, 5000);
+                    feedbackEl.style.display = 'none';
+                    showToast('Configuration saved successfully!', 'success');
                     
                     // If credentials were updated, restart monitoring
                     if (config.credentials.eg4_username || config.credentials.eg4_password || 
