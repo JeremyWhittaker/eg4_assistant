@@ -235,32 +235,74 @@
             background: #2563eb;
         }
         
-        /* Tab styles */
+        /* Enhanced Tab styles */
         .tabs {
             display: flex;
             gap: 0.5rem;
             border-bottom: 2px solid #334155;
             margin-bottom: 2rem;
+            position: relative;
         }
         
         .tab {
-            padding: 0.75rem 1.5rem;
+            padding: 1rem 2rem;
             background: none;
             border: none;
             color: #94a3b8;
             cursor: pointer;
             border-bottom: 2px solid transparent;
-            transition: all 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             font-size: 1rem;
+            font-weight: 500;
+            position: relative;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
-        .tab:hover {
+        .tab:hover:not(.active) {
             color: #e2e8f0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 0.5rem 0.5rem 0 0;
         }
         
         .tab.active {
             color: #3b82f6;
             border-bottom-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 0.5rem 0.5rem 0 0;
+        }
+        
+        /* Mobile-optimized tabs */
+        @media (max-width: 768px) {
+            .tabs {
+                gap: 0;
+                background: #1e293b;
+                border-radius: 0.5rem;
+                padding: 0.25rem;
+                border-bottom: none;
+                margin-bottom: 1.5rem;
+            }
+            
+            .tab {
+                flex: 1;
+                padding: 0.75rem 1rem;
+                border-radius: 0.25rem;
+                border-bottom: none;
+                font-size: 0.875rem;
+            }
+            
+            .tab.active {
+                background: #3b82f6;
+                color: white;
+                border-radius: 0.25rem;
+            }
+            
+            .tab:hover:not(.active) {
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 0.25rem;
+            }
         }
         
         .tab-content {
