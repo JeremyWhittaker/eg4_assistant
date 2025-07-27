@@ -1725,6 +1725,100 @@
                 closeGmailConfig();
             }
         };
+        
+        // Enhanced UX Functions
+        function showToast(message, type = 'success', duration = 3000) {
+            // Remove existing toasts
+            const existingToasts = document.querySelectorAll('.toast');
+            existingToasts.forEach(toast => toast.remove());
+            
+            // Create new toast
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            
+            // Add to DOM
+            document.body.appendChild(toast);
+            
+            // Show with animation
+            setTimeout(() => toast.classList.add('show'), 100);
+            
+            // Auto remove
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+        
+        function addLoadingState(element) {
+            if (element) {
+                element.classList.add('loading');
+            }
+        }
+        
+        function removeLoadingState(element) {
+            if (element) {
+                element.classList.remove('loading');
+            }
+        }
+        
+        function animateValueChange(element, newValue) {
+            if (element && element.textContent !== newValue) {
+                element.classList.add('updating');
+                setTimeout(() => {
+                    element.textContent = newValue;
+                    element.classList.remove('updating');
+                }, 150);
+            }
+        }
+        
+        // Enhance existing socket handlers with animations
+        const originalSocket = socket;
+        
+        // Override the EG4 data update handler to include animations
+        socket.on('eg4_data', function(data) {
+            // Add smooth animations for value updates
+            const metrics = {
+                'battery-soc': data.battery_soc + '%',
+                'battery-power': data.battery_power + 'W',
+                'pv-power': data.pv_power + 'W',
+                'grid-power': data.grid_power + 'W',
+                'load-power': data.load_power + 'W',
+                'battery-voltage': data.battery_voltage + 'V',
+                'grid-voltage': data.grid_voltage + 'V'
+            };
+            
+            // Animate value changes
+            Object.entries(metrics).forEach(([id, value]) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    animateValueChange(element, value);
+                }
+            });
+            
+            // Update PV details with animation
+            if (data.pv1_power !== undefined) {
+                animateValueChange(document.getElementById('pv1-power'), data.pv1_power);
+                animateValueChange(document.getElementById('pv1-voltage'), data.pv1_voltage);
+            }
+            if (data.pv2_power !== undefined) {
+                animateValueChange(document.getElementById('pv2-power'), data.pv2_power);
+                animateValueChange(document.getElementById('pv2-voltage'), data.pv2_voltage);
+            }
+            if (data.pv3_power !== undefined) {
+                animateValueChange(document.getElementById('pv3-power'), data.pv3_power);
+                animateValueChange(document.getElementById('pv3-voltage'), data.pv3_voltage);
+            }
+            
+            // Update timestamp
+            document.getElementById('last-updated').textContent = new Date().toLocaleString();
+            
+            // Set status
+            const statusElement = document.getElementById('status');
+            if (statusElement) {
+                statusElement.innerHTML = '<span style="color: #22c55e;">● Online</span>';
+            }
+        });
     </script>
 </body>
 </html>
