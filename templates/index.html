@@ -990,10 +990,13 @@
         }
         
         // Refresh EG4 data manually
-        async function refreshEG4(event) {
-            const button = event.target;
-            button.disabled = true;
-            button.textContent = 'Refreshing...';
+        async function refreshEG4(event = null) {
+            let button = null;
+            if (event && event.target) {
+                button = event.target;
+                button.disabled = true;
+                button.textContent = 'Refreshing...';
+            }
             
             try {
                 const response = await fetch('/api/refresh-eg4', { method: 'POST' });
@@ -1002,13 +1005,15 @@
                 if (response.ok) {
                     // Data will be updated via socket
                 } else {
-                    alert('Failed to refresh: ' + (result.message || 'Unknown error'));
+                    console.error('Failed to refresh:', result.message || 'Unknown error');
                 }
             } catch (error) {
-                alert('Error refreshing data: ' + error.message);
+                console.error('Error refreshing data:', error.message);
             } finally {
-                button.disabled = false;
-                button.textContent = 'Refresh';
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = 'Refresh Now';
+                }
             }
         }
         
