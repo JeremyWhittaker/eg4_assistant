@@ -1009,21 +1009,13 @@
                 } else {
                     // Show error feedback
                     const error = await response.json();
-                    feedbackEl.style.background = '#dc2626';
-                    feedbackEl.textContent = '✗ Failed to save: ' + (error.message || 'Unknown error');
-                    
-                    setTimeout(() => {
-                        feedbackEl.style.display = 'none';
-                    }, 5000);
+                    feedbackEl.style.display = 'none';
+                    showToast('Failed to save: ' + (error.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 // Show error feedback
-                feedbackEl.style.background = '#dc2626';
-                feedbackEl.textContent = '✗ Failed to save: ' + error.message;
-                
-                setTimeout(() => {
-                    feedbackEl.style.display = 'none';
-                }, 5000);
+                feedbackEl.style.display = 'none';
+                showToast('Failed to save: ' + error.message, 'error');
             }
         }
         
