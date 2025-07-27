@@ -1158,12 +1158,12 @@
                 const result = await response.json();
                 
                 if (response.ok) {
-                    // Data will be updated via socket
+                    showToast('Data refreshed successfully', 'success');
                 } else {
-                    console.error('Failed to refresh:', result.message || 'Unknown error');
+                    showToast('Failed to refresh: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
-                console.error('Error refreshing data:', error.message);
+                showToast('Error refreshing data: ' + error.message, 'error');
             } finally {
                 if (button) {
                     button.disabled = false;
