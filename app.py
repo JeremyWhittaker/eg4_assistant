@@ -1125,6 +1125,22 @@ async def monitor_loop():
                                 monitor_data['srp']['last_daily_update'] = now.isoformat()
                                 socketio.emit('srp_update', srp_data)
                                 last_srp_update_date = current_date
+                                
+                                # Store data in database
+                                if data_storage:
+                                    try:
+                                        success = data_storage.store_srp_data(
+                                            date=current_date.isoformat(),
+                                            chart_type='demand',
+                                            data=srp_data
+                                        )
+                                        if success:
+                                            logger.debug("SRP data stored to database")
+                                        else:
+                                            logger.warning("Failed to store SRP data to database")
+                                    except Exception as e:
+                                        logger.error(f"Error storing SRP data: {e}")
+                                
                                 logger.info(f"SRP peak demand updated: {srp_data.get('demand', 0)}kW")
                                 
                                 # Download CSV data files after getting peak demand
