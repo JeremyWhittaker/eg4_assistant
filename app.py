@@ -2015,8 +2015,28 @@ def get_srp_chart_data():
                 }), 404
         
         # Get the most recent file by filename (timestamp in filename)
-        # Docker volumes can have unreliable file creation times
-        latest_csv = max(csv_files)  # This works because filenames have YYYYMMDD_HHMMSS format
+        # Filter for properly formatted filenames with timestamps and sort by timestamp
+        import re
+        timestamp_pattern = r'srp_\w+_(\d{8})_(\d{6})\.csv$'
+        valid_files = []
+        
+        for csv_file in csv_files:
+            filename = os.path.basename(csv_file)
+            match = re.match(timestamp_pattern, filename)
+            if match:
+                # Extract timestamp for sorting
+                date_str = match.group(1)  # YYYYMMDD
+                time_str = match.group(2)  # HHMMSS
+                timestamp = date_str + time_str  # YYYYMMDDHHMMSS for sorting
+                valid_files.append((timestamp, csv_file))
+        
+        if not valid_files:
+            # Fallback to original method if no properly formatted files found
+            latest_csv = max(csv_files)
+        else:
+            # Sort by timestamp and get the newest
+            valid_files.sort(key=lambda x: x[0], reverse=True)
+            latest_csv = valid_files[0][1]
         logger.info(f"Reading SRP {chart_type} CSV data from: {latest_csv}")
         
         # Read CSV data - structure depends on chart type
