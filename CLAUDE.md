@@ -399,7 +399,7 @@ The application has been thoroughly tested and is running in production:
 - `app.py` (1,496 lines) - Main Flask application with monitoring, logging, and credential management
 - `templates/index.html` (1,479 lines) - Web dashboard UI with real-time updates and credential management
 - `requirements.txt` (8 lines) - Python dependencies including pytz
-- `PROJECT_STRUCTURE.md` - Comprehensive project documentation
+- `docs/PROJECT_STRUCTURE.md` - Comprehensive project documentation
 - `CLAUDE.md` - This development guide
 
 ### Archived Files (Deprecated)
