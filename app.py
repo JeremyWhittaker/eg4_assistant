@@ -379,6 +379,210 @@ class EG4Monitor:
         if self.playwright:
             await self.playwright.stop()
 
+class EnphaseMonitor:
+    def __init__(self):
+        self.username = alert_config['credentials'].get('enphase_username', '') or os.getenv('ENPHASE_USERNAME', '')
+        self.password = alert_config['credentials'].get('enphase_password', '') or os.getenv('ENPHASE_PASSWORD', '')
+        self.browser = None
+        self.page = None
+        self.playwright = None
+        self.logged_in = False
+        self.last_login_time = None
+        self.system_url = "https://enlighten.enphaseenergy.com/systems/5815605/"
+    
+    def update_credentials(self, username, password):
+        """Update credentials"""
+        self.username = username
+        self.password = password
+        self.logged_in = False  # Force re-login with new credentials
+        
+    async def start(self):
+        self.playwright = await async_playwright().start()
+        self.browser = await self.playwright.chromium.launch(
+            headless=True,
+            args=['--no-sandbox', '--disable-setuid-sandbox', '--single-process']
+        )
+        self.page = await self.browser.new_page()
+        self.page.set_default_timeout(120000)  # 2 minute timeout
+        
+    async def is_logged_in(self):
+        """Check if currently logged in to Enphase"""
+        if not self.page:
+            return False
+            
+        try:
+            # Check if session has expired (more than 2 hours)
+            if self.last_login_time:
+                time_since_login = datetime.now() - self.last_login_time
+                if time_since_login.total_seconds() > 7200:  # 2 hours
+                    logger.info("Enphase session expired (2+ hours), forcing re-login")
+                    self.logged_in = False
+                    return False
+            
+            # Navigate to the system page to test session
+            await self.page.goto(self.system_url, wait_until='domcontentloaded')
+            await asyncio.sleep(2)
+            
+            # Check if we can access the summary data (means we're logged in)
+            summary_element = await self.page.query_selector('#summary')
+            if summary_element:
+                return True
+            
+            # If we see login elements, session is invalid
+            page_content = await self.page.content()
+            if 'sign in' in page_content.lower() or 'login' in page_content.lower():
+                logger.info("Enphase session invalid - login required")
+                self.logged_in = False
+                return False
+                
+        except Exception as e:
+            logger.warning(f"Error checking Enphase login status: {e}")
+            self.logged_in = False
+            return False
+        
+        return False
+
+    async def login(self):
+        try:
+            await self.page.goto('https://enlighten.enphaseenergy.com/', wait_until='domcontentloaded')
+            await asyncio.sleep(2)
+            
+            # Look for sign in button and click it
+            sign_in_button = await self.page.query_selector('a[href*="signin"], button:has-text("Sign In"), a:has-text("Sign In")')
+            if sign_in_button:
+                await sign_in_button.click()
+                await asyncio.sleep(3)
+            
+            # Fill in credentials
+            logger.info("Attempting Enphase login...")
+            username_field = await self.page.query_selector('input[name="username"], input[type="email"], input[id*="email"], input[id*="username"]')
+            password_field = await self.page.query_selector('input[name="password"], input[type="password"]')
+            
+            if not username_field or not password_field:
+                logger.error("Could not find Enphase login fields")
+                return False
+            
+            await username_field.fill(self.username)
+            await password_field.fill(self.password)
+            
+            # Submit the form
+            submit_button = await self.page.query_selector('button[type="submit"], input[type="submit"], button:has-text("Sign In")')
+            if submit_button:
+                await submit_button.click()
+            else:
+                await password_field.press('Enter')
+            
+            await asyncio.sleep(5)
+            
+            # Check if login was successful by navigating to our system
+            await self.page.goto(self.system_url, wait_until='domcontentloaded')
+            await asyncio.sleep(3)
+            
+            # Verify we can access the summary section
+            summary_element = await self.page.query_selector('#summary')
+            login_success = summary_element is not None
+            
+            if login_success:
+                self.logged_in = True
+                self.last_login_time = datetime.now()
+                logger.info("Enphase login successful")
+            else:
+                self.logged_in = False
+                logger.error("Enphase login failed - could not access system page")
+            
+            return login_success
+            
+        except Exception as e:
+            logger.error(f"Enphase login error: {e}")
+            self.logged_in = False
+            return False
+    
+    async def get_data(self):
+        """Extract Enphase system data from the summary tab"""
+        try:
+            # Make sure we're on the right page
+            await self.page.goto(self.system_url, wait_until='domcontentloaded')
+            await asyncio.sleep(3)
+            
+            # Extract data using the provided selectors
+            data = {}
+            
+            # Today's energy production
+            today_energy_elem = await self.page.query_selector('#energy_today .formatted-value')
+            if today_energy_elem:
+                today_energy_text = await today_energy_elem.get_attribute('data-value')
+                data['today_energy_kwh'] = float(today_energy_text) if today_energy_text else 0
+            
+            # Peak power today
+            peak_power_elem = await self.page.query_selector('#peak_power .formatted-value')
+            if peak_power_elem:
+                peak_power_text = await peak_power_elem.get_attribute('data-value')
+                data['peak_power_kw'] = float(peak_power_text) if peak_power_text else 0
+            
+            # Peak power time
+            peak_time_elem = await self.page.query_selector('#peak_power .time')
+            if peak_time_elem:
+                peak_time_text = await peak_time_elem.text_content()
+                data['peak_power_time'] = peak_time_text.replace('at ', '').strip() if peak_time_text else ''
+            
+            # Latest power output
+            latest_power_elem = await self.page.query_selector('#latest_power .formatted-value')
+            if latest_power_elem:
+                latest_power_text = await latest_power_elem.get_attribute('data-value')
+                data['latest_power_w'] = float(latest_power_text) if latest_power_text else 0
+            
+            # Latest power time
+            latest_time_elem = await self.page.query_selector('#latest_power .time')
+            if latest_time_elem:
+                latest_time_text = await latest_time_elem.text_content()
+                data['latest_power_time'] = latest_time_text.replace('at ', '').strip() if latest_time_text else ''
+            
+            # Past 7 days energy
+            seven_days_elem = await self.page.query_selector('#energy_last_7_days .formatted-value')
+            if seven_days_elem:
+                seven_days_text = await seven_days_elem.get_attribute('data-value')
+                data['past_7_days_kwh'] = float(seven_days_text) if seven_days_text else 0
+            
+            # Month to date energy
+            month_elem = await self.page.query_selector('#energy_month .formatted-value')
+            if month_elem:
+                month_text = await month_elem.get_attribute('data-value')
+                data['month_to_date_kwh'] = float(month_text) if month_text else 0
+            
+            # Lifetime energy
+            lifetime_elem = await self.page.query_selector('#energy_lifetime .formatted-value')
+            if lifetime_elem:
+                lifetime_text = await lifetime_elem.get_attribute('data-value')
+                data['lifetime_mwh'] = float(lifetime_text) if lifetime_text else 0
+            
+            # AC Voltage
+            voltage_elem = await self.page.query_selector('#system_ac_voltage .formatted-value')
+            if voltage_elem:
+                voltage_text = await voltage_elem.get_attribute('data-value')
+                data['microinverter_ac_voltage_v'] = float(voltage_text) if voltage_text else 0
+            
+            # Add timestamp
+            data['last_update'] = datetime.now().isoformat()
+            
+            logger.debug(f"Enphase data extracted: {data}")
+            return data
+            
+        except Exception as e:
+            logger.error(f"Error extracting Enphase data: {e}")
+            return None
+    
+    async def stop(self):
+        """Clean up resources"""
+        try:
+            if self.page:
+                await self.page.close()
+            if self.browser:
+                await self.browser.close()
+            if self.playwright:
+                await self.playwright.stop()
+        except Exception as e:
+            logger.error(f"Error stopping Enphase monitor: {e}")
+
 class SRPMonitor:
     def __init__(self):
         self.username = alert_config['credentials'].get('srp_username', '') or os.getenv('SRP_USERNAME', '')
