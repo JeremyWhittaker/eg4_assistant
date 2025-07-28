@@ -132,7 +132,9 @@ alert_config = {
         'eg4_username': '',
         'eg4_password': '',
         'srp_username': '',
-        'srp_password': ''
+        'srp_password': '',
+        'enphase_username': '',
+        'enphase_password': ''
     },
     'thresholds': {
         'battery_low': 20,
