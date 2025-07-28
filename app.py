@@ -1253,15 +1253,17 @@ def restore_data_on_startup():
 
 async def monitor_loop():
     """Main monitoring loop with automatic recovery"""
-    global eg4_monitor, srp_monitor
+    global eg4_monitor, srp_monitor, enphase_monitor
     
     # Restore data from database on startup
     restore_data_on_startup()
     
     eg4_monitor = EG4Monitor()
     srp_monitor = SRPMonitor()
+    enphase_monitor = EnphaseMonitor()
     eg4 = eg4_monitor
     srp = srp_monitor
+    enphase = enphase_monitor
     
     retry_count = 0
     max_retries = 5
