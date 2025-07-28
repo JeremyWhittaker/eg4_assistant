@@ -561,7 +561,7 @@ class EnphaseMonitor:
             await asyncio.sleep(3)
             
             # Wait for the Energy tab content to be loaded
-            await self.page.wait_for_selector('tabpanel[aria-label="Energy"]', timeout=30000)
+            await self.page.wait_for_selector('tab:has-text("Energy")', timeout=30000)
             
             data = {}
             
