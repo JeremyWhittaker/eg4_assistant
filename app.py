@@ -425,16 +425,19 @@ class EnphaseMonitor:
             
             # Navigate to the system page to test session
             await self.page.goto(self.system_url, wait_until='domcontentloaded')
-            await asyncio.sleep(2)
+            await asyncio.sleep(3)
             
-            # Check if we can access the summary data (means we're logged in)
-            summary_element = await self.page.query_selector('#summary')
-            if summary_element:
+            # Check if we can access system data (means we're logged in)
+            page_content = await self.page.content()
+            
+            # Look for system-specific content that indicates successful login
+            if ('kWh' in page_content and 'Today' in page_content and 
+                ('Microinverters' in page_content or 'Gilbert, AZ' in page_content)):
                 return True
             
             # If we see login elements, session is invalid
-            page_content = await self.page.content()
-            if 'sign in' in page_content.lower() or 'login' in page_content.lower():
+            if ('sign in' in page_content.lower() or 'login' in page_content.lower() or
+                'email' in page_content.lower() and 'password' in page_content.lower()):
                 logger.info("Enphase session invalid - login required")
                 self.logged_in = False
                 return False
@@ -448,51 +451,67 @@ class EnphaseMonitor:
 
     async def login(self):
         try:
-            await self.page.goto('https://enlighten.enphaseenergy.com/', wait_until='domcontentloaded')
-            await asyncio.sleep(2)
-            
-            # Look for sign in button and click it
-            sign_in_button = await self.page.query_selector('a[href*="signin"], button:has-text("Sign In"), a:has-text("Sign In")')
-            if sign_in_button:
-                await sign_in_button.click()
-                await asyncio.sleep(3)
-            
-            # Fill in credentials
             logger.info("Attempting Enphase login...")
-            username_field = await self.page.query_selector('input[name="username"], input[type="email"], input[id*="email"], input[id*="username"]')
-            password_field = await self.page.query_selector('input[name="password"], input[type="password"]')
+            await self.page.goto('https://enlighten.enphaseenergy.com/', wait_until='networkidle')
+            await asyncio.sleep(3)
             
-            if not username_field or not password_field:
-                logger.error("Could not find Enphase login fields")
+            # The login form is already present on the main page - no need to click a separate sign-in button
+            # Wait for the login form to be visible
+            await self.page.wait_for_selector('input[type="email"], input[id*="email"]', timeout=30000)
+            
+            # Find and fill email field
+            email_field = await self.page.query_selector('input[type="email"], input[id*="email"]')
+            if not email_field:
+                logger.error("Could not find Enphase email field")
                 return False
             
-            await username_field.fill(self.username)
+            # Find and fill password field  
+            password_field = await self.page.query_selector('input[type="password"]')
+            if not password_field:
+                logger.error("Could not find Enphase password field")
+                return False
+            
+            # Clear fields and fill with credentials
+            await email_field.fill('')
+            await email_field.fill(self.username)
+            await password_field.fill('')
             await password_field.fill(self.password)
             
-            # Submit the form
-            submit_button = await self.page.query_selector('button[type="submit"], input[type="submit"], button:has-text("Sign In")')
+            # Submit the login form
+            submit_button = await self.page.query_selector('button:has-text("Sign In")')
             if submit_button:
                 await submit_button.click()
             else:
-                await password_field.press('Enter')
+                logger.error("Could not find Sign In button")
+                return False
             
-            await asyncio.sleep(5)
+            # Wait for navigation after login
+            await self.page.wait_for_url('**/systems**', timeout=30000)
+            await asyncio.sleep(2)
             
-            # Check if login was successful by navigating to our system
-            await self.page.goto(self.system_url, wait_until='domcontentloaded')
+            # Navigate to our specific system page
+            await self.page.goto(self.system_url, wait_until='networkidle')
             await asyncio.sleep(3)
             
-            # Verify we can access the summary section
-            summary_element = await self.page.query_selector('#summary')
-            login_success = summary_element is not None
+            # Wait for the Energy tab to be visible (indicates successful login)
+            try:
+                await self.page.wait_for_selector('tab[aria-label="Energy"], a:has-text("Energy")', timeout=15000)
+                login_success = True
+                logger.info("Enphase login successful")
+            except Exception:
+                # Alternative check - look for system data
+                page_content = await self.page.content()
+                login_success = 'kWh' in page_content and 'Today' in page_content
+                if login_success:
+                    logger.info("Enphase login successful (alternative check)")
+                else:
+                    logger.error("Enphase login failed - could not access system data")
             
             if login_success:
                 self.logged_in = True
                 self.last_login_time = datetime.now()
-                logger.info("Enphase login successful")
             else:
                 self.logged_in = False
-                logger.error("Enphase login failed - could not access system page")
             
             return login_success
             
@@ -502,68 +521,121 @@ class EnphaseMonitor:
             return False
     
     async def get_data(self):
-        """Extract Enphase system data from the summary tab"""
+        """Extract Enphase system data from the system page"""
         try:
-            # Make sure we're on the right page
-            await self.page.goto(self.system_url, wait_until='domcontentloaded')
+            # Make sure we're on the right page and wait for content to load
+            await self.page.goto(self.system_url, wait_until='networkidle')
             await asyncio.sleep(3)
             
-            # Extract data using the provided selectors
+            # Wait for the Energy tab content to be loaded
+            await self.page.wait_for_selector('[data-tab="Energy"], tabpanel:has-text("Today")', timeout=30000)
+            
             data = {}
             
-            # Today's energy production
-            today_energy_elem = await self.page.query_selector('#energy_today .formatted-value')
-            if today_energy_elem:
-                today_energy_text = await today_energy_elem.get_attribute('data-value')
-                data['today_energy_kwh'] = float(today_energy_text) if today_energy_text else 0
+            # Helper function to safely extract numeric values
+            def safe_float(text):
+                if not text:
+                    return 0
+                try:
+                    # Remove any non-numeric characters except decimal point
+                    clean_text = ''.join(c for c in text if c.isdigit() or c == '.')
+                    return float(clean_text) if clean_text else 0
+                except (ValueError, TypeError):
+                    return 0
             
-            # Peak power today
-            peak_power_elem = await self.page.query_selector('#peak_power .formatted-value')
-            if peak_power_elem:
-                peak_power_text = await peak_power_elem.get_attribute('data-value')
-                data['peak_power_kw'] = float(peak_power_text) if peak_power_text else 0
+            # Today's energy production - look for the "Today" section
+            today_section = await self.page.query_selector('generic:has-text("Today"):not(:has-text("Month To Date"))')
+            if today_section:
+                # Find the kWh value in the Today section
+                kwh_elem = await today_section.query_selector('generic:has-text("kWh")')
+                if kwh_elem:
+                    kwh_text = await kwh_elem.text_content()
+                    # Extract the number before "kWh"
+                    kwh_match = kwh_text.split('kWh')[0].strip() if 'kWh' in kwh_text else '0'
+                    data['today_energy_kwh'] = safe_float(kwh_match)
+                
+                # Extract peak power and time from the same section
+                peak_elem = await today_section.query_selector('generic:has-text("Peak:")')
+                if peak_elem:
+                    peak_text = await peak_elem.text_content()
+                    # Extract kW value (e.g., "Peak: 3.88 kW at 12:35 PM")
+                    if 'kW' in peak_text:
+                        peak_parts = peak_text.split('kW')
+                        peak_value = peak_parts[0].replace('Peak:', '').strip()
+                        data['peak_power_kw'] = safe_float(peak_value)
+                        
+                        # Extract time if present
+                        if 'at' in peak_text:
+                            time_part = peak_text.split('at')[-1].strip()
+                            data['peak_power_time'] = time_part
+                
+                # Extract latest power and time
+                latest_elem = await today_section.query_selector('generic:has-text("Latest:")')
+                if latest_elem:
+                    latest_text = await latest_elem.text_content()
+                    # Extract W value (e.g., "Latest: 0.00 W at 7:45 PM")
+                    if 'W' in latest_text:
+                        latest_parts = latest_text.split('W')
+                        latest_value = latest_parts[0].replace('Latest:', '').strip()
+                        data['latest_power_w'] = safe_float(latest_value)
+                        
+                        # Extract time if present
+                        if 'at' in latest_text:
+                            time_part = latest_text.split('at')[-1].strip()
+                            data['latest_power_time'] = time_part
             
-            # Peak power time
-            peak_time_elem = await self.page.query_selector('#peak_power .time')
-            if peak_time_elem:
-                peak_time_text = await peak_time_elem.text_content()
-                data['peak_power_time'] = peak_time_text.replace('at ', '').strip() if peak_time_text else ''
+            # Past 7 Days energy
+            seven_days_section = await self.page.query_selector('generic:has-text("Past 7 Days")')
+            if seven_days_section:
+                kwh_elem = await seven_days_section.query_selector('generic:has-text("kWh")')
+                if kwh_elem:
+                    kwh_text = await kwh_elem.text_content()
+                    kwh_match = kwh_text.split('kWh')[0].strip() if 'kWh' in kwh_text else '0'
+                    data['past_7_days_kwh'] = safe_float(kwh_match)
             
-            # Latest power output
-            latest_power_elem = await self.page.query_selector('#latest_power .formatted-value')
-            if latest_power_elem:
-                latest_power_text = await latest_power_elem.get_attribute('data-value')
-                data['latest_power_w'] = float(latest_power_text) if latest_power_text else 0
+            # Month to Date energy
+            month_section = await self.page.query_selector('generic:has-text("Month To Date")')
+            if month_section:
+                kwh_elem = await month_section.query_selector('generic:has-text("kWh")')
+                if kwh_elem:
+                    kwh_text = await kwh_elem.text_content()
+                    kwh_match = kwh_text.split('kWh')[0].strip() if 'kWh' in kwh_text else '0'
+                    data['month_to_date_kwh'] = safe_float(kwh_match)
             
-            # Latest power time
-            latest_time_elem = await self.page.query_selector('#latest_power .time')
-            if latest_time_elem:
-                latest_time_text = await latest_time_elem.text_content()
-                data['latest_power_time'] = latest_time_text.replace('at ', '').strip() if latest_time_text else ''
+            # Lifetime energy (in MWh)
+            lifetime_section = await self.page.query_selector('generic:has-text("Lifetime")')
+            if lifetime_section:
+                mwh_elem = await lifetime_section.query_selector('generic:has-text("MWh")')
+                if mwh_elem:
+                    mwh_text = await mwh_elem.text_content()
+                    mwh_match = mwh_text.split('MWh')[0].strip() if 'MWh' in mwh_text else '0'
+                    data['lifetime_mwh'] = safe_float(mwh_match)
             
-            # Past 7 days energy
-            seven_days_elem = await self.page.query_selector('#energy_last_7_days .formatted-value')
-            if seven_days_elem:
-                seven_days_text = await seven_days_elem.get_attribute('data-value')
-                data['past_7_days_kwh'] = float(seven_days_text) if seven_days_text else 0
+            # Microinverter AC Voltage
+            voltage_section = await self.page.query_selector('generic:has-text("Microinverter AC Voltage")')
+            if voltage_section:
+                voltage_elem = await voltage_section.query_selector('generic:has-text("V")')
+                if voltage_elem:
+                    voltage_text = await voltage_elem.text_content()
+                    voltage_match = voltage_text.split('V')[0].strip() if 'V' in voltage_text else '0'
+                    data['microinverter_ac_voltage_v'] = safe_float(voltage_match)
             
-            # Month to date energy
-            month_elem = await self.page.query_selector('#energy_month .formatted-value')
-            if month_elem:
-                month_text = await month_elem.get_attribute('data-value')
-                data['month_to_date_kwh'] = float(month_text) if month_text else 0
+            # Set default values for any missing data
+            default_values = {
+                'today_energy_kwh': 0,
+                'peak_power_kw': 0,
+                'peak_power_time': '',
+                'latest_power_w': 0,
+                'latest_power_time': '',
+                'past_7_days_kwh': 0,
+                'month_to_date_kwh': 0,
+                'lifetime_mwh': 0,
+                'microinverter_ac_voltage_v': 0
+            }
             
-            # Lifetime energy
-            lifetime_elem = await self.page.query_selector('#energy_lifetime .formatted-value')
-            if lifetime_elem:
-                lifetime_text = await lifetime_elem.get_attribute('data-value')
-                data['lifetime_mwh'] = float(lifetime_text) if lifetime_text else 0
-            
-            # AC Voltage
-            voltage_elem = await self.page.query_selector('#system_ac_voltage .formatted-value')
-            if voltage_elem:
-                voltage_text = await voltage_elem.get_attribute('data-value')
-                data['microinverter_ac_voltage_v'] = float(voltage_text) if voltage_text else 0
+            for key, default_value in default_values.items():
+                if key not in data:
+                    data[key] = default_value
             
             # Add timestamp
             data['last_update'] = datetime.now().isoformat()
