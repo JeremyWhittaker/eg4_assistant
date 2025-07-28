@@ -1284,6 +1284,11 @@ async def monitor_loop():
                 srp_started = True
                 logger.info("SRP browser started")
             
+            if not enphase_started:
+                await enphase.start()
+                enphase_started = True
+                logger.info("Enphase browser started")
+            
             # Check SRP login status and login if needed
             srp_logged_in = False
             try:
