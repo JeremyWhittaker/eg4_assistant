@@ -481,18 +481,25 @@ class EnphaseMonitor:
             page_title = await self.page.title()
             logger.debug(f"Enphase login page loaded: {page_url} - {page_title}")
             
-            # The login form is already present on the main page - no need to click a separate sign-in button
             # Wait for the login form to be visible
-            await self.page.wait_for_selector('input[type="email"], input[id*="email"]', timeout=30000)
+            await self.page.wait_for_selector('input[type="email"]', timeout=30000)
             
-            # Find and fill email field
-            email_field = await self.page.query_selector('input[type="email"], input[id*="email"]')
+            # Find and fill email field using the correct selector
+            email_field = await self.page.query_selector('textbox[name="Email:"]')
+            if not email_field:
+                # Fallback to generic email input selector
+                email_field = await self.page.query_selector('input[type="email"]')
+            
             if not email_field:
                 logger.error("Could not find Enphase email field")
                 return False
             
-            # Find and fill password field  
-            password_field = await self.page.query_selector('input[type="password"]')
+            # Find and fill password field using the correct selector
+            password_field = await self.page.query_selector('textbox[name="Password:"]')
+            if not password_field:
+                # Fallback to generic password input selector
+                password_field = await self.page.query_selector('input[type="password"]')
+            
             if not password_field:
                 logger.error("Could not find Enphase password field")
                 return False
@@ -503,10 +510,15 @@ class EnphaseMonitor:
             await password_field.fill('')
             await password_field.fill(self.password)
             
-            # Submit the login form
+            # Submit the login form using the correct selector
             submit_button = await self.page.query_selector('button:has-text("Sign In")')
+            if not submit_button:
+                # Fallback selector
+                submit_button = await self.page.query_selector('input[type="submit"]')
+            
             if submit_button:
                 await submit_button.click()
+                logger.debug("Clicked Sign In button")
             else:
                 logger.error("Could not find Sign In button")
                 return False
@@ -521,13 +533,14 @@ class EnphaseMonitor:
             
             # Wait for the Energy tab to be visible (indicates successful login)
             try:
-                await self.page.wait_for_selector('tab[aria-label="Energy"], a:has-text("Energy")', timeout=15000)
+                await self.page.wait_for_selector('tab:has-text("Energy")', timeout=15000)
                 login_success = True
                 logger.info("Enphase login successful")
             except Exception:
-                # Alternative check - look for system data
+                # Alternative check - look for system data and specific page elements
                 page_content = await self.page.content()
-                login_success = 'kWh' in page_content and 'Today' in page_content
+                login_success = ('kWh' in page_content and 'Today' in page_content and 
+                               ('Gilbert, AZ' in page_content or 'Microinverters' in page_content))
                 if login_success:
                     logger.info("Enphase login successful (alternative check)")
                 else:
