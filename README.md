@@ -229,7 +229,7 @@ grep -i error logs/eg4_srp_monitor.log
 curl http://localhost:5001/api/refresh-srp
 
 # Check current status
-curl http://localhost:5000/api/status | python3 -m json.tool
+curl http://localhost:5001/api/status | python3 -m json.tool
 ```
 
 ## 🔄 Monitoring Schedule
