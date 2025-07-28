@@ -567,8 +567,12 @@ class EnphaseMonitor:
             await self.page.goto(self.system_url, wait_until='networkidle')
             await asyncio.sleep(3)
             
-            # Wait for the Energy tab content to be loaded
-            await self.page.wait_for_selector('tab:has-text("Energy")', timeout=30000)
+            # Wait for the Energy tab content to be loaded - use a more reliable selector
+            try:
+                await self.page.wait_for_selector('tab:has-text("Energy")', timeout=10000)
+            except:
+                # Fallback - wait for any energy-related content to load
+                await self.page.wait_for_selector('*:has-text("kWh")', timeout=15000)
             
             data = {}
             
