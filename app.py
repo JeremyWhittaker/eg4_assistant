@@ -1055,6 +1055,30 @@ def is_valid_srp_data(data):
     logger.debug(f"SRP data validation failed - demand: {demand}")
     return False
 
+def is_valid_enphase_data(data):
+    """Check if Enphase data represents a valid response"""
+    if not data or not isinstance(data, dict):
+        return False
+    
+    # Check for reasonable data values
+    today_energy = data.get('today_energy_kwh', 0)
+    latest_power = data.get('latest_power_w', 0)
+    ac_voltage = data.get('microinverter_ac_voltage_v', 0)
+    
+    # During daylight hours, expect some production
+    current_hour = datetime.now().hour
+    if 8 <= current_hour <= 18:  # Daylight hours
+        # At least some production expected during day, or reasonable voltage
+        if today_energy > 0 or latest_power > 0 or ac_voltage > 200:
+            return True
+    else:
+        # At night, zero production is normal, but voltage should still be reasonable
+        if ac_voltage > 200 or today_energy >= 0:  # Accept any reasonable voltage or valid energy
+            return True
+    
+    logger.debug(f"Enphase data validation failed - energy:{today_energy}kWh, power:{latest_power}W, voltage:{ac_voltage}V")
+    return False
+
 def retry_with_exponential_backoff(func, max_retries=3, base_delay=1):
     """Retry function with exponential backoff"""
     async def wrapper(*args, **kwargs):
