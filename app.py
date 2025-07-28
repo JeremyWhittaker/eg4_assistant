@@ -1414,13 +1414,11 @@ async def monitor_loop():
                     logger.debug("Enphase session validated - already logged in")
                 else:
                     # Need to login
-                    for attempt in range(3):
-                        if await enphase.login():
-                            enphase_logged_in = True
-                            logger.info("Enphase login successful")
-                            break
-                        logger.warning(f"Enphase login attempt {attempt + 1} failed")
-                        await asyncio.sleep(5)
+                    if await enphase.login_with_retry():
+                        enphase_logged_in = True
+                        logger.info("Enphase login successful")
+                    else:
+                        logger.error("Failed to login to Enphase after all retry attempts")
                     
                     if not enphase_logged_in:
                         logger.error("Enphase login failed after 3 attempts - continuing without Enphase data")
@@ -1495,12 +1493,11 @@ async def monitor_loop():
                             # Validate session before attempting data collection
                             if not await enphase.is_logged_in():
                                 logger.warning("Enphase session expired, attempting re-login...")
-                                for attempt in range(3):
-                                    if await enphase.login():
-                                        logger.info("Enphase re-login successful")
-                                        break
-                                    logger.warning(f"Enphase re-login attempt {attempt + 1} failed")
-                                    await asyncio.sleep(5)
+                                if await enphase.login_with_retry():
+                                    logger.info("Enphase re-login successful")
+                                else:
+                                    logger.error("Failed to re-login to Enphase after all retry attempts")
+                                    continue
                                 else:
                                     logger.error("Enphase re-login failed - skipping Enphase update")
                                     enphase_logged_in = False
