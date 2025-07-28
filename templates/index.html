@@ -1382,7 +1382,7 @@
             // Set up new interval if enabled
             if (isEnabled) {
                 autoRefreshInterval = setInterval(() => {
-                    refreshEG4();
+                    refreshEG4(null); // Pass null for auto-refresh (no button to disable)
                 }, interval);
             }
         }
