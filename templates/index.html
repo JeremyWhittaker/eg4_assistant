@@ -1802,10 +1802,34 @@
         // Load current status
         fetch('/api/status').then(r => r.json()).then(data => {
             if (data.eg4) {
-                socket.emit('eg4_update', data.eg4);
+                // Directly update UI instead of emitting
+                const eg4Event = new CustomEvent('eg4_update_received', { detail: data.eg4 });
+                window.dispatchEvent(eg4Event);
             }
             if (data.srp) {
-                socket.emit('srp_update', data.srp);
+                // Directly update UI
+                document.getElementById('peak-demand').textContent = data.srp.demand.toFixed(1) + ' kW';
+                document.getElementById('peak-demand-header').textContent = data.srp.demand.toFixed(1) + ' kW';
+                if (data.srp.last_daily_update || data.srp.timestamp) {
+                    const timeField = data.srp.last_daily_update || data.srp.timestamp;
+                    const updateTime = new Date(timeField);
+                    document.getElementById('srp-last-update').textContent = updateTime.toLocaleString();
+                }
+                document.getElementById('srp-status').className = 'status-indicator online';
+                document.getElementById('srp-status-text').textContent = 'Online';
+            }
+            if (data.enphase) {
+                // Update Enphase UI
+                document.getElementById('enphase-current-power').textContent = data.enphase.latest_power_w + ' W';
+                document.getElementById('enphase-today-energy').textContent = data.enphase.today_energy_kwh.toFixed(2) + ' kWh';
+                document.getElementById('enphase-lifetime-energy').textContent = (data.enphase.lifetime_energy_kwh / 1000).toFixed(1) + ' MWh';
+                document.getElementById('enphase-microinverters').textContent = data.enphase.microinverters_online + ' / ' + data.enphase.microinverters_total;
+                if (data.enphase.timestamp) {
+                    const updateTime = new Date(data.enphase.timestamp);
+                    document.getElementById('enphase-last-update').textContent = updateTime.toLocaleString();
+                }
+                document.getElementById('enphase-status').className = 'status-indicator online';
+                document.getElementById('enphase-status-text').textContent = 'Online';
             }
         });
         
