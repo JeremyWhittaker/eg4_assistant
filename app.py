@@ -1009,6 +1009,19 @@ async def monitor_loop():
                             logger.info("No SRP data found, fetching initial data")
                         
                         if should_update_srp:
+                            # Validate session before attempting data collection
+                            if not await srp.is_logged_in():
+                                logger.warning("SRP session expired, attempting re-login...")
+                                for attempt in range(3):
+                                    if await srp.login():
+                                        logger.info("SRP re-login successful")
+                                        break
+                                    logger.warning(f"SRP re-login attempt {attempt + 1} failed")
+                                    await asyncio.sleep(5)
+                                else:
+                                    logger.error("SRP re-login failed - skipping SRP update")
+                                    continue
+                            
                             logger.info("Updating SRP peak demand data...")
                             srp_data = await srp.get_peak_demand()
                             if srp_data:
