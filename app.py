@@ -1833,6 +1833,11 @@ def config():
                     alert_config['credentials']['srp_username'],
                     alert_config['credentials']['srp_password']
                 )
+            if enphase_monitor and ('enphase_username' in data['credentials'] or 'enphase_password' in data['credentials']):
+                enphase_monitor.update_credentials(
+                    alert_config['credentials'].get('enphase_username', ''),
+                    alert_config['credentials'].get('enphase_password', '')
+                )
         
         # Save configuration to file
         save_config()
