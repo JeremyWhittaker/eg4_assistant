@@ -176,7 +176,8 @@ eg4-srp-monitor/
 ├── gmail_integration_temp/ # Gmail functionality
 ├── .env                # Environment variables (optional)
 ├── .env.example        # Example environment file
-├── PROJECT_STRUCTURE.md # Detailed file documentation
+├── docs/
+│   └── PROJECT_STRUCTURE.md # Detailed file documentation
 ├── CLAUDE.md           # Development guide
 └── README.md           # This documentation
 ```
