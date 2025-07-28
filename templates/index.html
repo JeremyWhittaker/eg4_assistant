@@ -973,6 +973,23 @@
             }
         });
         
+        // Update Enphase data
+        socket.on('enphase_update', (data) => {
+            document.getElementById('enphase-current-power').textContent = data.latest_power_w + ' W';
+            document.getElementById('enphase-today-energy').textContent = data.today_energy_kwh.toFixed(2) + ' kWh';
+            document.getElementById('enphase-lifetime-energy').textContent = (data.lifetime_energy_kwh / 1000).toFixed(1) + ' MWh';
+            document.getElementById('enphase-microinverters').textContent = data.microinverters_online + ' / ' + data.microinverters_total;
+            
+            // Update timestamp
+            if (data.timestamp) {
+                const updateTime = new Date(data.timestamp);
+                document.getElementById('enphase-last-update').textContent = updateTime.toLocaleString();
+            }
+            
+            document.getElementById('enphase-status').className = 'status-indicator online';
+            document.getElementById('enphase-status-text').textContent = 'Online';
+        });
+        
         // Handle alerts
         socket.on('alert', (data) => {
             const alertDiv = document.getElementById('alert');
