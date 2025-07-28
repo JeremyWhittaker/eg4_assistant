@@ -1361,7 +1361,8 @@
         let logRefreshInterval = null;
         function startLogRefresh() {
             // Load logs immediately if on configuration tab
-            if (document.getElementById('alerts-tab').classList.contains('active')) {
+            if (document.getElementById('alerts-tab').classList.contains('active') && 
+                document.getElementById('log-level')) {
                 loadLogs();
             }
             
