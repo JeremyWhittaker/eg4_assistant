@@ -612,7 +612,7 @@ class EnphaseMonitor:
                             for (let el of peakElements) {
                                 if (el.textContent && el.textContent.includes('Peak:')) {
                                     const fullText = el.textContent;
-                                    const kwMatch = fullText.match(/([0-9.]+)\s*kW/);
+                                    const kwMatch = fullText.match(/([0-9.]+)\\s*kW/);
                                     if (kwMatch) {
                                         data.peak_power_kw = parseFloat(kwMatch[1]) || 0;
                                     }
@@ -629,7 +629,7 @@ class EnphaseMonitor:
                             for (let el of latestElements) {
                                 if (el.textContent && el.textContent.includes('Latest:')) {
                                     const fullText = el.textContent;
-                                    const kwMatch = fullText.match(/([0-9.]+)\s*kW/);
+                                    const kwMatch = fullText.match(/([0-9.]+)\\s*kW/);
                                     if (kwMatch) {
                                         data.latest_power_kw = parseFloat(kwMatch[1]) || 0;
                                     }
