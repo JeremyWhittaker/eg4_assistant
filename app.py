@@ -1269,6 +1269,7 @@ async def monitor_loop():
     max_retries = 5
     eg4_started = False
     srp_started = False
+    enphase_started = False
     
     while True:
         try:
