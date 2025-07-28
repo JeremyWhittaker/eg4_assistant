@@ -632,7 +632,8 @@ class EnphaseMonitor:
                                     const fullText = el.textContent;
                                     const kwMatch = fullText.match(/([0-9.]+)\\s*kW/);
                                     if (kwMatch) {
-                                        data.latest_power_kw = parseFloat(kwMatch[1]) || 0;
+                                        // Convert kW to W for consistency with validation
+                                        data.latest_power_w = (parseFloat(kwMatch[1]) || 0) * 1000;
                                     }
                                     const timeMatch = fullText.match(/at\\s+([0-9:]+\\s*[AP]M)/);
                                     if (timeMatch) {
