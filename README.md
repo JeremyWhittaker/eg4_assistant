@@ -69,7 +69,7 @@ A comprehensive monitoring and alerting system for EG4 inverters with Salt River
    python app.py
    ```
 
-5. **Access Dashboard**: Open http://localhost:5000
+5. **Access Dashboard**: Open http://localhost:5001
 
 ## 📊 Dashboard Overview
 
