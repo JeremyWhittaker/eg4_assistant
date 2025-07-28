@@ -517,8 +517,15 @@ class EnphaseMonitor:
                 logger.error("Could not find Sign In button")
                 return False
             
-            # Wait for navigation after login
-            await self.page.wait_for_url('**/systems**', timeout=30000)
+            # Wait for navigation after login (login redirects automatically)
+            try:
+                await self.page.wait_for_url('**/systems/**', timeout=15000)
+            except:
+                # Check if we're already on a system page
+                current_url = self.page.url
+                if '/systems/' not in current_url:
+                    logger.error(f"Login redirect failed, current URL: {current_url}")
+                    return False
             await asyncio.sleep(2)
             
             # Navigate to our specific system page
