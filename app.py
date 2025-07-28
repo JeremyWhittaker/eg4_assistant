@@ -2181,7 +2181,7 @@ if __name__ == '__main__':
     # Check if we're in development mode
     debug_mode = os.getenv('FLASK_ENV') == 'development'
     if debug_mode:
-        logger.info("Starting Flask application in DEVELOPMENT mode on port 5000 (auto-reload enabled)")
+        logger.info("Starting Flask application in DEVELOPMENT mode on port 5001 (auto-reload enabled)")
     else:
         logger.info("Starting Flask application in PRODUCTION mode on port 5001")
     
