@@ -1067,8 +1067,11 @@ async def monitor_loop():
                                     continue
                             
                             logger.info("Updating SRP peak demand data...")
-                            srp_data = await srp.get_peak_demand()
-                            if srp_data:
+                            # Use retry logic for SRP data collection
+                            retry_srp_get_data = retry_with_exponential_backoff(srp.get_peak_demand, max_retries=3, base_delay=2)
+                            srp_data = await retry_srp_get_data()
+                            
+                            if srp_data and is_valid_srp_data(srp_data):
                                 monitor_data['srp'] = srp_data
                                 monitor_data['srp']['last_daily_update'] = now.isoformat()
                                 socketio.emit('srp_update', srp_data)
