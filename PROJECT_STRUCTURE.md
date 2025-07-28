@@ -84,7 +84,7 @@ source venv/bin/activate
 python app.py
 
 # Access web interface
-# http://localhost:5000
+# http://localhost:5001
 ```
 
 ### Log Management
