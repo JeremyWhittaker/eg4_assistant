@@ -1396,6 +1396,53 @@ async def monitor_loop():
                         except Exception as e:
                             logger.error(f"Error stopping EG4 monitor: {e}")
                     
+                    # Get Enphase data every cycle (like EG4, every 60 seconds)
+                    if enphase_logged_in:
+                        try:
+                            # Validate session before attempting data collection
+                            if not await enphase.is_logged_in():
+                                logger.warning("Enphase session expired, attempting re-login...")
+                                for attempt in range(3):
+                                    if await enphase.login():
+                                        logger.info("Enphase re-login successful")
+                                        break
+                                    logger.warning(f"Enphase re-login attempt {attempt + 1} failed")
+                                    await asyncio.sleep(5)
+                                else:
+                                    logger.error("Enphase re-login failed - skipping Enphase update")
+                                    enphase_logged_in = False
+                            
+                            if enphase_logged_in:
+                                # Get Enphase data with retry logic
+                                retry_enphase_get_data = retry_with_exponential_backoff(enphase.get_data, max_retries=2, base_delay=1)
+                                enphase_data = await retry_enphase_get_data()
+                                
+                                if enphase_data and is_valid_enphase_data(enphase_data):
+                                    monitor_data['enphase'] = enphase_data
+                                    monitor_data['enphase_connected'] = True
+                                    socketio.emit('enphase_update', enphase_data)
+                                    
+                                    # Store data in database
+                                    if data_storage:
+                                        try:
+                                            # We'll add Enphase table to database later, for now just log
+                                            logger.debug("Enphase data collected (database storage pending)")
+                                        except Exception as e:
+                                            logger.error(f"Error storing Enphase data: {e}")
+                                    
+                                    logger.debug(f"Enphase data updated - Today: {enphase_data.get('today_energy_kwh', 0)}kWh, Latest: {enphase_data.get('latest_power_w', 0)}W")
+                                elif enphase_data:
+                                    monitor_data['enphase_connected'] = False
+                                    logger.warning("Enphase data validation failed - invalid readings")
+                                    logger.debug(f"Enphase invalid data: {enphase_data}")
+                                else:
+                                    monitor_data['enphase_connected'] = False
+                                    logger.error("Failed to get Enphase data after retries")
+                                    
+                        except Exception as e:
+                            logger.error(f"Error in Enphase data collection: {e}")
+                            monitor_data['enphase_connected'] = False
+                    
                     # Get SRP data once per day at configured time OR on manual refresh OR if missing
                     if srp_logged_in:
                         # Get timezone-aware current time
