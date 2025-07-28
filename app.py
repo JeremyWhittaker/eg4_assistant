@@ -1567,6 +1567,10 @@ async def monitor_loop():
                         elif not monitor_data.get('srp') and last_srp_update_date is None:
                             should_update_srp = True
                             logger.info("No SRP data found, fetching initial data")
+                        elif last_srp_update_date != current_date:
+                            # Force update once per day even if missed the scheduled time
+                            should_update_srp = True
+                            logger.info(f"Daily SRP update needed - last update was {last_srp_update_date}, today is {current_date}")
                         
                         if should_update_srp:
                             # Validate session before attempting data collection
