@@ -1050,6 +1050,19 @@ async def monitor_loop():
                         manual_csv_download_requested = False
                         logger.info("Manual CSV download requested")
                         try:
+                            # Validate session before manual download
+                            if not await srp.is_logged_in():
+                                logger.warning("SRP session expired for manual download, attempting re-login...")
+                                for attempt in range(3):
+                                    if await srp.login():
+                                        logger.info("SRP re-login successful for manual download")
+                                        break
+                                    logger.warning(f"SRP manual download re-login attempt {attempt + 1} failed")
+                                    await asyncio.sleep(5)
+                                else:
+                                    logger.error("SRP re-login failed - skipping manual CSV download")
+                                    continue
+                            
                             csv_files = await srp.download_csv_data()
                             if csv_files:
                                 logger.info(f"Manual download successful: {len(csv_files)} CSV files")
