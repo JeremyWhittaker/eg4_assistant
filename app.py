@@ -567,7 +567,7 @@ class EnphaseMonitor:
             await asyncio.sleep(3)
             
             # Wait for the Energy tab content to be loaded
-            await self.page.wait_for_selector('[data-tab="Energy"], tabpanel:has-text("Today")', timeout=30000)
+            await self.page.wait_for_selector('tabpanel[aria-label="Energy"]', timeout=30000)
             
             data = {}
             
@@ -582,89 +582,157 @@ class EnphaseMonitor:
                 except (ValueError, TypeError):
                     return 0
             
-            # Today's energy production - look for the "Today" section
-            today_section = await self.page.query_selector('generic:has-text("Today"):not(:has-text("Month To Date"))')
-            if today_section:
-                # Find the kWh value in the Today section
-                kwh_elem = await today_section.query_selector('generic:has-text("kWh")')
-                if kwh_elem:
-                    kwh_text = await kwh_elem.text_content()
-                    # Extract the number before "kWh"
-                    kwh_match = kwh_text.split('kWh')[0].strip() if 'kWh' in kwh_text else '0'
-                    data['today_energy_kwh'] = safe_float(kwh_match)
-                
-                # Extract peak power and time from the same section
-                peak_elem = await today_section.query_selector('generic:has-text("Peak:")')
-                if peak_elem:
-                    peak_text = await peak_elem.text_content()
-                    # Extract kW value (e.g., "Peak: 3.88 kW at 12:35 PM")
-                    if 'kW' in peak_text:
-                        peak_parts = peak_text.split('kW')
-                        peak_value = peak_parts[0].replace('Peak:', '').strip()
-                        data['peak_power_kw'] = safe_float(peak_value)
-                        
-                        # Extract time if present
-                        if 'at' in peak_text:
-                            time_part = peak_text.split('at')[-1].strip()
-                            data['peak_power_time'] = time_part
-                
-                # Extract latest power and time
-                latest_elem = await today_section.query_selector('generic:has-text("Latest:")')
-                if latest_elem:
-                    latest_text = await latest_elem.text_content()
-                    # Extract W value (e.g., "Latest: 0.00 W at 7:45 PM")
-                    if 'W' in latest_text:
-                        latest_parts = latest_text.split('W')
-                        latest_value = latest_parts[0].replace('Latest:', '').strip()
-                        data['latest_power_w'] = safe_float(latest_value)
-                        
-                        # Extract time if present
-                        if 'at' in latest_text:
-                            time_part = latest_text.split('at')[-1].strip()
-                            data['latest_power_time'] = time_part
-            
-            # Past 7 Days energy
-            seven_days_section = await self.page.query_selector('generic:has-text("Past 7 Days")')
-            if seven_days_section:
-                kwh_elem = await seven_days_section.query_selector('generic:has-text("kWh")')
-                if kwh_elem:
-                    kwh_text = await kwh_elem.text_content()
-                    kwh_match = kwh_text.split('kWh')[0].strip() if 'kWh' in kwh_text else '0'
-                    data['past_7_days_kwh'] = safe_float(kwh_match)
-            
-            # Month to Date energy
-            month_section = await self.page.query_selector('generic:has-text("Month To Date")')
-            if month_section:
-                kwh_elem = await month_section.query_selector('generic:has-text("kWh")')
-                if kwh_elem:
-                    kwh_text = await kwh_elem.text_content()
-                    kwh_match = kwh_text.split('kWh')[0].strip() if 'kWh' in kwh_text else '0'
-                    data['month_to_date_kwh'] = safe_float(kwh_match)
-            
-            # Lifetime energy (in MWh)
-            lifetime_section = await self.page.query_selector('generic:has-text("Lifetime")')
-            if lifetime_section:
-                mwh_elem = await lifetime_section.query_selector('generic:has-text("MWh")')
-                if mwh_elem:
-                    mwh_text = await mwh_elem.text_content()
-                    mwh_match = mwh_text.split('MWh')[0].strip() if 'MWh' in mwh_text else '0'
-                    data['lifetime_mwh'] = safe_float(mwh_match)
-            
-            # Microinverter AC Voltage
-            voltage_section = await self.page.query_selector('generic:has-text("Microinverter AC Voltage")')
-            if voltage_section:
-                voltage_elem = await voltage_section.query_selector('generic:has-text("V")')
-                if voltage_elem:
-                    voltage_text = await voltage_elem.text_content()
-                    voltage_match = voltage_text.split('V')[0].strip() if 'V' in voltage_text else '0'
-                    data['microinverter_ac_voltage_v'] = safe_float(voltage_match)
+            # Use JavaScript to extract data more reliably
+            js_data = await self.page.evaluate("""
+                () => {
+                    const data = {};
+                    
+                    // Find Today section and extract energy data
+                    const todaySection = Array.from(document.querySelectorAll('*')).find(el => 
+                        el.textContent && el.textContent.trim() === 'Today' && 
+                        !el.textContent.includes('Month To Date'));
+                    
+                    if (todaySection) {
+                        const parent = todaySection.closest('generic');
+                        if (parent) {
+                            // Extract today's kWh value
+                            const kwhElements = parent.querySelectorAll('*');
+                            for (let el of kwhElements) {
+                                if (el.textContent && el.textContent.includes('kWh')) {
+                                    const match = el.textContent.match(/([0-9.]+)/);
+                                    if (match) {
+                                        data.today_energy_kwh = parseFloat(match[1]) || 0;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            // Extract peak power
+                            const peakElements = parent.querySelectorAll('*');
+                            for (let el of peakElements) {
+                                if (el.textContent && el.textContent.includes('Peak:')) {
+                                    const fullText = el.textContent;
+                                    const kwMatch = fullText.match(/([0-9.]+)\s*kW/);
+                                    if (kwMatch) {
+                                        data.peak_power_kw = parseFloat(kwMatch[1]) || 0;
+                                    }
+                                    const timeMatch = fullText.match(/at\s+([0-9:]+\s*[AP]M)/);
+                                    if (timeMatch) {
+                                        data.peak_power_time = timeMatch[1];
+                                    }
+                                    break;
+                                }
+                            }
+                            
+                            // Extract latest power
+                            const latestElements = parent.querySelectorAll('*');
+                            for (let el of latestElements) {
+                                if (el.textContent && el.textContent.includes('Latest:')) {
+                                    const fullText = el.textContent;
+                                    const kwMatch = fullText.match(/([0-9.]+)\s*kW/);
+                                    if (kwMatch) {
+                                        data.latest_power_kw = parseFloat(kwMatch[1]) || 0;
+                                    }
+                                    const timeMatch = fullText.match(/at\s+([0-9:]+\s*[AP]M)/);
+                                    if (timeMatch) {
+                                        data.latest_power_time = timeMatch[1];
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Extract Past 7 Days data
+                    const sevenDaysSection = Array.from(document.querySelectorAll('*')).find(el => 
+                        el.textContent && el.textContent.trim() === 'Past 7 Days');
+                    
+                    if (sevenDaysSection) {
+                        const parent = sevenDaysSection.closest('generic');
+                        if (parent) {
+                            const kwhElements = parent.querySelectorAll('*');
+                            for (let el of kwhElements) {
+                                if (el.textContent && el.textContent.includes('kWh')) {
+                                    const match = el.textContent.match(/([0-9.]+)/);
+                                    if (match) {
+                                        data.past_7_days_kwh = parseFloat(match[1]) || 0;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Extract Month To Date data
+                    const monthSection = Array.from(document.querySelectorAll('*')).find(el => 
+                        el.textContent && el.textContent.trim() === 'Month To Date');
+                    
+                    if (monthSection) {
+                        const parent = monthSection.closest('generic');
+                        if (parent) {
+                            const kwhElements = parent.querySelectorAll('*');
+                            for (let el of kwhElements) {
+                                if (el.textContent && el.textContent.includes('kWh')) {
+                                    const match = el.textContent.match(/([0-9.]+)/);
+                                    if (match) {
+                                        data.month_to_date_kwh = parseFloat(match[1]) || 0;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Extract Lifetime data
+                    const lifetimeSection = Array.from(document.querySelectorAll('*')).find(el => 
+                        el.textContent && el.textContent.trim() === 'Lifetime');
+                    
+                    if (lifetimeSection) {
+                        const parent = lifetimeSection.closest('generic');
+                        if (parent) {
+                            const mwhElements = parent.querySelectorAll('*');
+                            for (let el of mwhElements) {
+                                if (el.textContent && el.textContent.includes('MWh')) {
+                                    const match = el.textContent.match(/([0-9.]+)/);
+                                    if (match) {
+                                        data.lifetime_mwh = parseFloat(match[1]) || 0;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Extract AC Voltage
+                    const voltageSection = Array.from(document.querySelectorAll('*')).find(el => 
+                        el.textContent && el.textContent.includes('Microinverter AC Voltage'));
+                    
+                    if (voltageSection) {
+                        const parent = voltageSection.closest('generic');
+                        if (parent) {
+                            const voltageElements = parent.querySelectorAll('*');
+                            for (let el of voltageElements) {
+                                if (el.textContent && el.textContent.includes('V') && !el.textContent.includes('Voltage')) {
+                                    const match = el.textContent.match(/([0-9.]+)/);
+                                    if (match) {
+                                        data.microinverter_ac_voltage_v = parseFloat(match[1]) || 0;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    return data;
+                }
+            """)
             
             # Set default values for any missing data
             default_values = {
                 'today_energy_kwh': 0,
                 'peak_power_kw': 0,
                 'peak_power_time': '',
-                'latest_power_w': 0,
+                'latest_power_kw': 0,
                 'latest_power_time': '',
                 'past_7_days_kwh': 0,
                 'month_to_date_kwh': 0,
@@ -672,14 +740,14 @@ class EnphaseMonitor:
                 'microinverter_ac_voltage_v': 0
             }
             
+            # Merge JavaScript extracted data with defaults
             for key, default_value in default_values.items():
-                if key not in data:
-                    data[key] = default_value
+                data[key] = js_data.get(key, default_value)
             
             # Add timestamp
             data['last_update'] = datetime.now().isoformat()
             
-            logger.debug(f"Enphase data extracted: {data}")
+            logger.info(f"Enphase data extracted: {data}")
             return data
             
         except Exception as e:
