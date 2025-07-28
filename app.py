@@ -1312,6 +1312,29 @@ async def monitor_loop():
                 logger.error(f"Error checking SRP login status: {e}")
                 srp_logged_in = False
             
+            # Check Enphase login status and login if needed
+            enphase_logged_in = False
+            try:
+                # Check if already logged in
+                if await enphase.is_logged_in():
+                    enphase_logged_in = True
+                    logger.debug("Enphase session validated - already logged in")
+                else:
+                    # Need to login
+                    for attempt in range(3):
+                        if await enphase.login():
+                            enphase_logged_in = True
+                            logger.info("Enphase login successful")
+                            break
+                        logger.warning(f"Enphase login attempt {attempt + 1} failed")
+                        await asyncio.sleep(5)
+                    
+                    if not enphase_logged_in:
+                        logger.error("Enphase login failed after 3 attempts - continuing without Enphase data")
+            except Exception as e:
+                logger.error(f"Error checking Enphase login status: {e}")
+                enphase_logged_in = False
+            
             # Reset retry count on successful connection
             retry_count = 0
             
