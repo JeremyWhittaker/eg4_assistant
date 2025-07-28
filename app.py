@@ -380,6 +380,43 @@ class SRPMonitor:
         # Set longer default timeout for all page operations (2 minutes)
         self.page.set_default_timeout(120000)
         
+    async def is_logged_in(self):
+        """Check if currently logged in to SRP"""
+        if not self.page:
+            return False
+            
+        try:
+            # Check if session has expired (more than 2 hours)
+            if self.last_login_time:
+                time_since_login = datetime.now() - self.last_login_time
+                if time_since_login.total_seconds() > 7200:  # 2 hours
+                    logger.info("SRP session expired (2+ hours), forcing re-login")
+                    self.logged_in = False
+                    return False
+            
+            # Navigate to a protected page to test session
+            current_url = self.page.url
+            await self.page.goto('https://myaccount.srpnet.com/power/myaccount/usage', wait_until='domcontentloaded')
+            await asyncio.sleep(2)
+            
+            # If we're redirected to login page or see login elements, session is invalid
+            page_content = await self.page.content()
+            if ('username' in page_content and 'password' in page_content) or 'login' in self.page.url.lower():
+                logger.info("SRP session invalid - login required")
+                self.logged_in = False
+                return False
+            
+            # If we can access the usage page, we're logged in
+            if 'usage' in self.page.url or 'dashboard' in self.page.url:
+                return True
+                
+        except Exception as e:
+            logger.warning(f"Error checking SRP login status: {e}")
+            self.logged_in = False
+            return False
+        
+        return False
+
     async def login(self):
         try:
             await self.page.goto('https://myaccount.srpnet.com/power', wait_until='domcontentloaded')
@@ -387,18 +424,33 @@ class SRPMonitor:
             
             # Check if already logged in
             if 'dashboard' in self.page.url:
+                self.logged_in = True
+                self.last_login_time = datetime.now()
+                logger.info("SRP already logged in")
                 return True
                 
             # Login
+            logger.info("Attempting SRP login...")
             await self.page.fill('input[name="username"]', self.username)
             await self.page.fill('input[name="password"]', self.password)
             await self.page.press('input[name="password"]', 'Enter')
             await asyncio.sleep(5)
             
-            return 'dashboard' in self.page.url or 'myaccount' in self.page.url
+            # Verify login success
+            login_success = 'dashboard' in self.page.url or 'myaccount' in self.page.url
+            if login_success:
+                self.logged_in = True
+                self.last_login_time = datetime.now()
+                logger.info("SRP login successful")
+            else:
+                self.logged_in = False
+                logger.error("SRP login failed - incorrect credentials or page structure changed")
+            
+            return login_success
             
         except Exception as e:
             logger.error(f"SRP login error: {e}")
+            self.logged_in = False
             return False
     
     async def get_peak_demand(self):
