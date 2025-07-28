@@ -994,8 +994,10 @@ async def monitor_loop():
             consecutive_failures = 0
             while True:
                 try:
-                    # Get EG4 data (login handled internally if needed)
-                    eg4_data = await eg4.get_data()
+                    # Get EG4 data with retry logic (login handled internally if needed)
+                    retry_eg4_get_data = retry_with_exponential_backoff(eg4.get_data, max_retries=2, base_delay=1)
+                    eg4_data = await retry_eg4_get_data()
+                    
                     if eg4_data and is_valid_eg4_data(eg4_data):
                         monitor_data['eg4'] = eg4_data
                         # Use timezone-aware timestamp for consistency - only on successful update
