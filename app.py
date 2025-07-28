@@ -734,7 +734,7 @@ class EnphaseMonitor:
                 'today_energy_kwh': 0,
                 'peak_power_kw': 0,
                 'peak_power_time': '',
-                'latest_power_kw': 0,
+                'latest_power_w': 0,
                 'latest_power_time': '',
                 'past_7_days_kwh': 0,
                 'month_to_date_kwh': 0,
