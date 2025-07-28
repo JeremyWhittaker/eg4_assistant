@@ -591,6 +591,13 @@ class EnphaseMonitor:
                     // Get all text content from the page
                     const pageText = document.body.textContent || '';
                     
+                    // Debug: Store first 500 characters of page text
+                    data.debug_page_text = pageText.substring(0, 500);
+                    data.debug_has_kwh = pageText.includes('kWh');
+                    data.debug_has_peak = pageText.includes('Peak');
+                    data.debug_has_latest = pageText.includes('Latest');
+                    data.debug_has_voltage = pageText.includes('V');
+                    
                     // Simple regex patterns to extract data from page text
                     
                     // Look for today's energy - should be first kWh value we encounter
