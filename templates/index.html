@@ -458,7 +458,34 @@
         
         <!-- Monitoring Tab -->
         <div id="monitoring-tab" class="tab-content active">
-            <div class="grid">
+            <!-- SRP Energy Usage Chart at Top -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <div>
+                        <h2 style="margin: 0;">SRP Energy Usage</h2>
+                        <div style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem;">
+                            Chart data: <span id="chart-last-update">--</span> | Peak Demand: <span class="value warning" style="font-size: 1rem;" id="peak-demand-header">-- kW</span>
+                        </div>
+                    </div>
+                    <button onclick="loadSRPChart()" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Refresh Chart</button>
+                </div>
+                <!-- Chart Type Selector -->
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                    <button class="chart-type-btn active" data-chart-type="net" onclick="switchChartType('net')">Net energy</button>
+                    <button class="chart-type-btn" data-chart-type="generation" onclick="switchChartType('generation')">Generation</button>
+                    <button class="chart-type-btn" data-chart-type="usage" onclick="switchChartType('usage')">Usage</button>
+                    <button class="chart-type-btn" data-chart-type="demand" onclick="switchChartType('demand')">Demand</button>
+                </div>
+                <div style="position: relative; height: 400px;">
+                    <canvas id="srpChart"></canvas>
+                </div>
+                <div id="chart-info" style="margin-top: 0.5rem; color: #64748b; font-size: 0.75rem;">
+                    <!-- Chart description updated by switchChartType() -->
+                </div>
+            </div>
+            
+            <!-- EG4 and Enphase Status Side by Side -->
+            <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
             <!-- EG4 Status -->
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
@@ -523,8 +550,41 @@
                 </div>
             </div>
             
-            <!-- SRP Status -->
+            <!-- Enphase Status -->
             <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <div>
+                        <h2 style="margin: 0;">Enphase Solar System</h2>
+                        <div style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem;">
+                            Last updated: <span id="enphase-last-update">--</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric">
+                    <span>Current Power</span>
+                    <span class="value positive" id="enphase-current-power">-- W</span>
+                </div>
+                <div class="metric">
+                    <span>Today's Energy</span>
+                    <span class="value positive" id="enphase-today-energy">-- kWh</span>
+                </div>
+                <div class="metric">
+                    <span>Lifetime Energy</span>
+                    <span class="value" id="enphase-lifetime-energy">-- MWh</span>
+                </div>
+                <div class="metric">
+                    <span>Microinverters</span>
+                    <span class="value" id="enphase-microinverters">--</span>
+                </div>
+                <div class="metric">
+                    <span>Status</span>
+                    <span><span class="status-indicator offline" id="enphase-status"></span><span id="enphase-status-text">Offline</span></span>
+                </div>
+            </div>
+            </div>
+            
+            <!-- SRP Peak Demand Info (Compact) -->
+            <div class="card" style="margin-top: 1rem;">
                 <div>
                     <h2 style="margin: 0;">SRP Peak Demand</h2>
                     <div style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem;">
@@ -551,33 +611,7 @@
             </div>
         </div>
         
-        <!-- SRP Energy Usage Chart -->
-        <div class="card" style="margin-top: 1.5rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <div>
-                    <h2 style="margin: 0;">SRP Energy Usage</h2>
-                    <div style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem;">
-                        Chart data: <span id="chart-last-update">--</span>
-                    </div>
-                </div>
-                <button onclick="loadSRPChart()" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Refresh Chart</button>
-            </div>
-            <!-- Chart Type Selector -->
-            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                <button class="chart-type-btn active" data-chart-type="net" onclick="switchChartType('net')">Net energy</button>
-                <button class="chart-type-btn" data-chart-type="generation" onclick="switchChartType('generation')">Generation</button>
-                <button class="chart-type-btn" data-chart-type="usage" onclick="switchChartType('usage')">Usage</button>
-                <button class="chart-type-btn" data-chart-type="demand" onclick="switchChartType('demand')">Demand</button>
-            </div>
-            <div style="position: relative; height: 400px;">
-                <canvas id="srpChart"></canvas>
-            </div>
-            <div id="chart-info" style="margin-top: 0.5rem; color: #64748b; font-size: 0.75rem;">
-                <p style="margin: 0;">• Blue bars: Off-peak usage | Red bars: On-peak usage</p>
-                <p style="margin: 0;">• Lines: High/Low temperatures</p>
-                <p style="margin: 0;">• Negative values indicate energy export to grid</p>
-            </div>
-        </div>
+        <!-- Moved to top of page -->
         </div>
         
         <!-- Alert Configuration Tab -->
