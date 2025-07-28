@@ -2183,7 +2183,7 @@ if __name__ == '__main__':
     if debug_mode:
         logger.info("Starting Flask application in DEVELOPMENT mode on port 5000 (auto-reload enabled)")
     else:
-        logger.info("Starting Flask application in PRODUCTION mode on port 5000")
+        logger.info("Starting Flask application in PRODUCTION mode on port 5001")
     
     # Run with allow_unsafe_werkzeug=True to suppress production warnings
     # For a monitoring tool like this, Werkzeug is acceptable
