@@ -19,7 +19,7 @@ EG4-SRP Monitor is a comprehensive real-time monitoring system for EG4 inverters
 
 ## Architecture Overview
 
-This is a **monolithic Flask application** with real-time web scraping and WebSocket communication running on port 5000.
+This is a **monolithic Flask application** with real-time web scraping and WebSocket communication running on port 5001.
 
 ### Core Components
 - **`app.py` (1,496 lines)**: Main Flask server containing all business logic
