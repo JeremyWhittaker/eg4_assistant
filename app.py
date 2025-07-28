@@ -788,19 +788,63 @@ def is_valid_eg4_data(data):
     battery = data.get('battery', {})
     soc = battery.get('soc', 0)
     
-    # SOC of 0 is suspicious unless battery is truly empty
-    # Also check for any non-zero power readings
+    # Check for any non-zero power readings
     pv_power = data.get('pv', {}).get('power', 0)
     battery_voltage = battery.get('voltage', 0)
+    grid_power = data.get('grid', {}).get('power', 0)
+    load_power = data.get('load', {}).get('power', 0)
     
     # Valid connection indicators:
     # - SOC > 0 (battery has some charge)
-    # - OR battery voltage > 0 (battery is connected)
-    # - OR PV power > 0 (system is active)
-    if soc > 0 or battery_voltage > 10 or pv_power > 0:
+    # - OR battery voltage > 10V (battery is connected)
+    # - OR any significant power reading (PV, grid, or load)
+    if (soc > 0 or 
+        battery_voltage > 10 or 
+        abs(pv_power) > 1 or 
+        abs(grid_power) > 1 or 
+        abs(load_power) > 1):
         return True
     
+    # If all critical values are near zero, connection is likely invalid
+    logger.debug(f"EG4 data validation failed - SOC:{soc}%, BattV:{battery_voltage}V, PV:{pv_power}W, Grid:{grid_power}W, Load:{load_power}W")
     return False
+
+def is_valid_srp_data(data):
+    """Check if SRP data represents a valid response"""
+    if not data or not isinstance(data, dict):
+        return False
+    
+    # Check if we have a valid demand value
+    demand = data.get('demand', 0)
+    
+    # SRP demand should be a positive number (kW)
+    # Even low usage should show some demand during monitoring
+    if isinstance(demand, (int, float)) and demand >= 0:
+        return True
+    
+    logger.debug(f"SRP data validation failed - demand: {demand}")
+    return False
+
+def retry_with_exponential_backoff(func, max_retries=3, base_delay=1):
+    """Retry function with exponential backoff"""
+    async def wrapper(*args, **kwargs):
+        for attempt in range(max_retries):
+            try:
+                result = await func(*args, **kwargs)
+                if result:  # Success
+                    return result
+            except Exception as e:
+                logger.warning(f"Attempt {attempt + 1} failed: {e}")
+            
+            if attempt < max_retries - 1:  # Don't delay after last attempt
+                delay = base_delay * (2 ** attempt)  # Exponential backoff
+                logger.info(f"Retrying in {delay} seconds...")
+                await asyncio.sleep(delay)
+        
+        logger.error(f"All {max_retries} retry attempts failed")
+        return None
+    
+    return wrapper
 
 def check_thresholds():
     """Check if any thresholds are exceeded"""
