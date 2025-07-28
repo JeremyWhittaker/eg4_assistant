@@ -1261,9 +1261,12 @@
         // Log functions
         async function loadLogs() {
             const levelElement = document.getElementById('log-level');
-            if (!levelElement) return; // Exit if element doesn't exist
+            if (!levelElement) {
+                console.warn('Log level element not found, skipping log load');
+                return; // Exit if element doesn't exist
+            }
             
-            const level = levelElement.value;
+            const level = levelElement.value || 'ALL';
             const lines = 100; // Default to 100 lines
             
             try {
