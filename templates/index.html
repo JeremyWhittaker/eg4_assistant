@@ -833,7 +833,12 @@
             
             // Load logs when switching to configuration/alerts tab
             if (tabName === 'alerts') {
-                loadLogs();
+                // Add small delay to ensure DOM is ready
+                setTimeout(() => {
+                    if (document.getElementById('log-level')) {
+                        loadLogs();
+                    }
+                }, 100);
             }
         }
         
