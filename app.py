@@ -1013,14 +1013,25 @@ async def monitor_loop():
                         socketio.emit('eg4_update', eg4_data)
                         consecutive_failures = 0
                         logger.debug(f"EG4 data updated - SOC: {eg4_data.get('battery', {}).get('soc', 0)}%")
+                    elif eg4_data:
+                        consecutive_failures += 1
+                        monitor_data['eg4_connected'] = False
+                        logger.warning(f"EG4 data validation failed - invalid readings (attempt {consecutive_failures})")
+                        logger.debug(f"EG4 invalid data: {eg4_data}")
                     else:
                         consecutive_failures += 1
                         monitor_data['eg4_connected'] = False
-                        # Don't update timestamp on failure
-                        if eg4_data:
-                            logger.warning(f"EG4 data invalid (all zeros) - connection issue (attempt {consecutive_failures})")
-                        else:
-                            logger.warning(f"Failed to get EG4 data (attempt {consecutive_failures})")
+                        logger.error(f"Failed to get EG4 data after retries (attempt {consecutive_failures})")
+                    
+                    # Reset consecutive failures if we've had too many
+                    if consecutive_failures >= 5:
+                        logger.warning(f"Too many consecutive EG4 failures ({consecutive_failures}), forcing reconnection")
+                        try:
+                            await eg4.stop()
+                            eg4_started = False
+                            consecutive_failures = 0
+                        except Exception as e:
+                            logger.error(f"Error stopping EG4 monitor: {e}")
                     
                     # Get SRP data once per day at configured time OR on manual refresh OR if missing
                     if srp_logged_in:
