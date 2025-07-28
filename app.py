@@ -1502,10 +1502,8 @@ async def monitor_loop():
                                     logger.info("Enphase re-login successful")
                                 else:
                                     logger.error("Failed to re-login to Enphase after all retry attempts")
-                                    continue
-                                else:
-                                    logger.error("Enphase re-login failed - skipping Enphase update")
                                     enphase_logged_in = False
+                                    continue
                             
                             if enphase_logged_in:
                                 # Get Enphase data with retry logic
