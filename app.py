@@ -1036,6 +1036,18 @@ async def monitor_loop():
                         monitor_data['eg4_connected'] = True
                         socketio.emit('eg4_update', eg4_data)
                         consecutive_failures = 0
+                        
+                        # Store data in database
+                        if data_storage:
+                            try:
+                                success = data_storage.store_eg4_data(eg4_data)
+                                if success:
+                                    logger.debug("EG4 data stored to database")
+                                else:
+                                    logger.warning("Failed to store EG4 data to database")
+                            except Exception as e:
+                                logger.error(f"Error storing EG4 data: {e}")
+                        
                         logger.debug(f"EG4 data updated - SOC: {eg4_data.get('battery', {}).get('soc', 0)}%")
                     elif eg4_data:
                         consecutive_failures += 1
