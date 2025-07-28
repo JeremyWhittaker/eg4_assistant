@@ -11,6 +11,126 @@
       ],
       "log": "Agent registry initialized",
       "critical": false
+    },
+    "monitoring-dashboard": {
+      "last_updated": "2025-07-28T00:00:00Z",
+      "status": "Idle",
+      "task": "Agent created",
+      "todo": [
+        "Test real-time WebSocket data updates",
+        "Validate chart rendering with current SRP CSV data",
+        "Verify mobile responsiveness of monitoring interface"
+      ],
+      "log": "Monitoring dashboard agent initialized for EG4 real-time data and SRP charts",
+      "critical": false
+    },
+    "configuration-manager": {
+      "last_updated": "2025-07-28T00:00:00Z",
+      "status": "Idle",
+      "task": "Agent created",
+      "todo": [
+        "Test credential management workflow",
+        "Validate timezone configuration functionality",
+        "Verify Gmail integration setup process"
+      ],
+      "log": "Configuration manager agent initialized for settings and credentials",
+      "critical": false
+    },
+    "data-persistence-architect": {
+      "last_updated": "2025-07-28T00:00:00Z",
+      "status": "Idle",
+      "task": "Agent created",
+      "todo": [
+        "Design SQLite schema for time-series energy data",
+        "Plan migration strategy from volatile to persistent storage",
+        "Implement database performance optimization"
+      ],
+      "log": "Data persistence architect initialized for SQLite migration planning",
+      "critical": true
+    },
+    "web-interface-tester": {
+      "last_updated": "2025-07-28T00:00:00Z",
+      "status": "Idle",
+      "task": "Agent created",
+      "todo": [
+        "Perform comprehensive functional testing of monitoring tab",
+        "Test configuration tab functionality and form validation",
+        "Validate mobile responsiveness across different devices"
+      ],
+      "log": "Web interface tester initialized for comprehensive UI validation",
+      "critical": false
+    },
+    "log-troubleshooter": {
+      "last_updated": "2025-07-28T00:00:00Z",
+      "status": "Idle",
+      "task": "Agent created",
+      "todo": [
+        "Analyze current log patterns for Playwright automation issues",
+        "Identify connection failure patterns and recommend improvements",
+        "Review alert system performance and timing"
+      ],
+      "log": "Log troubleshooter initialized for system diagnosis and performance analysis",
+      "critical": false
+    },
+    "file-organizer": {
+      "last_updated": "2025-07-28T00:00:00Z",
+      "status": "Idle",
+      "task": "Agent created",
+      "todo": [
+        "Audit current project structure for improvement opportunities",
+        "Plan modular refactoring file organization",
+        "Implement CSV file cleanup policies for downloads directory"
+      ],
+      "log": "File organizer initialized for project structure optimization",
+      "critical": false
+    },
+    "web-scraper-specialist": {
+      "last_updated": "2025-07-28T00:00:00Z",
+      "status": "Idle",
+      "task": "Agent created",
+      "todo": [
+        "Review EG4 session management and optimization opportunities",
+        "Analyze SRP CSV download reliability and timeout handling",
+        "Test data extraction accuracy and error recovery"
+      ],
+      "log": "Web scraper specialist initialized for Playwright automation optimization",
+      "critical": false
+    },
+    "web-interface-designer": {
+      "last_updated": "2025-07-28T00:00:00Z",
+      "status": "Idle",
+      "task": "Agent created",
+      "todo": [
+        "Analyze current UI design using MCP browser automation",
+        "Design improvements for mobile responsiveness",
+        "Create accessibility enhancements and modern visual updates"
+      ],
+      "log": "Web interface designer initialized for UI/UX optimization",
+      "critical": false
+    },
+    "enphase-integration-specialist": {
+      "last_updated": "2025-07-28T00:00:00Z",
+      "status": "Idle",
+      "task": "Agent created",
+      "todo": [
+        "Research Enphase Enlighten API integration requirements",
+        "Design data model extensions for Enphase metrics",
+        "Plan web interface integration for Enphase data display"
+      ],
+      "log": "Enphase integration specialist initialized for future solar vendor expansion",
+      "critical": false
+    },
+    "code-refactoring-specialist": {
+      "last_updated": "2025-07-28T00:00:00Z",
+      "status": "Idle",
+      "task": "Agent created",
+      "todo": [
+        "Analyze monolithic app.py structure for refactoring opportunities",
+        "Design modular architecture plan",
+        "Create gradual refactoring strategy with minimal disruption"
+      ],
+      "log": "Code refactoring specialist initialized for architectural improvements",
+      "critical": true
     }
   }
 }
