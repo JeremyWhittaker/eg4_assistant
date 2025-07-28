@@ -60,7 +60,7 @@ A comprehensive monitoring and alerting system for EG4 inverters with Salt River
    python3 -m venv venv
    source venv/bin/activate
    pip install -r requirements.txt
-   pip install -e ./gmail_integration_temp
+   # Gmail integration is now built-in - no separate installation needed
    playwright install chromium
    ```
 
