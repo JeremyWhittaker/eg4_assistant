@@ -917,21 +917,28 @@ async def monitor_loop():
                 srp_started = True
                 logger.info("SRP browser started")
             
-            # Check if we need to login to SRP (it doesn't have persistent session yet)
+            # Check SRP login status and login if needed
             srp_logged_in = False
-            if not hasattr(srp, 'logged_in') or not srp.logged_in:
-                for attempt in range(3):
-                    if await srp.login():
-                        srp_logged_in = True
-                        logger.info("SRP login successful")
-                        break
-                    logger.warning(f"SRP login attempt {attempt + 1} failed")
-                    await asyncio.sleep(5)
-                
-                if not srp_logged_in:
-                    logger.warning("SRP login failed - continuing without SRP data")
-            else:
-                srp_logged_in = True
+            try:
+                # Check if already logged in
+                if await srp.is_logged_in():
+                    srp_logged_in = True
+                    logger.debug("SRP session validated - already logged in")
+                else:
+                    # Need to login
+                    for attempt in range(3):
+                        if await srp.login():
+                            srp_logged_in = True
+                            logger.info("SRP login successful")
+                            break
+                        logger.warning(f"SRP login attempt {attempt + 1} failed")
+                        await asyncio.sleep(5)
+                    
+                    if not srp_logged_in:
+                        logger.error("SRP login failed after 3 attempts - continuing without SRP data")
+            except Exception as e:
+                logger.error(f"Error checking SRP login status: {e}")
+                srp_logged_in = False
             
             # Reset retry count on successful connection
             retry_count = 0
