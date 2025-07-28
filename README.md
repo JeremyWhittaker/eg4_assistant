@@ -173,7 +173,7 @@ eg4-srp-monitor/
 ├── config/             # Configuration persistence
 ├── logs/               # Application logs
 ├── gmail_config/       # Gmail authentication
-├── gmail_integration_temp/ # Gmail functionality
+# Gmail functionality now integrated into main app
 ├── .env                # Environment variables (optional)
 ├── .env.example        # Example environment file
 ├── docs/
