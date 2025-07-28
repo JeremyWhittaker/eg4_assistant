@@ -1,0 +1,16 @@
+{
+  "agents": {
+    "project-architect": {
+      "last_updated": "2025-07-28T00:00:00Z",
+      "status": "Idle",
+      "task": "Initial setup",
+      "todo": [
+        "Review CLAUDE.md for project goals alignment",
+        "Monitor project architecture evolution",
+        "Update documentation as system grows"
+      ],
+      "log": "Agent registry initialized",
+      "critical": false
+    }
+  }
+}
