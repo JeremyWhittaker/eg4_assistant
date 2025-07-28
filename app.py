@@ -409,6 +409,27 @@ class EnphaseMonitor:
         self.page = await self.browser.new_page()
         self.page.set_default_timeout(120000)  # 2 minute timeout
         
+    async def login_with_retry(self, max_attempts=3):
+        """Login with retry logic"""
+        for attempt in range(max_attempts):
+            try:
+                logger.info(f"Enphase login attempt {attempt + 1}/{max_attempts}")
+                success = await self.login()
+                if success:
+                    return True
+                    
+                if attempt < max_attempts - 1:
+                    logger.warning(f"Login attempt {attempt + 1} failed, retrying in 5 seconds...")
+                    await asyncio.sleep(5)
+                    
+            except Exception as e:
+                logger.error(f"Login attempt {attempt + 1} error: {e}")
+                if attempt < max_attempts - 1:
+                    await asyncio.sleep(5)
+                    
+        logger.error(f"All {max_attempts} login attempts failed")
+        return False
+        
     async def is_logged_in(self):
         """Check if currently logged in to Enphase"""
         if not self.page:
