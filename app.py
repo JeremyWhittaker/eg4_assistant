@@ -90,11 +90,13 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # Monitor instances (initialized in monitor_loop)
 eg4_monitor = None
 srp_monitor = None
+enphase_monitor = None
 
 # Global state
 monitor_data = {
     'eg4': {},
     'srp': {},
+    'enphase': {},
     'last_update': None
 }
 
