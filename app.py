@@ -616,7 +616,7 @@ class EnphaseMonitor:
                                     if (kwMatch) {
                                         data.peak_power_kw = parseFloat(kwMatch[1]) || 0;
                                     }
-                                    const timeMatch = fullText.match(/at\s+([0-9:]+\s*[AP]M)/);
+                                    const timeMatch = fullText.match(/at\\s+([0-9:]+\\s*[AP]M)/);
                                     if (timeMatch) {
                                         data.peak_power_time = timeMatch[1];
                                     }
@@ -633,7 +633,7 @@ class EnphaseMonitor:
                                     if (kwMatch) {
                                         data.latest_power_kw = parseFloat(kwMatch[1]) || 0;
                                     }
-                                    const timeMatch = fullText.match(/at\s+([0-9:]+\s*[AP]M)/);
+                                    const timeMatch = fullText.match(/at\\s+([0-9:]+\\s*[AP]M)/);
                                     if (timeMatch) {
                                         data.latest_power_time = timeMatch[1];
                                     }
