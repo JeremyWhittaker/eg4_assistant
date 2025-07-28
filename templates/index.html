@@ -1802,9 +1802,32 @@
         // Load current status
         fetch('/api/status').then(r => r.json()).then(data => {
             if (data.eg4) {
-                // Directly update UI instead of emitting
-                const eg4Event = new CustomEvent('eg4_update_received', { detail: data.eg4 });
-                window.dispatchEvent(eg4Event);
+                // Directly update UI for EG4
+                const eg4Data = data.eg4;
+                document.getElementById('battery-soc').textContent = eg4Data.battery.soc + '%';
+                document.getElementById('battery-soc').className = 'value ' + 
+                    (eg4Data.battery.soc < 20 ? 'negative' : eg4Data.battery.soc > 95 ? 'warning' : '');
+                
+                document.getElementById('battery-power').textContent = eg4Data.battery.power + 'W';
+                document.getElementById('battery-power').className = 'value ' + 
+                    (eg4Data.battery.power < 0 ? 'negative' : 'positive');
+                
+                document.getElementById('pv-power').textContent = eg4Data.pv.power + 'W';
+                document.getElementById('grid-power').textContent = eg4Data.grid.power + 'W';
+                document.getElementById('grid-power').className = 'value ' + 
+                    (eg4Data.grid.power < 0 ? 'negative' : eg4Data.grid.power > 0 ? 'warning' : '');
+                
+                document.getElementById('load-power').textContent = eg4Data.load.power + 'W';
+                document.getElementById('battery-voltage').textContent = eg4Data.battery.voltage + 'V';
+                document.getElementById('grid-voltage').textContent = eg4Data.grid.voltage + 'V';
+                
+                document.getElementById('eg4-status').className = 'status-indicator online';
+                document.getElementById('eg4-status-text').textContent = 'Online';
+                
+                if (eg4Data.last_update) {
+                    const updateTime = new Date(eg4Data.last_update);
+                    document.getElementById('eg4-last-update').textContent = updateTime.toLocaleString();
+                }
             }
             if (data.srp) {
                 // Directly update UI
