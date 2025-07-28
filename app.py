@@ -1269,6 +1269,18 @@ async def monitor_loop():
                         logger.info("Manual refresh requested, fetching data immediately")
                         continue  # Skip sleep and fetch data immediately
                     
+                    # Periodic database cleanup (once per day)
+                    if data_storage:
+                        current_hour = datetime.now().hour
+                        current_minute = datetime.now().minute
+                        # Run cleanup at 3:00 AM daily
+                        if current_hour == 3 and current_minute == 0:
+                            try:
+                                data_storage.cleanup_old_data()
+                                logger.info("Daily database cleanup completed")
+                            except Exception as e:
+                                logger.error(f"Database cleanup failed: {e}")
+                    
                     # Wait 60 seconds
                     await asyncio.sleep(60)
                     
