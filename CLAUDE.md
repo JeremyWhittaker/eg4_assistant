@@ -306,7 +306,7 @@ Always invoke relevant agents proactively when their capabilities match the task
 
 ### Changing Default Port
 1. Edit `docker-compose.yml` ports section
-2. Change from `"8085:5000"` to `"YOUR_PORT:5000"`
+2. Change from `"8085:5001"` to `"YOUR_PORT:5001"`
 3. Restart container with `docker compose down && docker compose up -d`
 
 ## Security Considerations
