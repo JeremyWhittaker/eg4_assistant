@@ -1271,7 +1271,18 @@ def index():
 
 @app.route('/api/status')
 def get_status():
-    return jsonify(monitor_data)
+    """Get current system status"""
+    status = monitor_data.copy()
+    
+    # Add database statistics if available
+    if data_storage:
+        try:
+            status['database'] = data_storage.get_database_stats()
+        except Exception as e:
+            logger.error(f"Error getting database stats: {e}")
+            status['database'] = {'error': str(e)}
+    
+    return jsonify(status)
 
 @app.route('/api/config', methods=['GET', 'POST'])
 def config():
