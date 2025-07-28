@@ -1088,8 +1088,10 @@ async def monitor_loop():
                                     monitor_data['srp']['csv_files_count'] = len(csv_files)
                                 else:
                                     logger.warning("Failed to download some or all CSV files")
+                            elif srp_data:
+                                logger.warning(f"SRP data validation failed - received invalid data: {srp_data}")
                             else:
-                                logger.warning("Failed to get SRP peak demand data")
+                                logger.error("Failed to get SRP peak demand data after retries")
                     
                     # Check for manual CSV download request
                     global manual_csv_download_requested
