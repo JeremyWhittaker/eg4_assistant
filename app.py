@@ -22,6 +22,14 @@ from collections import deque
 import csv
 import glob
 
+# Import data storage module
+try:
+    from data_storage import DataStorage, CachedDataStorage
+    DATA_STORAGE_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Data storage module not available: {e}")
+    DATA_STORAGE_AVAILABLE = False
+
 # Configure logging with rotation
 LOG_FILE = './logs/eg4_srp_monitor.log'
 LOG_MAX_SIZE = 10 * 1024 * 1024  # 10MB
