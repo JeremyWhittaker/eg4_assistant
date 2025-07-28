@@ -207,7 +207,7 @@ eg4-srp-monitor/
    - Verify recipient email is correct
 
 4. **Application Won't Start**:
-   - Check port 5000 isn't in use: `netstat -an | grep 5000`
+   - Check port 5001 isn't in use: `netstat -an | grep 5001`
    - Verify virtual environment is activated
    - Check application logs for specific errors
 
