@@ -69,7 +69,7 @@ python app.py
 tail -f logs/eg4_srp_monitor.log
 
 # Access web interface
-curl http://localhost:5000/api/status
+curl http://localhost:5001/api/status
 
 # Stop the application
 Ctrl+C
