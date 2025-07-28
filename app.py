@@ -98,6 +98,22 @@ monitor_data = {
     'last_update': None
 }
 
+# Initialize data storage
+data_storage = None
+cached_data_storage = None
+
+if DATA_STORAGE_AVAILABLE:
+    try:
+        data_storage = DataStorage()
+        cached_data_storage = CachedDataStorage(data_storage)
+        logger.info("Data storage initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize data storage: {e}")
+        data_storage = None
+        cached_data_storage = None
+else:
+    logger.warning("Data storage not available - running without persistence")
+
 # Track manual refresh requests
 manual_refresh_requested = False
 manual_srp_refresh_requested = False
