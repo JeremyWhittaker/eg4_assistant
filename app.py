@@ -485,20 +485,14 @@ class EnphaseMonitor:
             await self.page.wait_for_selector('input[type="email"]', timeout=30000)
             
             # Find and fill email field using the correct selector
-            email_field = await self.page.query_selector('textbox[name="Email:"]')
-            if not email_field:
-                # Fallback to generic email input selector
-                email_field = await self.page.query_selector('input[type="email"]')
+            email_field = await self.page.query_selector('input[type="email"]')
             
             if not email_field:
                 logger.error("Could not find Enphase email field")
                 return False
             
             # Find and fill password field using the correct selector
-            password_field = await self.page.query_selector('textbox[name="Password:"]')
-            if not password_field:
-                # Fallback to generic password input selector
-                password_field = await self.page.query_selector('input[type="password"]')
+            password_field = await self.page.query_selector('input[type="password"]')
             
             if not password_field:
                 logger.error("Could not find Enphase password field")
