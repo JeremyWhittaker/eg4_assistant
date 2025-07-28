@@ -362,6 +362,8 @@ class SRPMonitor:
         self.browser = None
         self.page = None
         self.playwright = None
+        self.logged_in = False
+        self.last_login_time = None
     
     def update_credentials(self, username, password):
         """Update credentials"""
