@@ -403,11 +403,13 @@ The application has been thoroughly tested and is running in production:
 - `CLAUDE.md` - This development guide
 
 ### Archived Files (Deprecated)
-- `archive/deprecated-docs/srp_csv_downloader.py` - Standalone CSV export (integrated into main app)
-- `archive/deprecated-docs/requirements-dev.txt` - Development dependencies (no longer needed)
-- `archive/deprecated-docs/send-gmail` - Standalone email script (integrated into main app)
-- `archive/deprecated-docs/FILE_STRUCTURE.md` - Old Docker-based documentation
-- `archive/deprecated-docs/README_GITWATCH.md` - Gitwatch automation docs
+- `archive/old-scripts-standalone/srp_csv_downloader.py` - Standalone CSV export (integrated into main app)
+- `archive/old-scripts-standalone/send-gmail` - Standalone email script (integrated into main app)
+- `archive/old-documentation-v2.2/FILE_STRUCTURE.md` - Old Docker-based documentation
+- `archive/old-documentation-v2.2/README_GITWATCH.md` - Gitwatch automation docs
+- `archive/old-documentation-v2.2/requirements-dev.txt` - Development dependencies (no longer needed)
+- `archive/enphase-fixes-2025/` - Enphase integration fixes and test files
+- `archive/deprecated-components/gmail-integration-temp/` - Old Gmail integration components
 
 ### Docker Configuration (Removed in v2.3)
 **Note**: All Docker components have been removed and archived. The application now runs natively with Python virtual environment.
