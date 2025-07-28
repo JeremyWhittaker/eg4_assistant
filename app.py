@@ -1284,6 +1284,33 @@ def get_status():
     
     return jsonify(status)
 
+@app.route('/api/database/stats')
+def get_database_stats():
+    """Get database statistics"""
+    if not data_storage:
+        return jsonify({'error': 'Database not available'}), 503
+    
+    try:
+        stats = data_storage.get_database_stats()
+        return jsonify(stats)
+    except Exception as e:
+        logger.error(f"Error getting database stats: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/historical/eg4')
+def get_historical_eg4():
+    """Get historical EG4 data"""
+    if not data_storage:
+        return jsonify({'error': 'Database not available'}), 503
+    
+    try:
+        hours = int(request.args.get('hours', 24))
+        data = data_storage.get_historical_eg4_data(hours=hours)
+        return jsonify(data)
+    except Exception as e:
+        logger.error(f"Error getting historical EG4 data: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/config', methods=['GET', 'POST'])
 def config():
     global alert_config
