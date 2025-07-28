@@ -583,146 +583,62 @@ class EnphaseMonitor:
                 except (ValueError, TypeError):
                     return 0
             
-            # Use JavaScript to extract data more reliably
+            # Use JavaScript to extract data using simple text matching
             js_data = await self.page.evaluate("""
                 () => {
                     const data = {};
                     
-                    // Find Today section and extract energy data
-                    const todaySection = Array.from(document.querySelectorAll('*')).find(el => 
-                        el.textContent && el.textContent.trim() === 'Today' && 
-                        !el.textContent.includes('Month To Date'));
+                    // Get all text content from the page
+                    const pageText = document.body.textContent || '';
                     
-                    if (todaySection) {
-                        const parent = todaySection.closest('generic');
-                        if (parent) {
-                            // Extract today's kWh value
-                            const kwhElements = parent.querySelectorAll('*');
-                            for (let el of kwhElements) {
-                                if (el.textContent && el.textContent.includes('kWh')) {
-                                    const match = el.textContent.match(/([0-9.]+)/);
-                                    if (match) {
-                                        data.today_energy_kwh = parseFloat(match[1]) || 0;
-                                        break;
-                                    }
-                                }
-                            }
-                            
-                            // Extract peak power
-                            const peakElements = parent.querySelectorAll('*');
-                            for (let el of peakElements) {
-                                if (el.textContent && el.textContent.includes('Peak:')) {
-                                    const fullText = el.textContent;
-                                    const kwMatch = fullText.match(/([0-9.]+)\\s*kW/);
-                                    if (kwMatch) {
-                                        data.peak_power_kw = parseFloat(kwMatch[1]) || 0;
-                                    }
-                                    const timeMatch = fullText.match(/at\\s+([0-9:]+\\s*[AP]M)/);
-                                    if (timeMatch) {
-                                        data.peak_power_time = timeMatch[1];
-                                    }
-                                    break;
-                                }
-                            }
-                            
-                            // Extract latest power
-                            const latestElements = parent.querySelectorAll('*');
-                            for (let el of latestElements) {
-                                if (el.textContent && el.textContent.includes('Latest:')) {
-                                    const fullText = el.textContent;
-                                    const kwMatch = fullText.match(/([0-9.]+)\\s*kW/);
-                                    if (kwMatch) {
-                                        // Convert kW to W for consistency with validation
-                                        data.latest_power_w = (parseFloat(kwMatch[1]) || 0) * 1000;
-                                    }
-                                    const timeMatch = fullText.match(/at\\s+([0-9:]+\\s*[AP]M)/);
-                                    if (timeMatch) {
-                                        data.latest_power_time = timeMatch[1];
-                                    }
-                                    break;
-                                }
-                            }
+                    // Simple regex patterns to extract data from page text
+                    
+                    // Look for today's energy - should be first kWh value we encounter
+                    const todayEnergyMatch = pageText.match(/([0-9.]+)\s*kWh/);
+                    if (todayEnergyMatch) {
+                        data.today_energy_kwh = parseFloat(todayEnergyMatch[1]) || 0;
+                    }
+                    
+                    // Look for peak power
+                    const peakMatch = pageText.match(/Peak:\s*([0-9.]+)\s*kW/);
+                    if (peakMatch) {
+                        data.peak_power_kw = parseFloat(peakMatch[1]) || 0;
+                    }
+                    
+                    // Look for latest power 
+                    const latestMatch = pageText.match(/Latest:\s*([0-9.]+)\s*kW/);
+                    if (latestMatch) {
+                        // Convert kW to W for consistency with validation
+                        data.latest_power_w = (parseFloat(latestMatch[1]) || 0) * 1000;
+                    }
+                    
+                    // Look for AC voltage - find V that's not part of another word
+                    const voltageMatches = pageText.match(/([0-9.]+)\s*V(?!\w)/g);
+                    if (voltageMatches) {
+                        // Get the last voltage match (likely the AC voltage)
+                        const lastVoltage = voltageMatches[voltageMatches.length - 1];
+                        const voltageValue = parseFloat(lastVoltage.match(/([0-9.]+)/)[1]);
+                        if (voltageValue > 100) { // Only accept reasonable voltage values
+                            data.microinverter_ac_voltage_v = voltageValue;
                         }
                     }
                     
-                    // Extract Past 7 Days data
-                    const sevenDaysSection = Array.from(document.querySelectorAll('*')).find(el => 
-                        el.textContent && el.textContent.trim() === 'Past 7 Days');
-                    
-                    if (sevenDaysSection) {
-                        const parent = sevenDaysSection.closest('generic');
-                        if (parent) {
-                            const kwhElements = parent.querySelectorAll('*');
-                            for (let el of kwhElements) {
-                                if (el.textContent && el.textContent.includes('kWh')) {
-                                    const match = el.textContent.match(/([0-9.]+)/);
-                                    if (match) {
-                                        data.past_7_days_kwh = parseFloat(match[1]) || 0;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
+                    // Look for past 7 days
+                    const past7Match = pageText.match(/Past 7 Days[\s\S]*?([0-9.]+)\s*kWh/);
+                    if (past7Match) {
+                        data.past_7_days_kwh = parseFloat(past7Match[1]) || 0;
                     }
                     
-                    // Extract Month To Date data
-                    const monthSection = Array.from(document.querySelectorAll('*')).find(el => 
-                        el.textContent && el.textContent.trim() === 'Month To Date');
-                    
-                    if (monthSection) {
-                        const parent = monthSection.closest('generic');
-                        if (parent) {
-                            const kwhElements = parent.querySelectorAll('*');
-                            for (let el of kwhElements) {
-                                if (el.textContent && el.textContent.includes('kWh')) {
-                                    const match = el.textContent.match(/([0-9.]+)/);
-                                    if (match) {
-                                        data.month_to_date_kwh = parseFloat(match[1]) || 0;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
+                    // Look for month to date
+                    const monthMatch = pageText.match(/Month To Date[\s\S]*?([0-9.]+)\s*kWh/);
+                    if (monthMatch) {
+                        data.month_to_date_kwh = parseFloat(monthMatch[1]) || 0;
                     }
                     
-                    // Extract Lifetime data
-                    const lifetimeSection = Array.from(document.querySelectorAll('*')).find(el => 
-                        el.textContent && el.textContent.trim() === 'Lifetime');
-                    
-                    if (lifetimeSection) {
-                        const parent = lifetimeSection.closest('generic');
-                        if (parent) {
-                            const mwhElements = parent.querySelectorAll('*');
-                            for (let el of mwhElements) {
-                                if (el.textContent && el.textContent.includes('MWh')) {
-                                    const match = el.textContent.match(/([0-9.]+)/);
-                                    if (match) {
-                                        data.lifetime_mwh = parseFloat(match[1]) || 0;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Extract AC Voltage
-                    const voltageSection = Array.from(document.querySelectorAll('*')).find(el => 
-                        el.textContent && el.textContent.includes('Microinverter AC Voltage'));
-                    
-                    if (voltageSection) {
-                        const parent = voltageSection.closest('generic');
-                        if (parent) {
-                            const voltageElements = parent.querySelectorAll('*');
-                            for (let el of voltageElements) {
-                                if (el.textContent && el.textContent.includes('V') && !el.textContent.includes('Voltage')) {
-                                    const match = el.textContent.match(/([0-9.]+)/);
-                                    if (match) {
-                                        data.microinverter_ac_voltage_v = parseFloat(match[1]) || 0;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
+                    // Look for lifetime
+                    const lifetimeMatch = pageText.match(/Lifetime[\s\S]*?([0-9.]+)\s*MWh/);
+                    if (lifetimeMatch) {
+                        data.lifetime_mwh = parseFloat(lifetimeMatch[1]) || 0;
                     }
                     
                     return data;
