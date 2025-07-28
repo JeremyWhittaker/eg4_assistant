@@ -959,9 +959,73 @@ def check_thresholds():
         success, _ = send_alert_email(subject, message)
         socketio.emit('alert', {'subject': subject, 'message': message, 'timestamp': datetime.now().isoformat()})
 
+def restore_data_on_startup():
+    """Restore latest data from database on startup"""
+    global monitor_data
+    
+    if not data_storage:
+        logger.info("No data storage available - starting with empty data")
+        return
+    
+    try:
+        # Restore latest EG4 data
+        latest_eg4 = data_storage.get_latest_eg4_data()
+        if latest_eg4:
+            logger.info(f"Restored EG4 data from {latest_eg4.get('timestamp')}")
+            # Convert database format back to monitor format
+            if latest_eg4.get('parsed_data'):
+                monitor_data['eg4'] = latest_eg4['parsed_data']
+                monitor_data['eg4']['last_update'] = latest_eg4['timestamp']
+            else:
+                # Reconstruct from individual fields
+                monitor_data['eg4'] = {
+                    'battery': {
+                        'soc': latest_eg4.get('battery_soc', 0),
+                        'power': latest_eg4.get('battery_power', 0),
+                        'voltage': latest_eg4.get('battery_voltage', 0)
+                    },
+                    'pv': {
+                        'power': latest_eg4.get('pv_power', 0),
+                        'strings': {
+                            'pv1': {'power': latest_eg4.get('pv1_power', 0), 'voltage': latest_eg4.get('pv1_voltage', 0)},
+                            'pv2': {'power': latest_eg4.get('pv2_power', 0), 'voltage': latest_eg4.get('pv2_voltage', 0)},
+                            'pv3': {'power': latest_eg4.get('pv3_power', 0), 'voltage': latest_eg4.get('pv3_voltage', 0)}
+                        }
+                    },
+                    'grid': {
+                        'power': latest_eg4.get('grid_power', 0),
+                        'voltage': latest_eg4.get('grid_voltage', 0)
+                    },
+                    'load': {
+                        'power': latest_eg4.get('load_power', 0)
+                    },
+                    'last_update': latest_eg4['timestamp']
+                }
+        
+        # Restore latest SRP data
+        latest_srp = data_storage.get_latest_srp_data()
+        if latest_srp:
+            logger.info(f"Restored SRP data from {latest_srp.get('date')}")
+            if latest_srp.get('parsed_data'):
+                monitor_data['srp'] = latest_srp['parsed_data']
+            else:
+                monitor_data['srp'] = {
+                    'demand': latest_srp.get('peak_demand', 0),
+                    'last_daily_update': latest_srp.get('created_at')
+                }
+        
+        logger.info("Data restoration completed successfully")
+        
+    except Exception as e:
+        logger.error(f"Failed to restore data on startup: {e}")
+
 async def monitor_loop():
     """Main monitoring loop with automatic recovery"""
     global eg4_monitor, srp_monitor
+    
+    # Restore data from database on startup
+    restore_data_on_startup()
+    
     eg4_monitor = EG4Monitor()
     srp_monitor = SRPMonitor()
     eg4 = eg4_monitor
