@@ -476,6 +476,11 @@ class EnphaseMonitor:
             await self.page.goto('https://enlighten.enphaseenergy.com/', wait_until='networkidle')
             await asyncio.sleep(3)
             
+            # Log page info for debugging
+            page_url = self.page.url
+            page_title = await self.page.title()
+            logger.debug(f"Enphase login page loaded: {page_url} - {page_title}")
+            
             # The login form is already present on the main page - no need to click a separate sign-in button
             # Wait for the login form to be visible
             await self.page.wait_for_selector('input[type="email"], input[id*="email"]', timeout=30000)
