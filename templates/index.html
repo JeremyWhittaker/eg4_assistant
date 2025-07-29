@@ -934,10 +934,6 @@
             
             // Use last_daily_update if available, otherwise use timestamp
             const timeField = data.last_daily_update || data.timestamp;
-            if (timeField) {
-                const updateTime = new Date(timeField);
-                document.getElementById('srp-last-update').textContent = updateTime.toLocaleString();
-            }
             
             // Update CSV data timestamp if available
             if (data.csv_last_update) {
