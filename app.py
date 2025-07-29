@@ -2315,4 +2315,4 @@ if __name__ == '__main__':
     
     # Run with allow_unsafe_werkzeug=True to suppress production warnings
     # For a monitoring tool like this, Werkzeug is acceptable
-    socketio.run(app, host='0.0.0.0', port=5001, debug=debug_mode, allow_unsafe_werkzeug=True)
+    socketio.run(app, host='0.0.0.0', port=5002, debug=debug_mode, allow_unsafe_werkzeug=True)
