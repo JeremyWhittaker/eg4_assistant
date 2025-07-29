@@ -1807,15 +1807,7 @@
             }
             if (data.srp) {
                 // Directly update UI
-                document.getElementById('peak-demand').textContent = data.srp.demand.toFixed(1) + ' kW';
                 document.getElementById('peak-demand-header').textContent = data.srp.demand.toFixed(1) + ' kW';
-                if (data.srp.last_daily_update || data.srp.timestamp) {
-                    const timeField = data.srp.last_daily_update || data.srp.timestamp;
-                    const updateTime = new Date(timeField);
-                    document.getElementById('srp-last-update').textContent = updateTime.toLocaleString();
-                }
-                document.getElementById('srp-status').className = 'status-indicator online';
-                document.getElementById('srp-status-text').textContent = 'Online';
             }
             if (data.enphase) {
                 // Update Enphase UI
