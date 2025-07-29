@@ -612,11 +612,18 @@ class EnphaseMonitor:
                         data.peak_power_kw = parseFloat(peakMatch[1]) || 0;
                     }
                     
-                    // Look for latest power 
-                    const latestMatch = pageText.match(/Latest:\s*([0-9.]+)\s*kW/);
+                    // Look for latest power - check for both W and kW
+                    let latestMatch = pageText.match(/Latest:\s*([0-9.]+)\s*W(?!h)/);
                     if (latestMatch) {
-                        // Convert kW to W for consistency with validation
-                        data.latest_power_w = (parseFloat(latestMatch[1]) || 0) * 1000;
+                        // Already in watts
+                        data.latest_power_w = parseFloat(latestMatch[1]) || 0;
+                    } else {
+                        // Try kW format
+                        latestMatch = pageText.match(/Latest:\s*([0-9.]+)\s*kW/);
+                        if (latestMatch) {
+                            // Convert kW to W
+                            data.latest_power_w = (parseFloat(latestMatch[1]) || 0) * 1000;
+                        }
                     }
                     
                     // Look for AC voltage - find V that's not part of another word
