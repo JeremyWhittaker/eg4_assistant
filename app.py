@@ -606,10 +606,17 @@ class EnphaseMonitor:
                         data.today_energy_kwh = parseFloat(todayEnergyMatch[1]) || 0;
                     }
                     
-                    // Look for peak power
-                    const peakMatch = pageText.match(/Peak:\s*([0-9.]+)\s*kW/);
+                    // Look for peak power and time
+                    const peakMatch = pageText.match(/Peak:\s*([0-9.]+)\s*kW\s*at\s*([0-9:]+\s*[AP]M)/);
                     if (peakMatch) {
                         data.peak_power_kw = parseFloat(peakMatch[1]) || 0;
+                        data.peak_power_time = peakMatch[2] || '';
+                    } else {
+                        // Try without time
+                        const peakSimple = pageText.match(/Peak:\s*([0-9.]+)\s*kW/);
+                        if (peakSimple) {
+                            data.peak_power_kw = parseFloat(peakSimple[1]) || 0;
+                        }
                     }
                     
                     // Look for latest power - check for both W and kW
