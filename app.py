@@ -619,17 +619,30 @@ class EnphaseMonitor:
                         }
                     }
                     
-                    // Look for latest power - check for both W and kW
-                    let latestMatch = pageText.match(/Latest:\s*([0-9.]+)\s*W(?!h)/);
+                    // Look for latest power and time - check for both W and kW
+                    let latestMatch = pageText.match(/Latest:\s*([0-9.]+)\s*W(?!h)\s*at\s*([0-9:]+\s*[AP]M)/);
                     if (latestMatch) {
                         // Already in watts
                         data.latest_power_w = parseFloat(latestMatch[1]) || 0;
+                        data.latest_power_time = latestMatch[2] || '';
                     } else {
-                        // Try kW format
-                        latestMatch = pageText.match(/Latest:\s*([0-9.]+)\s*kW/);
+                        // Try kW format with time
+                        latestMatch = pageText.match(/Latest:\s*([0-9.]+)\s*kW\s*at\s*([0-9:]+\s*[AP]M)/);
                         if (latestMatch) {
                             // Convert kW to W
                             data.latest_power_w = (parseFloat(latestMatch[1]) || 0) * 1000;
+                            data.latest_power_time = latestMatch[2] || '';
+                        } else {
+                            // Try without time
+                            latestMatch = pageText.match(/Latest:\s*([0-9.]+)\s*W(?!h)/);
+                            if (latestMatch) {
+                                data.latest_power_w = parseFloat(latestMatch[1]) || 0;
+                            } else {
+                                latestMatch = pageText.match(/Latest:\s*([0-9.]+)\s*kW/);
+                                if (latestMatch) {
+                                    data.latest_power_w = (parseFloat(latestMatch[1]) || 0) * 1000;
+                                }
+                            }
                         }
                     }
                     
