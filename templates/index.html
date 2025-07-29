@@ -930,7 +930,6 @@
         
         // Update SRP data
         socket.on('srp_update', (data) => {
-            document.getElementById('peak-demand').textContent = data.demand.toFixed(1) + ' kW';
             document.getElementById('peak-demand-header').textContent = data.demand.toFixed(1) + ' kW';
             
             // Use last_daily_update if available, otherwise use timestamp
