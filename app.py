@@ -3,7 +3,7 @@
 EG4-SRP Monitor - Simplified monitoring and alerting system
 """
 
-from flask import Flask, render_template, jsonify, request, make_response
+from flask import Flask, render_template, jsonify, request, make_response, send_from_directory
 from flask_socketio import SocketIO, emit
 import asyncio
 from playwright.async_api import async_playwright
