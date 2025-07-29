@@ -1758,6 +1758,10 @@ def start_monitoring():
 def index():
     return render_template('index.html')
 
+@app.route('/eg4_logo.png')
+def serve_logo():
+    return send_from_directory('.', 'eg4_logo.png')
+
 @app.route('/api/status')
 def get_status():
     """Get current system status"""
