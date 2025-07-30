@@ -30,11 +30,12 @@
             overflow-x: hidden;
         }
         
-        /* Critical: Additional mobile improvements for very small screens */
+        /* ENHANCED: World-class mobile improvements for small screens */
         @media (max-width: 480px) {
             body {
                 padding: 0.75rem;
                 font-size: 16px;
+                line-height: 1.5;
             }
             
             .header-logo {
@@ -42,7 +43,7 @@
             }
             
             .header-logo img {
-                height: 120px; /* Smaller logo on very small screens */
+                height: 120px;
             }
             
             .tabs {
@@ -57,50 +58,110 @@
             }
             
             .card {
-                padding: 1.25rem 1rem;
-                margin-bottom: 1rem;
-            }
-            
-            /* Improve chart button layout on very small screens */
-            .chart-type-btn {
-                padding: 0.75rem 0.5rem !important;
-                font-size: 0.75rem !important;
-                min-height: 44px !important;
-                flex: 1;
-            }
-            
-            /* Better form spacing on small screens */
-            .form-group {
+                padding: 1.5rem 1.25rem;
                 margin-bottom: 1.25rem;
             }
             
-            .form-group h3,
+            /* Enhanced chart button spacing for touch */
+            .chart-type-btn {
+                padding: 0.875rem 0.625rem !important;
+                font-size: 0.8rem !important;
+                min-height: 48px !important;
+                flex: 1;
+                margin: 0.125rem;
+            }
+            
+            /* CRITICAL: Enhanced form spacing using 8px grid system */
+            .form-group {
+                margin-bottom: 2rem;
+                padding-bottom: 1.5rem;
+                border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+            }
+            
+            .form-group:last-child {
+                border-bottom: none;
+            }
+            
+            .form-group h3 {
+                font-size: 1.0625rem;
+                margin-bottom: 1.25rem;
+                color: #f1f5f9;
+                font-weight: 600;
+            }
+            
             .form-group h4 {
-                font-size: 0.95rem;
+                font-size: 0.9375rem;
+                margin-bottom: 1rem;
+                color: #cbd5e1;
+                font-weight: 500;
+            }
+            
+            /* Enhanced credential section spacing */
+            .credential-section {
+                margin-bottom: 2rem;
+                padding: 1.5rem;
+                background: rgba(15, 23, 42, 0.6);
+                border-radius: 0.75rem;
+                border: 1px solid rgba(51, 65, 85, 0.4);
+            }
+            
+            /* Better input field spacing */
+            .form-group > div {
+                margin-bottom: 1.5rem;
+            }
+            
+            .form-group input,
+            .form-group select {
                 margin-bottom: 0.75rem;
             }
             
-            /* Optimize metric display for small screens */
+            /* Optimize metric display for touch */
             .metric {
-                padding: 1.25rem 1rem;
+                padding: 1.5rem 1.25rem;
                 margin-bottom: 1rem;
             }
             
             .value {
-                font-size: 1.1rem !important;
-                padding: 0.625rem !important;
+                font-size: 1.125rem !important;
+                padding: 0.75rem !important;
             }
             
-            /* Better button spacing */
+            /* Enhanced button spacing and touch targets */
             button {
-                margin-bottom: 0.5rem;
-                font-size: 0.85rem;
+                margin-bottom: 0.75rem;
+                font-size: 0.875rem;
+                min-height: 44px;
+                padding: 0.75rem 1rem;
             }
             
-            /* Improve log viewer on small screens */
+            /* Improved log viewer for mobile */
             #log-container {
-                height: 300px !important;
-                font-size: 0.75rem !important;
+                height: 250px !important;
+                font-size: 0.8125rem !important;
+                line-height: 1.4;
+                padding: 1rem;
+            }
+            
+            /* Better alert threshold section spacing */
+            .alert-threshold-section {
+                margin-bottom: 2rem;
+                padding: 1.25rem;
+                background: rgba(30, 41, 59, 0.4);
+                border-radius: 0.75rem;
+                border-left: 3px solid rgba(59, 130, 246, 0.6);
+            }
+            
+            /* Enhanced information hierarchy */
+            .system-status-grid {
+                gap: 1rem;
+            }
+            
+            /* Better chart legend spacing */
+            .chart-legend {
+                margin-top: 1rem;
+                padding: 1rem;
+                font-size: 0.8125rem;
+                line-height: 1.4;
             }
         }
         
