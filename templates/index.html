@@ -2065,7 +2065,7 @@
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
-            const targetTab = document.getElementById(tabName + '-tab') || document.getElementById(tabName === 'monitoring' ? 'monitoring-tab' : 'configuration-tab');
+            const targetTab = document.getElementById(tabName + '-tab');
             if (targetTab) targetTab.classList.add('active');
             
             // Load logs when switching to configuration/alerts tab
