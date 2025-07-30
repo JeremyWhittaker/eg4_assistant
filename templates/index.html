@@ -648,19 +648,35 @@
             display: block;
         }
         
-        /* Chart type button styles */
+        /* Enhanced Chart Type Button System */
         .chart-type-btn {
-            padding: 0.75rem 1.25rem;
-            background: rgba(51, 65, 85, 0.6);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(71, 85, 105, 0.6);
+            padding: 0.875rem 1.5rem;
+            background: rgba(51, 65, 85, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(71, 85, 105, 0.5);
             color: #94a3b8;
             font-size: 0.875rem;
             font-weight: 600;
             cursor: pointer;
-            border-radius: 0.5rem;
-            transition: all 0.2s ease;
+            border-radius: 0.75rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
+            overflow: hidden;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .chart-type-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            border-radius: 0.75rem 0.75rem 0 0;
         }
         
         .chart-type-btn:first-child {
@@ -672,20 +688,29 @@
         }
         
         .chart-type-btn:hover:not(.active) {
-            background: rgba(71, 85, 105, 0.8);
-            color: #e2e8f0;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            background: rgba(71, 85, 105, 0.9);
+            color: #f1f5f9;
+            transform: translateY(-2px);
+            border-color: rgba(99, 179, 237, 0.4);
+            box-shadow: 
+                0 6px 16px rgba(0, 0, 0, 0.2),
+                0 0 0 1px rgba(99, 179, 237, 0.2);
         }
         
         .chart-type-btn.active {
-            background: linear-gradient(135deg, #059669, #047857);
-            border-color: #059669;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border-color: #3b82f6;
             color: white;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+            transform: translateY(-1px);
             box-shadow: 
-                0 4px 12px rgba(5, 150, 105, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+                0 6px 20px rgba(59, 130, 246, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.25),
+                0 0 0 1px rgba(59, 130, 246, 0.3);
+        }
+        
+        .chart-type-btn.active::before {
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
         }
         
         .alert {
