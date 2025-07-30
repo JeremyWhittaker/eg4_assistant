@@ -2009,17 +2009,18 @@
         
         // Tab switching functionality
         function switchTab(tabName) {
-            // Update active tab button
-            document.querySelectorAll('.tab').forEach(tab => {
+            // Update active nav button
+            document.querySelectorAll('.nav-tab').forEach(tab => {
                 tab.classList.remove('active');
             });
-            event.target.classList.add('active');
+            event.currentTarget.classList.add('active');
             
             // Update active tab content
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
-            document.getElementById(tabName + '-tab').classList.add('active');
+            const targetTab = document.getElementById(tabName + '-tab') || document.getElementById(tabName === 'monitoring' ? 'monitoring-tab' : 'configuration-tab');
+            if (targetTab) targetTab.classList.add('active');
             
             // Load logs when switching to configuration/alerts tab
             if (tabName === 'alerts') {
