@@ -960,10 +960,11 @@
         
         // Update Enphase data
         socket.on('enphase_update', (data) => {
-            document.getElementById('enphase-current-power').textContent = data.latest_power_w + ' W';
-            document.getElementById('enphase-today-energy').textContent = data.today_energy_kwh.toFixed(2) + ' kWh';
-            document.getElementById('enphase-lifetime-energy').textContent = (data.lifetime_energy_kwh / 1000).toFixed(1) + ' MWh';
-            document.getElementById('enphase-microinverters').textContent = data.microinverters_online + ' / ' + data.microinverters_total;
+            document.getElementById('enphase-current-power').textContent = (data.latest_power_w || 0) + ' W';
+            document.getElementById('enphase-today-energy').textContent = (data.today_energy_kwh || 0).toFixed(2) + ' kWh';
+            document.getElementById('enphase-lifetime-energy').textContent = (data.lifetime_mwh || 0).toFixed(2) + ' MWh';
+            // Use AC voltage instead of microinverter count which isn't available
+            document.getElementById('enphase-microinverters').textContent = data.microinverter_ac_voltage_v ? 'AC: ' + data.microinverter_ac_voltage_v.toFixed(1) + 'V' : '--';
             
             // Update timestamp
             if (data.timestamp) {
