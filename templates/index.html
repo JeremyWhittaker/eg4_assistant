@@ -712,27 +712,95 @@
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
         
-        /* Enhanced Mobile-First Responsive Design */
+        /* ENHANCED: World-class mobile-first responsive design */
         @media (max-width: 768px) {
             body {
                 padding: 1rem;
-                font-size: 16px; /* Prevent zoom on iOS */
-                line-height: 1.5; /* Improve readability */
+                font-size: 16px;
+                line-height: 1.6;
             }
             
-            /* Fix critical form accessibility issues */
+            /* Enhanced form accessibility and spacing */
             .form-group {
-                margin-bottom: 1.5rem;
+                margin-bottom: 2rem;
+                padding-bottom: 1.5rem;
+                border-bottom: 1px solid rgba(51, 65, 85, 0.2);
+            }
+            
+            .form-group:last-child {
+                border-bottom: none;
             }
             
             .form-group .grid {
-                grid-template-columns: 1fr !important; /* Stack credentials vertically on mobile */
-                gap: 1.5rem;
+                grid-template-columns: 1fr !important;
+                gap: 2rem;
             }
             
             .threshold-grid {
-                grid-template-columns: 1fr !important; /* Stack form elements vertically */
-                gap: 1rem;
+                grid-template-columns: 1fr !important;
+                gap: 1.5rem;
+            }
+            
+            /* Enhanced credential section design */
+            .credential-section {
+                background: rgba(15, 23, 42, 0.5);
+                border-radius: 1rem;
+                padding: 1.5rem;
+                margin-bottom: 1.5rem;
+                border: 1px solid rgba(51, 65, 85, 0.3);
+            }
+            
+            .credential-section h4 {
+                color: #60a5fa;
+                font-weight: 600;
+                margin-bottom: 1.25rem;
+                font-size: 1rem;
+            }
+            
+            /* Better input field design */
+            .form-group input,
+            .form-group select {
+                background: rgba(30, 41, 59, 0.8);
+                border: 1px solid rgba(71, 85, 105, 0.6);
+                border-radius: 0.5rem;
+                padding: 0.875rem 1rem;
+                font-size: 16px;
+                color: #e2e8f0;
+                width: 100%;
+                margin-bottom: 0.75rem;
+                transition: all 0.2s ease;
+            }
+            
+            .form-group input:focus,
+            .form-group select:focus {
+                outline: none;
+                border-color: #60a5fa;
+                box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+            }
+            
+            /* Enhanced chart button spacing */
+            .chart-type-btn {
+                min-height: 48px;
+                padding: 0.875rem 1rem;
+                margin: 0.25rem;
+                font-size: 0.875rem;
+                border-radius: 0.75rem;
+            }
+            
+            /* Better system status grid */
+            .system-status-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            /* Enhanced log section */
+            #log-container {
+                background: rgba(15, 23, 42, 0.8);
+                border-radius: 0.75rem;
+                padding: 1rem;
+                font-size: 0.875rem;
+                line-height: 1.5;
+                max-height: 300px;
             }
             
             /* Critical: Fix checkbox accessibility */
@@ -854,13 +922,14 @@
                 min-width: 120px;
             }
             
-            /* Touch-friendly chart buttons */
+            /* Enhanced touch-friendly chart buttons */
             .chart-type-btn {
                 padding: 1rem 1.25rem;
                 font-size: 0.875rem;
                 min-height: 48px;
                 margin: 0.25rem;
                 border-radius: 0.75rem !important;
+                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
                 /* Ensure adequate touch target spacing */
                 min-width: 80px;
                 display: flex;
