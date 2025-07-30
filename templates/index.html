@@ -30,6 +30,80 @@
             overflow-x: hidden;
         }
         
+        /* Critical: Additional mobile improvements for very small screens */
+        @media (max-width: 480px) {
+            body {
+                padding: 0.75rem;
+                font-size: 16px;
+            }
+            
+            .header-logo {
+                margin-bottom: 1.5rem;
+            }
+            
+            .header-logo img {
+                height: 120px; /* Smaller logo on very small screens */
+            }
+            
+            .tabs {
+                padding: 0.25rem;
+                gap: 0.125rem;
+            }
+            
+            .tab {
+                padding: 0.875rem 0.5rem;
+                font-size: 0.8rem;
+                min-height: 44px;
+            }
+            
+            .card {
+                padding: 1.25rem 1rem;
+                margin-bottom: 1rem;
+            }
+            
+            /* Improve chart button layout on very small screens */
+            .chart-type-btn {
+                padding: 0.75rem 0.5rem !important;
+                font-size: 0.75rem !important;
+                min-height: 44px !important;
+                flex: 1;
+            }
+            
+            /* Better form spacing on small screens */
+            .form-group {
+                margin-bottom: 1.25rem;
+            }
+            
+            .form-group h3,
+            .form-group h4 {
+                font-size: 0.95rem;
+                margin-bottom: 0.75rem;
+            }
+            
+            /* Optimize metric display for small screens */
+            .metric {
+                padding: 1.25rem 1rem;
+                margin-bottom: 1rem;
+            }
+            
+            .value {
+                font-size: 1.1rem !important;
+                padding: 0.625rem !important;
+            }
+            
+            /* Better button spacing */
+            button {
+                margin-bottom: 0.5rem;
+                font-size: 0.85rem;
+            }
+            
+            /* Improve log viewer on small screens */
+            #log-container {
+                height: 300px !important;
+                font-size: 0.75rem !important;
+            }
+        }
+        
         body::before {
             content: '';
             position: fixed;
