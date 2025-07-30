@@ -245,6 +245,110 @@
             margin: 0 auto;
         }
         
+        /* World-class header design */
+        .main-header {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            border-radius: 1.5rem;
+            margin-bottom: 2rem;
+            padding: 1.5rem 2rem;
+            box-shadow: 
+                0 20px 25px -5px rgba(0, 0, 0, 0.3),
+                0 10px 10px -5px rgba(0, 0, 0, 0.04),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .logo-wrapper {
+            width: 60px;
+            height: 60px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .logo-img {
+            height: 60px;
+            width: auto;
+            position: absolute;
+            left: 0;
+            top: 0;
+            clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
+            filter: drop-shadow(0 4px 8px rgba(59, 130, 246, 0.3));
+        }
+        
+        .brand-text h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #f1f5f9;
+            margin: 0;
+            line-height: 1.2;
+            letter-spacing: -0.05em;
+        }
+        
+        .brand-text p {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            margin: 0;
+            font-weight: 500;
+        }
+        
+        .main-nav {
+            display: flex;
+            gap: 0.5rem;
+            background: rgba(15, 23, 42, 0.5);
+            padding: 0.375rem;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(51, 65, 85, 0.5);
+        }
+        
+        .nav-tab {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            border-radius: 0.5rem;
+            color: #94a3b8;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+        
+        .nav-tab:hover {
+            color: #e2e8f0;
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .nav-tab.active {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            box-shadow: 
+                0 4px 12px rgba(59, 130, 246, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+        
+        .nav-tab svg {
+            width: 18px;
+            height: 18px;
+        }
+        
         /* World-class integrated header design */
         .header {
             position: sticky;
