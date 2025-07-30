@@ -1246,16 +1246,30 @@
         
         // Update EG4 data
         socket.on('eg4_update', (data) => {
-            document.getElementById('battery-soc').textContent = data.battery.soc + '%';
-            document.getElementById('battery-soc').className = 'value ' + 
-                (data.battery.soc < 20 ? 'negative' : data.battery.soc > 95 ? 'warning' : '');
+            const socElement = document.getElementById('battery-soc');
+            socElement.textContent = data.battery.soc + '%';
+            
+            // Enhanced battery level styling
+            let socClass = 'value ';
+            if (data.battery.soc <= 15) {
+                socClass += 'battery-critical';
+            } else if (data.battery.soc <= 30) {
+                socClass += 'battery-low';
+            } else if (data.battery.soc >= 80) {
+                socClass += 'battery-good';
+            } else {
+                socClass += 'warning';
+            }
+            socElement.className = socClass;
             
             document.getElementById('battery-power').textContent = data.battery.power + 'W';
             document.getElementById('battery-power').className = 'value ' + 
                 (data.battery.power < 0 ? 'negative' : 'positive');
             
-            // Update total PV power
-            document.getElementById('pv-power').textContent = data.pv.power + 'W';
+            // Update total PV power with enhanced styling
+            const pvElement = document.getElementById('pv-power');
+            pvElement.textContent = data.pv.power + 'W';
+            pvElement.className = 'value positive';
             
             // Update individual PV string details if available
             if (data.pv.strings) {
@@ -1292,9 +1306,10 @@
                 const anyStringActive = (strings.pv1?.power > 0) || (strings.pv2?.power > 0) || (strings.pv3?.power > 0);
                 document.getElementById('pv-strings').style.display = anyStringActive ? 'block' : 'none';
             }
-            document.getElementById('grid-power').textContent = data.grid.power + 'W';
-            document.getElementById('grid-power').className = 'value ' + 
-                (data.grid.power > 0 ? 'negative' : 'positive');
+            const gridElement = document.getElementById('grid-power');
+            gridElement.textContent = data.grid.power + 'W';
+            // Grid power: positive = importing (red), negative = exporting (green)
+            gridElement.className = 'value ' + (data.grid.power > 0 ? 'negative' : 'positive');
             
             document.getElementById('load-power').textContent = data.load.power + 'W';
             
@@ -1303,6 +1318,7 @@
             
             document.getElementById('eg4-status').className = 'status-indicator online';
             document.getElementById('eg4-status-text').textContent = 'Online';
+            document.getElementById('eg4-status-badge').className = 'status-badge status-online';
             
             // Update last update time from data if available
             if (data.last_update) {
@@ -1349,6 +1365,7 @@
             
             document.getElementById('enphase-status').className = 'status-indicator online';
             document.getElementById('enphase-status-text').textContent = 'Online';
+            document.getElementById('enphase-status-badge').className = 'status-badge status-online';
         });
         
         // Handle alerts
@@ -2186,6 +2203,7 @@
                 
                 document.getElementById('eg4-status').className = 'status-indicator online';
                 document.getElementById('eg4-status-text').textContent = 'Online';
+                document.getElementById('eg4-status-badge').className = 'status-badge status-online';
                 
                 if (eg4Data.last_update) {
                     const updateTime = new Date(eg4Data.last_update);
@@ -2209,6 +2227,7 @@
                 }
                 document.getElementById('enphase-status').className = 'status-indicator online';
                 document.getElementById('enphase-status-text').textContent = 'Online';
+                document.getElementById('enphase-status-badge').className = 'status-badge status-online';
             }
         });
         
