@@ -582,6 +582,59 @@
             body {
                 padding: 1rem;
                 font-size: 16px; /* Prevent zoom on iOS */
+                line-height: 1.5; /* Improve readability */
+            }
+            
+            /* Fix critical form accessibility issues */
+            .form-group {
+                margin-bottom: 1.5rem;
+            }
+            
+            .form-group .grid {
+                grid-template-columns: 1fr !important; /* Stack credentials vertically on mobile */
+                gap: 1.5rem;
+            }
+            
+            .threshold-grid {
+                grid-template-columns: 1fr !important; /* Stack form elements vertically */
+                gap: 1rem;
+            }
+            
+            /* Critical: Fix checkbox accessibility */
+            input[type="checkbox"] {
+                min-width: 20px;
+                min-height: 20px;
+                margin-right: 12px;
+                transform: scale(1.2); /* Make checkboxes more tappable */
+            }
+            
+            label {
+                display: flex;
+                align-items: center;
+                min-height: 44px; /* Ensure label touch target meets standards */
+                padding: 8px 0;
+                cursor: pointer;
+            }
+            
+            /* Fix spinbutton usability */
+            input[type="number"] {
+                -webkit-appearance: none;
+                -moz-appearance: textfield;
+                text-align: center;
+                font-size: 18px !important; /* Larger text for better visibility */
+            }
+            
+            /* Better spacing for time pickers */
+            .time-picker {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                min-height: 44px;
+            }
+            
+            .time-picker input {
+                flex: 1;
+                max-width: 80px;
             }
             
             .tabs {
@@ -630,6 +683,11 @@
                 min-height: 48px;
                 margin: 0.25rem;
                 border-radius: 0.75rem !important;
+                /* Ensure adequate touch target spacing */
+                min-width: 80px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             /* Improved form elements for mobile */
@@ -671,8 +729,11 @@
             }
             
             .chart-type-btn {
-                padding: 0.5rem 0.75rem;
-                font-size: 0.75rem;
+                padding: 0.75rem 1rem;
+                font-size: 0.8rem;
+                min-height: 44px !important; /* Ensure minimum touch target */
+                flex: 1;
+                margin: 0.125rem;
             }
             
             .header-logo {
