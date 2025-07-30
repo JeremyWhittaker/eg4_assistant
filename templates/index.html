@@ -1822,10 +1822,11 @@
             }
             if (data.enphase) {
                 // Update Enphase UI
-                document.getElementById('enphase-current-power').textContent = data.enphase.latest_power_w + ' W';
-                document.getElementById('enphase-today-energy').textContent = data.enphase.today_energy_kwh.toFixed(2) + ' kWh';
-                document.getElementById('enphase-lifetime-energy').textContent = (data.enphase.lifetime_energy_kwh / 1000).toFixed(1) + ' MWh';
-                document.getElementById('enphase-microinverters').textContent = data.enphase.microinverters_online + ' / ' + data.enphase.microinverters_total;
+                document.getElementById('enphase-current-power').textContent = (data.enphase.latest_power_w || 0) + ' W';
+                document.getElementById('enphase-today-energy').textContent = (data.enphase.today_energy_kwh || 0).toFixed(2) + ' kWh';
+                document.getElementById('enphase-lifetime-energy').textContent = (data.enphase.lifetime_mwh || 0).toFixed(2) + ' MWh';
+                // Microinverters not available in current data, hide or show placeholder
+                document.getElementById('enphase-microinverters').textContent = data.enphase.microinverter_ac_voltage_v ? 'AC: ' + data.enphase.microinverter_ac_voltage_v.toFixed(1) + 'V' : '--';
                 if (data.enphase.timestamp) {
                     const updateTime = new Date(data.enphase.timestamp);
                     document.getElementById('enphase-last-update').textContent = updateTime.toLocaleString();
