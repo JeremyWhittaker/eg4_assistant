@@ -30,17 +30,18 @@
         .header-logo {
             text-align: center;
             margin-bottom: clamp(1.5rem, 3vw, 3rem);
+            overflow: hidden;
+            max-width: 250px;
+            margin-left: auto;
+            margin-right: auto;
         }
         
         .header-logo img {
             height: 200px;
             width: auto;
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-            object-fit: cover;
-            object-position: left center;
-            max-width: 400px;
-            display: block;
-            margin: 0 auto;
+            margin-left: 0;
+            transform: translateX(0);
         }
         
         .grid {
