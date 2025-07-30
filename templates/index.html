@@ -119,20 +119,38 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 0.75rem;
-            padding: 1rem 1.25rem;
-            background: rgba(15, 23, 42, 0.4);
-            border-radius: 0.75rem;
-            border: 1px solid rgba(51, 65, 85, 0.3);
+            padding: 1.5rem;
+            background: linear-gradient(145deg, rgba(30, 35, 55, 0.9), rgba(37, 41, 70, 0.7));
+            backdrop-filter: blur(20px);
+            border-radius: 1rem;
+            border: 1px solid rgba(99, 179, 237, 0.2);
             font-size: 0.95rem;
-            transition: all 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
+            box-shadow: 
+                0 4px 16px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        .metric::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(99, 179, 237, 0.6), transparent);
+            border-radius: 1rem 1rem 0 0;
         }
         
         .metric:hover {
-            background: rgba(15, 23, 42, 0.6);
-            border-color: rgba(59, 130, 246, 0.3);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            background: linear-gradient(145deg, rgba(30, 35, 55, 1), rgba(37, 41, 70, 0.9));
+            border-color: rgba(99, 179, 237, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.2),
+                0 0 0 1px rgba(99, 179, 237, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
         }
         
         .metric:last-child {
@@ -143,35 +161,110 @@
         .value {
             font-weight: 800;
             color: #f1f5f9;
-            font-size: 1.125rem;
+            font-size: 1.5rem;
             letter-spacing: -0.025em;
             font-variant-numeric: tabular-nums;
-            padding: 0.25rem 0.75rem;
-            background: rgba(15, 23, 42, 0.6);
-            border-radius: 0.5rem;
-            border: 1px solid rgba(51, 65, 85, 0.4);
-            min-width: 80px;
-            text-align: right;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            padding: 0.75rem 1.25rem;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.6));
+            backdrop-filter: blur(10px);
+            border-radius: 0.75rem;
+            border: 1px solid rgba(99, 179, 237, 0.3);
+            min-width: 120px;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            box-shadow: 
+                inset 0 1px 2px rgba(0, 0, 0, 0.2),
+                0 2px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        
+        .value::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            border-radius: 0.75rem 0.75rem 0 0;
         }
         
         .positive { 
             color: #10b981;
-            background: rgba(16, 185, 129, 0.1);
-            border-color: rgba(16, 185, 129, 0.3);
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.1));
+            border-color: rgba(16, 185, 129, 0.4);
+            box-shadow: 
+                0 0 20px rgba(16, 185, 129, 0.15),
+                inset 0 1px 2px rgba(16, 185, 129, 0.1);
         }
+        .positive::after {
+            background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.3), transparent);
+        }
+        
         .negative { 
             color: #ef4444;
-            background: rgba(239, 68, 68, 0.1);
-            border-color: rgba(239, 68, 68, 0.3);
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.1);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.1));
+            border-color: rgba(239, 68, 68, 0.4);
+            box-shadow: 
+                0 0 20px rgba(239, 68, 68, 0.15),
+                inset 0 1px 2px rgba(239, 68, 68, 0.1);
         }
+        .negative::after {
+            background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.3), transparent);
+        }
+        
         .warning { 
             color: #f59e0b;
-            background: rgba(245, 158, 11, 0.1);
-            border-color: rgba(245, 158, 11, 0.3);
-            box-shadow: 0 0 20px rgba(245, 158, 11, 0.1);
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.1));
+            border-color: rgba(245, 158, 11, 0.4);
+            box-shadow: 
+                0 0 20px rgba(245, 158, 11, 0.15),
+                inset 0 1px 2px rgba(245, 158, 11, 0.1);
+        }
+        .warning::after {
+            background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.3), transparent);
+        }
+        
+        /* Battery level specific styling */
+        .battery-critical {
+            color: #ef4444;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.15));
+            border-color: rgba(239, 68, 68, 0.5);
+            box-shadow: 
+                0 0 30px rgba(239, 68, 68, 0.3),
+                inset 0 1px 2px rgba(239, 68, 68, 0.2);
+            animation: batteryPulse 2s infinite;
+        }
+        
+        .battery-low {
+            color: #f59e0b;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.15));
+            border-color: rgba(245, 158, 11, 0.5);
+            box-shadow: 
+                0 0 25px rgba(245, 158, 11, 0.2),
+                inset 0 1px 2px rgba(245, 158, 11, 0.15);
+        }
+        
+        .battery-good {
+            color: #10b981;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.15));
+            border-color: rgba(16, 185, 129, 0.5);
+            box-shadow: 
+                0 0 25px rgba(16, 185, 129, 0.2),
+                inset 0 1px 2px rgba(16, 185, 129, 0.15);
+        }
+        
+        @keyframes batteryPulse {
+            0%, 100% { 
+                box-shadow: 
+                    0 0 30px rgba(239, 68, 68, 0.3),
+                    inset 0 1px 2px rgba(239, 68, 68, 0.2);
+            }
+            50% { 
+                box-shadow: 
+                    0 0 40px rgba(239, 68, 68, 0.5),
+                    inset 0 1px 2px rgba(239, 68, 68, 0.3);
+            }
         }
         
         /* Loading States and Animations */
@@ -813,7 +906,10 @@
                 </div>
                 <div class="metric">
                     <span>Status</span>
-                    <span><span class="status-indicator offline" id="eg4-status"></span><span id="eg4-status-text">Offline</span></span>
+                    <span class="status-badge status-offline" id="eg4-status-badge">
+                        <span class="status-indicator offline" id="eg4-status"></span>
+                        <span id="eg4-status-text">Offline</span>
+                    </span>
                 </div>
             </div>
             
@@ -857,7 +953,10 @@
                 </div>
                 <div class="metric">
                     <span>Status</span>
-                    <span><span class="status-indicator offline" id="enphase-status"></span><span id="enphase-status-text">Offline</span></span>
+                    <span class="status-badge status-offline" id="enphase-status-badge">
+                        <span class="status-indicator offline" id="enphase-status"></span>
+                        <span id="enphase-status-text">Offline</span>
+                    </span>
                 </div>
             </div>
             </div>
