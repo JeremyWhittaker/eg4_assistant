@@ -216,12 +216,16 @@
         .header-logo img {
             height: 200px;
             width: auto;
+            position: absolute;
+            left: 0;
+            top: 0;
             filter: 
                 drop-shadow(0 8px 32px rgba(59, 130, 246, 0.3))
                 drop-shadow(0 4px 16px rgba(0, 0, 0, 0.3));
-            margin-left: 0;
+            /* Use transform to hide the right logo */
             transform: translateX(0);
-            border-radius: 1rem;
+            /* Clip exactly half the image to show only left logo */
+            clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
         }
         
         .grid {
