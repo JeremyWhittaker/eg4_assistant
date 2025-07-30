@@ -40,7 +40,7 @@ log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(me
 
 # Set up root logger
 root_logger = logging.getLogger()
-root_logger.setLevel(logging.INFO)
+root_logger.setLevel(logging.DEBUG)
 
 # Suppress Werkzeug production warnings
 werkzeug_logger = logging.getLogger('werkzeug')
