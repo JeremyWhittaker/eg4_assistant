@@ -1,0 +1,41 @@
+[Unit]
+Description=EG4-SRP Monitor - Real-time Energy Monitoring System
+Documentation=https://github.com/JeremyWhittaker/eg4-srp-monitor
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=jeremy
+Group=jeremy
+WorkingDirectory=/mnt/data/src/eg4-srp-monitor
+Environment=PATH=/mnt/data/src/eg4-srp-monitor/venv/bin
+ExecStart=/mnt/data/src/eg4-srp-monitor/venv/bin/python app.py
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+
+# Security settings
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=no
+ReadWritePaths=/mnt/data/src/eg4-srp-monitor
+ReadWritePaths=/home/jeremy/.gmail_send
+
+# Resource limits
+MemoryMax=512M
+TasksMax=100
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=eg4-srp-monitor
+
+# Environment variables
+Environment="PYTHONUNBUFFERED=1"
+Environment="PLAYWRIGHT_BROWSERS_PATH=/mnt/data/src/eg4-srp-monitor/venv/lib/python3.*/site-packages/playwright/driver"
+
+[Install]
+WantedBy=multi-user.target
