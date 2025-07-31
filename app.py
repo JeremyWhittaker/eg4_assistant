@@ -1793,6 +1793,10 @@ def serve_logo():
 def serve_favicon():
     return send_from_directory('.', 'favicon.ico')
 
+@app.route('/favicon-<size>.png')
+def serve_favicon_png(size):
+    return send_from_directory('.', f'favicon-{size}.png')
+
 @app.route('/api/status')
 def get_status():
     """Get current system status"""
