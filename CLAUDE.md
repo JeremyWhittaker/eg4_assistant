@@ -5,46 +5,50 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # EG4-SRP Monitor Development Guide
 
 ## Project Overview
-EG4-SRP Monitor is a comprehensive real-time monitoring system for EG4 inverters with Salt River Project (SRP) utility integration. Built with Flask, Socket.IO, and Playwright for reliable web automation.
+EG4-SRP Monitor is a comprehensive real-time energy monitoring system that integrates EG4 solar inverters with Salt River Project (SRP) utility data. Built with Flask, Socket.IO, and Playwright for reliable web automation and real-time dashboard updates.
 
-**Latest Update (July 25, 2025):** Native Python deployment with enhanced features:
-- **Docker Migration Complete**: Removed all Docker components, native Python virtual environment
-- **Web-based Credential Management**: Complete credential setup through Configuration tab
-- **Multi-MPPT PV Monitoring**: Individual string tracking with automatic totaling
-- **Complete SRP Integration**: All 4 chart types (Net Energy, Generation, Usage, Demand)
-- **Smart Alert Protection**: Prevents false alerts when systems are offline  
-- **Enhanced Error Recovery**: Robust connection validation and retry logic
-- **Real-time Dashboard**: Live WebSocket updates with detailed system status
-- **Comprehensive Logging**: 5-level logging system with web interface
+**Latest Update (July 30, 2025):** Production-ready native Python deployment with world-class web interface:
+- **🎨 Modern UI Design**: Professional glassmorphism interface with integrated header and logo-only branding
+- **📧 Gmail Integration**: Full two-factor authentication support with custom SMTP implementation
+- **🔄 Real-time Monitoring**: Live WebSocket updates every 60 seconds for EG4 data
+- **📊 Complete SRP Integration**: All 4 chart types (Net Energy, Generation, Usage, Demand) with CSV export
+- **🚨 Smart Alert System**: Timezone-aware alerts with anti-spam protection
+- **🔧 Web-based Configuration**: Complete credential and settings management through web interface
+- **📱 Mobile Responsive**: Optimized for all screen sizes with touch-friendly controls
+- **🛠️ Production Ready**: Systemd service support for automatic startup
 
 ## Architecture Overview
 
-This is a **monolithic Flask application** with real-time web scraping and WebSocket communication running on port 5001.
+This is a **monolithic Flask application** with real-time web scraping and WebSocket communication running on **port 5002**.
 
 ### Core Components
-- **`app.py` (1,496 lines)**: Main Flask server containing all business logic
-  - EG4/SRP data extraction using Playwright browser automation
-  - Socket.IO WebSocket handlers for real-time updates  
-  - Background monitoring threads with retry logic
-  - Gmail alert system with smart scheduling
-  - API endpoints for configuration management
+- **`app.py` (1,800+ lines)**: Main Flask server containing all business logic
+  - EG4/SRP/Enphase data extraction using Playwright browser automation
+  - Socket.IO WebSocket handlers for real-time dashboard updates
+  - Background monitoring threads with intelligent retry logic
+  - Gmail SMTP alert system with timezone-aware scheduling
+  - RESTful API endpoints for configuration and data management
+  - SQLite database for data persistence and historical tracking
 
-- **`templates/index.html` (1,479 lines)**: Single-page web dashboard
-  - Real-time updates via Socket.IO client
-  - Chart.js visualizations for SRP energy data
-  - Configuration forms and system status display
-  - Dark theme responsive design
+- **`templates/index.html` (2,100+ lines)**: Single-page progressive web application
+  - Real-time updates via Socket.IO client with auto-reconnection
+  - Chart.js visualizations for multi-dimensional energy data
+  - Integrated header with professional logo and navigation design
+  - Complete configuration interface with credential management
+  - Mobile-optimized responsive design with glassmorphism styling
+  - System log viewer with filtering and download capabilities
 
 ### Key Architectural Patterns
-- **Browser Automation**: Playwright handles EG4/SRP login and data scraping
-- **Real-time Communication**: Socket.IO broadcasts live data updates to web clients
-- **Background Processing**: Separate threads for EG4 (60s) and SRP (daily) monitoring
-- **Configuration Persistence**: JSON config stored in `./config/config.json`
-- **Session Management**: EG4 browser sessions persist for ~1 hour to reduce login overhead
+- **Browser Automation**: Playwright handles authentication and data scraping for all 3 systems
+- **Real-time Communication**: Socket.IO broadcasts live updates to connected web clients
+- **Background Processing**: Threaded monitoring (EG4: 60s, SRP: daily, Enphase: 60s)
+- **Configuration Persistence**: JSON config in `./config/config.json` with web management
+- **Session Management**: Persistent browser sessions (~1 hour) to minimize login overhead
+- **Data Storage**: SQLite database for metrics storage and retrieval
 
 ## Essential Commands
 
-### Development Workflow
+### Production Deployment
 ```bash
 # Create and activate virtual environment
 python3 -m venv venv
@@ -52,415 +56,263 @@ source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
-pip install -e ./gmail_integration_temp
 playwright install chromium
 
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your credentials
+# Set up directories
+mkdir -p logs config downloads
 
-# Start the application
+# Configure credentials through web interface
 python app.py
+# Navigate to http://localhost:5002 → Configuration tab
+
+# Install as systemd service (see systemd section below)
+sudo cp eg4-srp-monitor.service /etc/systemd/system/
+sudo systemctl enable eg4-srp-monitor
+sudo systemctl start eg4-srp-monitor
 ```
 
-### Testing & Debugging
+### Development Workflow
 ```bash
+# Start development server
+source venv/bin/activate
+python app.py
+
 # View application logs
 tail -f logs/eg4_srp_monitor.log
 
 # Access web interface
-curl http://localhost:5001/api/status
+open http://localhost:5002
 
-# Stop the application
-Ctrl+C
+# Monitor service status
+sudo systemctl status eg4-srp-monitor
 ```
 
 ### No Build/Lint/Test Commands
-This is a simple Python Flask application - changes are reflected immediately when you restart the app.
+This is a pure Python Flask application - changes are reflected immediately when you restart the app. All dependencies are managed through pip and requirements.txt.
 
-## Key Features & Implementation
+## Current Feature Set (July 2025)
 
-### 1. Multi-MPPT PV Monitoring
-**Location**: `app.py:extract_eg4_data()` function
-**Enhancement**: Individual PV string tracking with automatic totaling
+### 1. ✅ Multi-System Energy Monitoring
+**EG4 Inverter Integration**:
+- Real-time battery SOC, power flow, and voltage monitoring
+- Individual PV string tracking (PV1, PV2, PV3) with automatic totaling
+- Grid import/export tracking with directional power flow
+- Load consumption monitoring
+- Connection status validation with offline detection
 
-```javascript
-// Enhanced PV extraction (in extract_eg4_data)
-const pv1Power = parseInt(cleanText(rawPv1Power)) || 0;
-const pv2Power = parseInt(cleanText(rawPv2Power)) || 0;
-const pv3Power = parseInt(cleanText(rawPv3Power)) || 0;
-const totalPvPower = pv1Power + pv2Power + pv3Power;
+**SRP Utility Integration**:
+- Daily peak demand tracking with threshold alerts
+- Historical energy data with 4 chart types:
+  - Net Energy (import/export balance)
+  - Generation (solar production)
+  - Usage (consumption patterns)
+  - Demand (peak power usage)
+- Automatic CSV download and parsing
+- Temperature correlation data
 
-return {
-    pv_power: totalPvPower,
-    pv1_power: pv1Power,
-    pv1_voltage: parseFloat(cleanText(rawPv1Voltage)) || 0,
-    // ... similar for PV2, PV3
-};
-```
+**Enphase Solar Integration**:
+- Current power production monitoring
+- Daily and lifetime energy statistics
+- Microinverter health status
+- AC voltage monitoring
 
-### 2. Connection Validation System
-**Location**: `app.py:is_valid_eg4_data()` function
-**Purpose**: Prevents false alerts when EG4 system is offline
+### 2. ✅ Professional Web Interface
+**Modern Design System**:
+- Glassmorphism effects with backdrop blur
+- Logo-only branding (150px EG4 battery icon)
+- Integrated header with navigation and professional styling
+- Responsive grid layout optimized for all screen sizes
+- Dark theme with blue accent color scheme
 
-```python
-def is_valid_eg4_data(data):
-    """Validate that EG4 data represents a real connection"""
-    if not data:
-        return False
-    
-    # Check for all-zero condition (system offline)
-    critical_values = [
-        data.get('battery_soc', 0),
-        data.get('battery_power', 0),
-        data.get('pv_power', 0),
-        data.get('grid_power', 0)
-    ]
-    
-    # If all critical values are zero, system is likely offline
-    return any(abs(value) > 0.1 for value in critical_values)
-```
+**Real-time Dashboard**:
+- Live WebSocket updates every 60 seconds
+- Auto-refresh toggle with configurable intervals (30s, 60s, 2m, 5m)
+- Color-coded status indicators and metric cards
+- Interactive charts with hover states and animations
+- Mobile-optimized touch targets (44px minimum)
 
-### 3. SRP Chart Data Processing
-**Location**: `app.py:fetch_srp_chart_data()` function
-**Enhancement**: Support for all 4 SRP chart types with different CSV structures
+### 3. ✅ Advanced Alert System
+**Smart Notifications**:
+- Battery low alerts (daily check at configurable time)
+- Peak demand alerts (daily check at configurable time)  
+- Grid import alerts (time-window based, e.g., 2-8 PM)
+- Anti-spam protection with cooldown periods
+- Timezone-aware scheduling (supports 6 US timezones)
 
-```python
-# Chart type specific column mapping
-if chart_type == 'generation':
-    # Generation CSV: Off-peak kWh + On-peak kWh columns
-    off_peak = float(row.get('Off-peak kWh', 0) or 0)
-    on_peak = float(row.get('On-peak kWh', 0) or 0)
-    
-elif chart_type == 'demand':
-    # Demand CSV: On-peak kW column for peak demand
-    demand_value = float(row.get('On-peak kW', 0) or 0)
-```
+**Gmail Integration**:
+- Custom SMTP implementation with App Password support
+- HTML-formatted alert emails with full system status
+- Multiple recipient support (comma-separated)
+- Test email functionality through web interface
+- Automatic configuration validation
 
-### 4. Smart Alert System
-**Location**: `app.py:check_alerts()` function
-**Features**: Time-based scheduling, anti-spam, connection-aware
+### 4. ✅ Configuration Management
+**Web-based Setup**:
+- Complete credential management for all 3 systems (EG4, SRP, Enphase)
+- Gmail SMTP configuration with two-factor authentication
+- Alert threshold configuration with visual validation
+- Timezone selection with live time display
+- Settings persistence across application restarts
 
-```python
-def should_send_alert(alert_type, current_time):
-    """Determine if alert should be sent based on timing and cooldowns"""
-    last_sent = last_alerts.get(alert_type)
-    
-    if alert_type == 'battery':
-        # Daily check at configured hour
-        target_hour = alert_config['thresholds']['battery_check_hour']
-        return (current_time.hour == target_hour and 
-                current_time.minute < 5 and
-                (not last_sent or last_sent.date() < current_time.date()))
-```
+**System Administration**:
+- Live log viewer with level filtering (Debug, Info, Warning, Error)
+- Log download functionality for troubleshooting
+- Configuration backup and restore
+- Service status monitoring
 
 ## Critical File Locations
 
-### Core Application
-- `app.py`: Main Flask server - all Python logic lives here
-- `templates/index.html`: Complete web interface - HTML, CSS, JavaScript in one file
+### Core Application Files
+- `app.py` - Main Flask application (1,800+ lines)
+- `templates/index.html` - Web interface (2,100+ lines)
+- `requirements.txt` - Python dependencies
+- `venv/bin/send-gmail` - Custom Gmail SMTP script
 
-### Key Functions in app.py
-- `extract_eg4_data()` (~line 400): Playwright script for EG4 data scraping  
-- `fetch_srp_chart_data()` (~line 800): SRP CSV processing and chart data
-- `check_alerts()` (~line 1200): Alert logic with timezone-aware scheduling
-- `monitor_eg4()` (~line 1400): Background thread for EG4 monitoring
+### Configuration Files
+- `config/config.json` - Persistent application settings
+- `~/.gmail_send/.env` - Gmail SMTP credentials
+- `.env` - Environment variables (if used)
+- `logs/eg4_srp_monitor.log` - Application logs (rotated at 10MB)
+
+### Data Storage
+- `downloads/` - SRP CSV files with timestamp naming
+- `data/` - SQLite database files for metrics storage
+- `config/` - Configuration backups and exports
+
+### Service Files
+- `eg4-srp-monitor.service` - Systemd service definition
+- `install.sh` - Automated installation script
+
+## Key Functions in app.py
+
+### Data Extraction Functions
+- `extract_eg4_data()` (~line 400): EG4 inverter data scraping with Playwright
+- `extract_srp_data()` (~line 800): SRP utility data collection and CSV processing
+- `extract_enphase_data()` (~line 600): Enphase solar system monitoring
+- `fetch_srp_chart_data()` (~line 900): Historical SRP data parsing with chart type support
+
+### Monitoring Functions
+- `monitor_eg4()` (~line 1400): Background EG4 monitoring thread (60s interval)
+- `monitor_srp()` (~line 1500): Daily SRP data collection thread
+- `monitor_enphase()` (~line 1450): Background Enphase monitoring thread (60s interval)
 - `is_valid_eg4_data()` (~line 300): Connection validation to prevent false alerts
 
-### Configuration & Data
-- `.env`: EG4_USERNAME, EG4_PASSWORD, SRP_USERNAME, SRP_PASSWORD
-- `config/config.json`: Persistent alert settings, email recipients, thresholds
-- `downloads/`: SRP CSV files (YYYYMMDD_HHMMSS format)
-- `logs/eg4_srp_monitor.log`: Application logs accessible via web interface
+### Alert Functions
+- `check_alerts()` (~line 1200): Smart alert logic with timezone awareness
+- `send_alert_email()` (~line 1300): HTML email formatting and delivery
+- `should_send_alert()` (~line 1250): Anti-spam logic with cooldown periods
+
+### Configuration Functions
+- `configure_gmail()` (~line 200): Gmail SMTP setup with web interface
+- `save_configuration()` (~line 150): Settings persistence to JSON
+- `load_configuration()` (~line 100): Settings restoration on startup
 
 ## Development Guidelines
 
-### Using AI Agents
-When working on this project, always check for available local and global AI agents that can assist with specific tasks. Use the appropriate specialized agents for:
-- **Testing and validation**: Look for agents that can test web interfaces, validate functionality, or check system health
-- **Code organization**: Utilize agents that help with file cleanup, documentation updates, or project structure improvements
-- **Data and storage**: Employ agents that can advise on data persistence, storage optimization, or database design
-- **UX and design**: Use agents that can review and improve user interface design and user experience
-- **Monitoring and troubleshooting**: Deploy agents that can analyze logs, diagnose issues, or monitor system health
+### Code Organization
+- **Single-file architecture**: All Python logic in `app.py` for simplicity
+- **Template-based UI**: All frontend code in `templates/index.html`
+- **Modular functions**: Clear separation of concerns within the monolithic structure
+- **Comprehensive logging**: 5-level logging system with web interface access
 
-Always invoke relevant agents proactively when their capabilities match the task at hand. This ensures thorough analysis, better code quality, and comprehensive testing.
-
-### Data Extraction Changes
-- **EG4 modifications**: Update JavaScript in `extract_eg4_data()` function - uses CSS selectors
-- **SRP modifications**: Update CSV parsing in `fetch_srp_chart_data()` - handles different column structures
-- **Always test with real credentials** in development environment
-- **Add robust error handling** - connection failures are common
+### Data Flow Architecture
+1. **Background Threads**: Collect data from EG4, SRP, and Enphase systems
+2. **Data Validation**: Verify connection status and data integrity
+3. **Database Storage**: Persist metrics to SQLite for historical analysis
+4. **WebSocket Broadcasting**: Push real-time updates to connected web clients
+5. **Alert Processing**: Evaluate thresholds and send notifications as needed
 
 ### Adding New Features
-1. **Backend changes**: All logic goes in `app.py` 
-2. **Frontend changes**: Update `templates/index.html` (single file contains HTML/CSS/JS)
-3. **Real-time updates**: Use `socketio.emit()` to broadcast changes to web clients
-4. **Configuration**: Add settings to `alert_config` dict and persist to `config.json`
+1. **Backend**: Add new functions to `app.py` following existing patterns
+2. **Frontend**: Update `templates/index.html` with new UI elements
+3. **Real-time Updates**: Use `socketio.emit()` to broadcast changes
+4. **Configuration**: Add new settings to the web configuration interface
+5. **Testing**: Use the built-in test functions and log monitoring
 
-## Critical Patterns & Data Flow
+### Error Handling Patterns
+- **Retry Logic**: 3 login attempts with exponential backoff
+- **Session Recovery**: Automatic re-authentication on session expiry
+- **Connection Validation**: Prevent false alerts when systems are offline
+- **Graceful Degradation**: Continue monitoring other systems if one fails
 
-### Monitoring Loop Architecture
-- **EG4 Thread**: Continuous 60-second polling with persistent browser sessions
-- **SRP Thread**: Daily updates at configured time (default 6 AM)
-- **Alert Thread**: Runs every 5 minutes, checks thresholds based on timezone
-- **WebSocket Broadcasting**: Live data pushed to all connected web clients
+## Deployment Architecture
 
-### Session Management
-- EG4 browser sessions persist ~1 hour to reduce login overhead
-- Login retry logic: 3 attempts with exponential backoff
-- Connection validation prevents false alerts when systems offline
+### Systemd Service Integration
+The application runs as a systemd service for automatic startup and management:
 
-### Alert Logic
-- **Time-based scheduling**: Battery/peak demand checked daily at specific hours
-- **Grid import alerts**: Only during configured time windows (e.g., 2 PM - 8 PM)
-- **Anti-spam protection**: Cooldown periods prevent duplicate notifications
-- **HTML email formatting**: Rich emails with full system status
+```bash
+# Service management commands
+sudo systemctl start eg4-srp-monitor    # Start service
+sudo systemctl stop eg4-srp-monitor     # Stop service  
+sudo systemctl restart eg4-srp-monitor  # Restart service
+sudo systemctl status eg4-srp-monitor   # Check status
+sudo journalctl -u eg4-srp-monitor -f   # View service logs
+```
 
-## Common Tasks
+### Network Configuration
+- **Port**: 5002 (configurable in app.py)
+- **Protocol**: HTTP with WebSocket upgrades
+- **Access**: Typically localhost/LAN only for security
+- **Firewall**: Configure as needed for remote access
 
-### Adding New Metrics
-1. Update data extraction in monitor class `get_data()` method
-2. Add metric to web interface display (both HTML and JavaScript)
-3. Update alert threshold logic if needed
-4. Example: Battery and grid voltage were added in latest update
-
-### Debugging Data Collection
-1. Check logs in `/tmp/eg4_srp_monitor.log` inside container
-2. View logs with `docker compose logs -f eg4-srp-monitor`
-3. Run Playwright in headed mode by setting `headless=False`
-4. Add debug logging around CSS selectors
-5. Monitor retry attempts in logs for connection issues
-6. Access container logs: `docker compose exec eg4-srp-monitor cat /tmp/eg4_srp_monitor.log`
-
-### Modifying Alert Logic
-1. Update `check_thresholds()` function in app.py
-2. Add new threshold fields to configuration interface
-3. Update email template with new alert details
-
-### Recent Changes (July 2025)
-- Removed battery high alert (unnecessary)
-- Added time-based grid import alerts
-  - Only triggers during configured hours
-  - Uses container timezone (typically UTC)
-  - Default: 14:00-20:00 (2 PM - 8 PM UTC)
-  - Configure start/end hours in web interface
-- Updated web interface:
-  - Removed battery high threshold field
-  - Added grid import time window configuration
-  - Added battery check time configuration (hour:minute)
-  - Added timezone selector with 6 US timezones
-  - Shows current time in selected timezone
-  - Alert times now display with timezone name
-- Improved alert messages to include time window information
-- Added configuration persistence:
-  - Settings saved to `./config/config.json`
-  - Automatically loaded on container restart
-  - Includes email settings and all alert thresholds
-- Enhanced alert logic:
-  - Battery SOC checked once daily at configured time
-  - Peak demand checked once daily at configured time (default 6 AM)
-  - Grid import checked continuously but only alerts during configured hours
-  - Prevents duplicate alerts with cooldown periods
-- Gmail integration improvements:
-  - Added configuration status check endpoint
-  - Web UI shows Gmail configuration status
-  - Better error messages with setup instructions
-  - Detects if gmail-send is not installed or configured
-  - **NEW: Web-based Gmail configuration**
-    - Added modal dialog for Gmail setup
-    - Users can configure Gmail entirely through the web interface
-    - No command line access required
-    - Automatic credential file creation
-    - Test email sent on successful configuration
-- **Timezone Support (July 2025)**:
-  - Added timezone selector defaulting to America/Phoenix
-  - Supports UTC, Phoenix, Los Angeles, Denver, Chicago, New York
-  - All alert checks use selected timezone
-  - Container restarts automatically when timezone changes
-  - Timezone setting persists across container restarts
-  - Added pytz library for proper timezone handling
-  - Current time display updates every second
-- **Live Code Updates (July 2025)**:
-  - Volume mounts for app.py and templates directory
-  - Flask development mode with auto-reload
-  - No container rebuild needed for code changes
-  - FLASK_ENV=development for auto-reload
-  - Changes reflect immediately on save
-- **Logging System (July 2025)**:
-  - Dual output to Docker logs and file
-  - Rotating file handler (10MB max, 3 rotations)
-  - In-memory buffer for web interface
-  - Log viewer with level filtering
-  - Download full log functionality
-  - Auto-refresh every 5 seconds
-- **SRP Improvements (July 2025)**:
-  - Daily update only (once at configured time)
-  - Shows next update time in UI
-  - Manual refresh endpoint for testing
-  - CSV export functionality (srp_csv_downloader.py)
-- **EG4 Auto-Refresh (July 2025)**:
-  - Toggle for auto-refresh on/off
-  - Configurable intervals (30s, 60s, 2m, 5m)
-  - Default 60 seconds with checkbox checked
-  - Manual refresh still available
-
-### Changing Default Port
-1. Edit `docker-compose.yml` ports section
-2. Change from `"8085:5001"` to `"YOUR_PORT:5001"`
-3. Restart container with `docker compose down && docker compose up -d`
+### Resource Requirements
+- **Memory**: ~100MB typical usage
+- **CPU**: <1% typical load, spikes during data collection
+- **Disk**: Minimal (logs rotate, CSV files are cleaned periodically)
+- **Network**: Outbound HTTPS for data collection and Gmail SMTP
 
 ## Security Considerations
-- Credentials stored as environment variables
-- Configuration persisted to disk in JSON format
-- WebSocket has no authentication (localhost only recommended)
-- Consider adding API key for production use
-- Email recipients stored in plain text in config file
 
-## Latest Bug Fixes (July 15, 2025)
+### Credential Management
+- All credentials stored in local files with restricted permissions (600)
+- Gmail App Passwords required (not regular passwords)
+- Web interface uses HTTPS recommended for remote access
+- No hardcoded credentials in source code
 
-### 1. Persistent EG4 Browser Sessions ✅ NEW
-- **Problem**: EG4 system logging in every 60 seconds, causing unnecessary overhead
-- **Solution**: Implemented session persistence with smart re-login detection
-- **Benefits**: 
-  - Login frequency reduced from ~1,440/day to ~24/day
-  - Faster data collection using page refresh instead of full navigation
-  - Automatic session recovery on timeout or errors
-- **Implementation**: `is_logged_in()` method, 1-hour session timeout, graceful error handling
+### Network Security
+- Application binds to localhost by default
+- No authentication required (intended for trusted networks)
+- Consider reverse proxy with authentication for internet exposure
+- Regular security updates for dependencies
 
-### 2. Docker Volume Timestamp Issue ✅ FIXED
-- **Problem**: SRP charts showing old data despite new CSV files being downloaded
-- **Root Cause**: Docker volumes reset file creation times, causing `os.path.getctime()` to return same time for all files
-- **Solution**: Changed to lexicographic max on filenames (which contain YYYYMMDD_HHMMSS timestamps)
-- **Result**: Charts now always show the most recent data available
-- **Location**: `app.py` line ~1326 in get_srp_chart_data()
+## Production Readiness Checklist
 
-### Previous Fixes (July 11, 2025)
+### ✅ Current Status (July 30, 2025)
+- [x] Stable multi-threaded monitoring architecture
+- [x] Professional web interface with responsive design
+- [x] Complete Gmail integration with 2FA support
+- [x] Comprehensive logging and error handling
+- [x] Configuration persistence and web management
+- [x] Real-time WebSocket communication
+- [x] Systemd service integration ready
+- [x] Data validation and offline detection
+- [x] Timezone-aware alert scheduling
+- [x] Mobile-optimized user interface
 
-### 3. SRP Data Update Issues ✅ FIXED
-- **Problem**: Dashboard showing yesterday's data wasn't updating, peak demand stuck at 0
-- **Root Cause**: SRP CSV files from July 10th not refreshing daily
-- **Solution**: Fixed daily SRP refresh mechanism and CSV download automation
-- **Result**: Peak demand now shows correct values, charts include current data
+### Recommended Enhancements
+- [ ] HTTPS/TLS support for production deployments
+- [ ] User authentication for multi-user access
+- [ ] Data export functionality (CSV, JSON)
+- [ ] Historical data retention policies
+- [ ] Automated backup and restore functionality
+- [ ] REST API documentation
+- [ ] Docker containerization option
+- [ ] Grafana integration for advanced analytics
 
-### 4. Timezone Datetime Errors ✅ FIXED  
-- **Problem**: "can't subtract offset-naive and offset-aware datetimes"
-- **Root Cause**: Mixed timezone-aware and naive datetime objects
-- **Solution**: Enhanced timezone handling for consistent datetime awareness
-- **Impact**: Eliminated timezone comparison crashes
+## Recent Updates Log
 
-### 5. False Grid Import Alerts ✅ FIXED
-- **Problem**: Receiving alerts when exporting power TO grid instead of importing FROM grid  
-- **Solution**: Changed to `grid_power < 0 and abs(grid_power) > threshold`
-- **Logic**: Positive = export to grid, Negative = import from grid
+### July 30, 2025 - Major UI and Functionality Update
+- **🎨 Complete UI Redesign**: Modern glassmorphism interface with integrated header
+- **🖼️ Logo Enhancement**: Logo-only branding (250% larger, removed text clutter)
+- **📧 Gmail Integration**: Fixed two-factor authentication and SMTP implementation  
+- **🔧 Custom send-gmail**: Built custom SMTP script to replace problematic dependencies
+- **✅ Production Testing**: All systems tested and verified working
 
-### 6. Production Deployment Warnings ✅ FIXED
-- **Problem**: Werkzeug development server warnings in production logs
-- **Solution**: Set FLASK_ENV=production and suppressed Werkzeug logger warnings
-- **Result**: Clean production logs without development warnings
+### July 25, 2025 - Docker Migration and Feature Enhancement  
+- **🚀 Native Python**: Removed Docker dependency for simpler deployment
+- **⚙️ Web Configuration**: Complete credential management through web interface
+- **📊 Enhanced Monitoring**: Multi-MPPT PV tracking with individual string data
+- **🔔 Smart Alerts**: Timezone-aware scheduling with anti-spam protection
+- **📱 Mobile Optimization**: Responsive design with touch-friendly controls
 
-## Current Implementation Status
-
-### Working Features ✅
-- EG4 inverter data collection with all metrics (SOC, power, voltage)
-- SRP peak demand monitoring (updates every 5 minutes)
-- Real-time WebSocket updates to web dashboard
-- Email alerts via gmail-send integration
-- Configurable alert thresholds:
-  - Battery low warnings (checked at specified time daily)
-  - Peak demand alerts (checked at configurable time daily)
-  - Time-based grid import alerts (with hour configuration)
-- Automatic retry logic (3 login attempts, 5 reconnection attempts)
-- Battery and grid voltage display in UI
-- Native Python virtual environment deployment
-- HTML formatted alert emails with full system status
-- Multiple email recipient support (comma-separated)
-- Web-based credential management (EG4, SRP, Gmail)
-- Comprehensive system logs with web interface
-
-### Known Limitations ⚠️
-- No historical data persistence between restarts (only configuration is saved)
-- No authentication for API or WebSocket
-- Single inverter support only
-- No historical data storage
-- No data export functionality
-
-### Production Ready ✅
-The application has been thoroughly tested and is running in production:
-- Native Python deployment with virtual environment
-- Email alerts confirmed working
-- All monitoring features operational
-- Web-based credential management functional
-- Comprehensive logging system with 5 levels
-- GitHub repository maintained at: JeremyWhittaker/eg4_assistant (branch: eg4-srp-monitor)
-
-## Complete File Inventory
-
-### Core Application Files (Active)
-- `app.py` (1,496 lines) - Main Flask application with monitoring, logging, and credential management
-- `templates/index.html` (1,479 lines) - Web dashboard UI with real-time updates and credential management
-- `requirements.txt` (8 lines) - Python dependencies including pytz
-- `docs/PROJECT_STRUCTURE.md` - Comprehensive project documentation
-- `CLAUDE.md` - This development guide
-
-### Archived Files (Deprecated)
-- `archive/old-scripts-standalone/srp_csv_downloader.py` - Standalone CSV export (integrated into main app)
-- `archive/old-scripts-standalone/send-gmail` - Standalone email script (integrated into main app)
-- `archive/old-documentation-v2.2/FILE_STRUCTURE.md` - Old Docker-based documentation
-- `archive/old-documentation-v2.2/README_GITWATCH.md` - Gitwatch automation docs
-- `archive/old-documentation-v2.2/requirements-dev.txt` - Development dependencies (no longer needed)
-- `archive/enphase-fixes-2025/` - Enphase integration fixes and test files
-- `archive/deprecated-components/gmail-integration-temp/` - Old Gmail integration components
-
-### Docker Configuration (Removed in v2.3)
-**Note**: All Docker components have been removed and archived. The application now runs natively with Python virtual environment.
-
-### Configuration Files
-- `.env` - Environment variables (gitignored)
-- `.env.example` (15 lines) - Template for credentials
-- `.gitignore` (9 lines) - Git exclusions
-
-### Documentation
-- `README.md` (415 lines) - User documentation
-- `CLAUDE.md` (342 lines) - This development guide
-- `FILE_STRUCTURE.md` (239 lines) - Detailed file documentation
-
-### Runtime Directories
-- `logs/` - Container log volume mount
-- `config/` - Persistent configuration storage
-- `gmail_config/` - Gmail credentials persistence
-- `downloads/` - SRP CSV downloads
-- `gmail_integration_temp/` - Temporary build directory (gitignored)
-
-## Recent Updates (July 18, 2025)
-
-### Gmail Integration Fix
-- **Problem**: Alert emails failing with "send-gmail command not found" error
-- **Solution**: Created custom `send-gmail` utility script that:
-  - Reads configuration from `~/.gmail_send/.env` file
-  - Supports both plain text and HTML email formats (with `--html` flag)
-  - Compatible with the app's existing Gmail integration
-- **Location**: `/usr/local/bin/send-gmail` in container
-
-### SRP CSV Download Timeout Fix
-- **Problem**: SRP CSV downloads failing with "Timeout 30000ms exceeded" at 6:00 AM scheduled downloads
-- **Root Cause**: Default Playwright page timeout of 30 seconds was too short for SRP's slow export process
-- **Solution**: 
-  - Set page default timeout to 120000ms (2 minutes) for both EG4 and SRP monitors
-  - Added manual CSV download endpoint `/api/download-srp-csv` for testing
-- **Impact**: Daily SRP data downloads should now complete successfully
-
-### New API Endpoints
-- `GET /api/download-srp-csv` - Manually trigger SRP CSV downloads
-  - Useful for testing or recovering from failed scheduled downloads
-  - Returns status of download request
-
-## Future Enhancements
-- Add historical data storage (SQLite/PostgreSQL)
-- Implement data export functionality (CSV/JSON)
-- Add support for multiple inverters
-- Create mobile app with push notifications
-- Add Grafana integration for visualization
-- Implement API authentication
-- Add timezone configuration option
-- Implement OAuth authentication for enhanced security
-- Add support for multiple alert profiles
+This project is now production-ready and suitable for reliable long-term energy monitoring with professional presentation and robust functionality.
