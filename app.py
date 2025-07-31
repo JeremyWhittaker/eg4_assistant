@@ -1789,6 +1789,10 @@ def index():
 def serve_logo():
     return send_from_directory('.', 'eg4_logo.png')
 
+@app.route('/favicon.ico')
+def serve_favicon():
+    return send_from_directory('.', 'favicon.ico')
+
 @app.route('/api/status')
 def get_status():
     """Get current system status"""
