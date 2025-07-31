@@ -11,6 +11,7 @@ User=jeremy
 Group=jeremy
 WorkingDirectory=/mnt/data/src/eg4-srp-monitor
 Environment=PATH=/mnt/data/src/eg4-srp-monitor/venv/bin
+ExecStartPre=/mnt/data/src/eg4-srp-monitor/venv/bin/playwright install chromium
 ExecStart=/mnt/data/src/eg4-srp-monitor/venv/bin/python app.py
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
