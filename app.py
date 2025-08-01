@@ -1734,7 +1734,10 @@ async def monitor_loop():
             retry_count += 1
             
             if retry_count >= max_retries:
-                logger.error(f"Max retries ({max_retries}) reached. Giving up.")
+                logger.error(f"Max retries ({max_retries}) reached. Will restart monitoring thread.")
+                update_monitor_health('max_retries_reached', error=f"Retry count: {retry_count}")
+                # Don't break - let the watchdog restart us
+                await asyncio.sleep(60)  # Wait before watchdog restarts
                 break
             
             # Check if it's a critical error that requires browser restart
@@ -1766,20 +1769,116 @@ async def monitor_loop():
     
     logger.error("Monitor loop exited unexpectedly")
 
-# Background thread
+# Background thread and monitoring health
 monitor_thread = None
+monitor_health = {
+    'status': 'starting',
+    'last_update': None,
+    'error_count': 0,
+    'restart_count': 0,
+    'thread_alive': False,
+    'eg4_last_success': None,
+    'srp_last_success': None,
+    'enphase_last_success': None,
+    'current_error': None
+}
+watchdog_thread = None
+monitoring_lock = threading.Lock()
+
+def update_monitor_health(status, error=None):
+    """Update monitoring health status"""
+    with monitoring_lock:
+        monitor_health['status'] = status
+        monitor_health['last_update'] = datetime.now().isoformat()
+        if error:
+            monitor_health['error_count'] += 1
+            monitor_health['current_error'] = str(error)
+        else:
+            monitor_health['current_error'] = None
+        
+        # Emit status update to web clients
+        socketio.emit('monitor_health', monitor_health)
+        logger.info(f"Monitor health updated: {status} (errors: {monitor_health['error_count']})")
 
 def start_monitoring():
-    """Start monitoring in background thread"""
+    """Start monitoring in background thread with health tracking"""
     def run():
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(monitor_loop())
+        try:
+            update_monitor_health('running')
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(monitor_loop())
+        except Exception as e:
+            logger.error(f"Monitor thread crashed: {e}")
+            update_monitor_health('crashed', error=e)
+        finally:
+            update_monitor_health('stopped')
+            logger.error("Monitor thread stopped unexpectedly")
     
     global monitor_thread
-    monitor_thread = threading.Thread(target=run)
-    monitor_thread.daemon = True
-    monitor_thread.start()
+    with monitoring_lock:
+        if monitor_thread and monitor_thread.is_alive():
+            logger.warning("Monitor thread already running, not starting a new one")
+            return
+        
+        monitor_thread = threading.Thread(target=run, name="MonitorThread")
+        monitor_thread.daemon = False  # Change to non-daemon so we can track it
+        monitor_thread.start()
+        monitor_health['thread_alive'] = True
+        monitor_health['restart_count'] += 1
+        logger.info(f"Monitor thread started (restart count: {monitor_health['restart_count']})")
+
+def watchdog_loop():
+    """Watchdog that monitors the health of the monitoring thread and restarts it if needed"""
+    logger.info("Watchdog thread started")
+    
+    while True:
+        try:
+            time.sleep(30)  # Check every 30 seconds
+            
+            with monitoring_lock:
+                # Check if monitoring thread is alive
+                if monitor_thread and not monitor_thread.is_alive():
+                    logger.error("Monitor thread is dead! Attempting restart...")
+                    monitor_health['thread_alive'] = False
+                    
+                    # Wait a bit before restarting to avoid rapid restart loops
+                    time.sleep(5)
+                    start_monitoring()
+                
+                # Check if monitoring is stalled (no updates for 5 minutes)
+                if monitor_health['last_update']:
+                    last_update_time = datetime.fromisoformat(monitor_health['last_update'])
+                    if datetime.now() - last_update_time > timedelta(minutes=5):
+                        logger.error("Monitor appears stalled (no updates for 5 minutes). Restarting...")
+                        
+                        # Try to stop the existing thread gracefully
+                        if monitor_thread and monitor_thread.is_alive():
+                            logger.info("Attempting to stop stalled monitor thread...")
+                            # Note: We can't forcefully kill threads in Python, but we can set a flag
+                            update_monitor_health('stalled')
+                        
+                        # Start a new monitoring thread
+                        time.sleep(5)
+                        start_monitoring()
+                
+                # Log health status periodically
+                if monitor_health['restart_count'] % 10 == 0:
+                    logger.info(f"Watchdog status - Thread alive: {monitor_thread.is_alive() if monitor_thread else False}, "
+                              f"Status: {monitor_health['status']}, Errors: {monitor_health['error_count']}, "
+                              f"Restarts: {monitor_health['restart_count']}")
+        
+        except Exception as e:
+            logger.error(f"Watchdog error: {e}")
+            time.sleep(60)  # Wait longer on error
+
+def start_watchdog():
+    """Start the watchdog thread"""
+    global watchdog_thread
+    watchdog_thread = threading.Thread(target=watchdog_loop, name="WatchdogThread")
+    watchdog_thread.daemon = True
+    watchdog_thread.start()
+    logger.info("Watchdog thread started")
 
 @app.route('/')
 def index():
