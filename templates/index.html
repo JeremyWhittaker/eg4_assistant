@@ -3212,6 +3212,81 @@
                 statusElement.innerHTML = '<span style="color: #22c55e;">● Online</span>';
             }
         });
+        
+        // Monitor health status handler
+        socket.on('monitor_health', function(health) {
+            // Update thread status with color coding
+            const statusEl = document.getElementById('monitor-thread-status');
+            if (statusEl) {
+                const statusColors = {
+                    'running': '#10b981',
+                    'starting': '#f59e0b',
+                    'stopped': '#ef4444',
+                    'crashed': '#dc2626',
+                    'stalled': '#f97316',
+                    'max_retries_reached': '#ef4444'
+                };
+                statusEl.innerHTML = `<span style="color: ${statusColors[health.status] || '#94a3b8'};">${health.status.toUpperCase()}</span>`;
+            }
+            
+            // Update counts
+            document.getElementById('monitor-restart-count').textContent = health.restart_count || '0';
+            document.getElementById('monitor-error-count').textContent = health.error_count || '0';
+            
+            // Update timestamps
+            if (health.last_update) {
+                const lastUpdate = new Date(health.last_update);
+                document.getElementById('monitor-last-update').textContent = lastUpdate.toLocaleString();
+            }
+            
+            // Update individual system last success times
+            if (health.eg4_last_success) {
+                const eg4Time = new Date(health.eg4_last_success);
+                document.getElementById('eg4-last-success').textContent = eg4Time.toLocaleString();
+            }
+            if (health.srp_last_success) {
+                const srpTime = new Date(health.srp_last_success);
+                document.getElementById('srp-last-success').textContent = srpTime.toLocaleString();
+            }
+            if (health.enphase_last_success) {
+                const enphaseTime = new Date(health.enphase_last_success);
+                document.getElementById('enphase-last-success').textContent = enphaseTime.toLocaleString();
+            }
+            
+            // Show/hide error message
+            const errorMsg = document.getElementById('monitor-error-msg');
+            const errorText = document.getElementById('monitor-error-text');
+            if (health.current_error) {
+                errorText.textContent = health.current_error;
+                errorMsg.style.display = 'block';
+            } else {
+                errorMsg.style.display = 'none';
+            }
+            
+            // Update monitor health card border based on status
+            const healthCard = document.getElementById('monitor-health-card');
+            if (healthCard) {
+                if (health.status === 'running' && health.error_count === 0) {
+                    healthCard.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                } else if (health.status === 'crashed' || health.status === 'stopped') {
+                    healthCard.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+                } else {
+                    healthCard.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+                }
+            }
+        });
+        
+        // Fetch initial monitor health on page load
+        fetch('/api/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.monitor_health) {
+                    socket.emit('monitor_health', data.monitor_health);
+                    // Manually trigger the handler for initial display
+                    socket._callbacks.$monitor_health[0](data.monitor_health);
+                }
+            })
+            .catch(error => console.error('Error fetching initial status:', error));
     </script>
 </body>
 </html>
