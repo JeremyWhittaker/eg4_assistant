@@ -1661,6 +1661,47 @@
                 </div>
             </div>
             
+            <!-- Monitor Health Status -->
+            <div class="card" id="monitor-health-card" style="margin-bottom: 1rem; background: rgba(30, 41, 59, 0.9); backdrop-filter: blur(20px); border: 1px solid rgba(51, 65, 85, 0.6);">
+                <h2 style="margin: 0 0 1rem 0;">Monitoring System Health</h2>
+                <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div class="metric" style="background: rgba(30, 41, 59, 0.7); padding: 1rem; border-radius: 0.5rem;">
+                        <div class="metric-label">Thread Status</div>
+                        <div class="metric-value" id="monitor-thread-status">--</div>
+                    </div>
+                    <div class="metric" style="background: rgba(30, 41, 59, 0.7); padding: 1rem; border-radius: 0.5rem;">
+                        <div class="metric-label">Restart Count</div>
+                        <div class="metric-value" id="monitor-restart-count">--</div>
+                    </div>
+                    <div class="metric" style="background: rgba(30, 41, 59, 0.7); padding: 1rem; border-radius: 0.5rem;">
+                        <div class="metric-label">Error Count</div>
+                        <div class="metric-value" id="monitor-error-count">--</div>
+                    </div>
+                    <div class="metric" style="background: rgba(30, 41, 59, 0.7); padding: 1rem; border-radius: 0.5rem;">
+                        <div class="metric-label">Last Health Update</div>
+                        <div class="metric-value" id="monitor-last-update" style="font-size: 0.875rem;">--</div>
+                    </div>
+                </div>
+                <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem;">
+                    <div class="metric" style="background: rgba(30, 41, 59, 0.7); padding: 1rem; border-radius: 0.5rem;">
+                        <div class="metric-label">EG4 Last Success</div>
+                        <div class="metric-value" id="eg4-last-success" style="font-size: 0.875rem;">--</div>
+                    </div>
+                    <div class="metric" style="background: rgba(30, 41, 59, 0.7); padding: 1rem; border-radius: 0.5rem;">
+                        <div class="metric-label">SRP Last Success</div>
+                        <div class="metric-value" id="srp-last-success" style="font-size: 0.875rem;">--</div>
+                    </div>
+                    <div class="metric" style="background: rgba(30, 41, 59, 0.7); padding: 1rem; border-radius: 0.5rem;">
+                        <div class="metric-label">Enphase Last Success</div>
+                        <div class="metric-value" id="enphase-last-success" style="font-size: 0.875rem;">--</div>
+                    </div>
+                </div>
+                <div id="monitor-error-msg" style="margin-top: 1rem; padding: 0.75rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 0.375rem; display: none;">
+                    <div style="font-weight: 500; color: #ef4444; margin-bottom: 0.25rem;">Current Error:</div>
+                    <div id="monitor-error-text" style="font-size: 0.875rem; color: #f87171;"></div>
+                </div>
+            </div>
+            
             <!-- EG4 and Enphase Status Side by Side -->
             <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
             <!-- EG4 Status -->
