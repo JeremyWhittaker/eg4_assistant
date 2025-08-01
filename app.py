@@ -1505,6 +1505,8 @@ async def monitor_loop():
                                 logger.error(f"Error storing EG4 data: {e}")
                         
                         logger.debug(f"EG4 data updated - SOC: {eg4_data.get('battery', {}).get('soc', 0)}%")
+                        monitor_health['eg4_last_success'] = datetime.now().isoformat()
+                        update_monitor_health('running')
                     elif eg4_data:
                         consecutive_failures += 1
                         monitor_data['eg4_connected'] = False
@@ -1557,6 +1559,8 @@ async def monitor_loop():
                                             logger.error(f"Error storing Enphase data: {e}")
                                     
                                     logger.debug(f"Enphase data updated - Today: {enphase_data.get('today_energy_kwh', 0)}kWh, Latest: {enphase_data.get('latest_power_w', 0)}W")
+                                    monitor_health['enphase_last_success'] = datetime.now().isoformat()
+                                    update_monitor_health('running')
                                 elif enphase_data:
                                     monitor_data['enphase_connected'] = False
                                     logger.warning("Enphase data validation failed - invalid readings")
@@ -1646,6 +1650,8 @@ async def monitor_loop():
                                         logger.error(f"Error storing SRP data: {e}")
                                 
                                 logger.info(f"SRP peak demand updated: {srp_data.get('demand', 0)}kW")
+                                monitor_health['srp_last_success'] = datetime.now().isoformat()
+                                update_monitor_health('running')
                                 
                                 # Download CSV data files after getting peak demand
                                 logger.info("Downloading SRP CSV data files...")
