@@ -1915,6 +1915,9 @@ def get_status():
             logger.error(f"Error getting database stats: {e}")
             status['database'] = {'error': str(e)}
     
+    # Add monitor health information
+    status['monitor_health'] = monitor_health.copy()
+    
     return jsonify(status)
 
 @app.route('/api/database/stats')
