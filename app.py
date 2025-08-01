@@ -2450,6 +2450,7 @@ if __name__ == '__main__':
     if os.getenv('EG4_USERNAME') and os.getenv('EG4_PASSWORD'):
         logger.info("Credentials found, starting monitoring thread")
         start_monitoring()
+        start_watchdog()
     else:
         logger.warning("No EG4 credentials found in environment")
     
