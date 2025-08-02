@@ -184,6 +184,53 @@ def save_config():
     except Exception as e:
         logger.error(f"Failed to save config: {e}")
 
+def kill_zombie_browsers():
+    """Kill all zombie browser processes to prevent thread exhaustion"""
+    try:
+        # Count existing browser processes first
+        result = subprocess.run(['pgrep', '-f', 'chromium|chrome.*headless'], 
+                              capture_output=True, text=True)
+        if result.stdout:
+            process_count = len(result.stdout.strip().split('\n'))
+            logger.warning(f"Found {process_count} browser processes, cleaning up...")
+            
+            # Kill all chromium/chrome headless processes
+            subprocess.run(['pkill', '-9', '-f', 'chromium|chrome.*headless'], 
+                         capture_output=True)
+            
+            # Clean up playwright temp directories
+            subprocess.run(['rm', '-rf', '/tmp/playwright*'], 
+                         capture_output=True)
+            
+            logger.info("Zombie browser cleanup completed")
+            return process_count
+        return 0
+    except Exception as e:
+        logger.error(f"Error during zombie browser cleanup: {e}")
+        return 0
+
+def check_system_resources():
+    """Check if system has enough resources for browser operations"""
+    try:
+        # Check thread availability by trying to create a test thread
+        test_thread = threading.Thread(target=lambda: None)
+        test_thread.start()
+        test_thread.join(timeout=1)
+        
+        # Check browser process count
+        result = subprocess.run(['pgrep', '-f', 'chromium|chrome.*headless'], 
+                              capture_output=True, text=True)
+        browser_count = len(result.stdout.strip().split('\n')) if result.stdout else 0
+        
+        if browser_count > 10:
+            logger.warning(f"High browser process count detected: {browser_count}")
+            return False
+            
+        return True
+    except Exception as e:
+        logger.error(f"Resource check failed: {e}")
+        return False
+
 class EG4Monitor:
     def __init__(self):
         self.username = alert_config['credentials'].get('eg4_username', '') or os.getenv('EG4_USERNAME', '')
