@@ -190,9 +190,11 @@ class EG4Monitor:
         self.password = alert_config['credentials'].get('eg4_password', '') or os.getenv('EG4_PASSWORD', '')
         self.browser = None
         self.page = None
+        self.context = None
         self.playwright = None
         self.logged_in = False
         self.session_start_time = None
+        self.browser_pid = None
     
     def update_credentials(self, username, password):
         """Update credentials and reset login state"""
@@ -201,16 +203,78 @@ class EG4Monitor:
         self.logged_in = False
         self.session_start_time = None
         
+    async def cleanup_browser(self):
+        """Aggressively clean up browser resources"""
+        try:
+            if self.page:
+                try:
+                    await self.page.close()
+                except:
+                    pass
+                self.page = None
+            
+            if self.context:
+                try:
+                    await self.context.close()
+                except:
+                    pass
+                self.context = None
+                
+            if self.browser:
+                try:
+                    await self.browser.close()
+                except:
+                    pass
+                self.browser = None
+                
+            if self.playwright:
+                try:
+                    await self.playwright.stop()
+                except:
+                    pass
+                self.playwright = None
+                
+            # Force kill any hanging browser processes
+            if self.browser_pid:
+                try:
+                    os.kill(self.browser_pid, 9)
+                except:
+                    pass
+                self.browser_pid = None
+                
+        except Exception as e:
+            logger.error(f"Error during browser cleanup: {e}")
+        finally:
+            self.logged_in = False
+            self.session_start_time = None
+    
     async def start(self):
-        self.playwright = await async_playwright().start()
-        self.browser = await self.playwright.chromium.launch(
-            headless=True,
-            args=['--no-sandbox', '--disable-setuid-sandbox', '--single-process']
-        )
-        self.page = await self.browser.new_page()
-        # Set longer default timeout for all page operations (2 minutes)
-        self.page.set_default_timeout(120000)
-        self.session_start_time = time.time()
+        # Clean up any existing browser first
+        await self.cleanup_browser()
+        
+        try:
+            self.playwright = await async_playwright().start()
+            self.browser = await self.playwright.chromium.launch(
+                headless=True,
+                args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+            )
+            
+            # Store browser PID for emergency cleanup
+            try:
+                self.browser_pid = self.browser.process.pid
+            except:
+                pass
+                
+            self.context = await self.browser.new_context()
+            self.page = await self.context.new_page()
+            # Set longer default timeout for all page operations (2 minutes)
+            self.page.set_default_timeout(120000)
+            self.session_start_time = time.time()
+            logger.info("EG4 browser started")
+        except Exception as e:
+            logger.error(f"Failed to start browser: {e}")
+            await self.cleanup_browser()
+            raise
         
     async def is_logged_in(self):
         """Check if we're still logged in by looking at the current URL"""
