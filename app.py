@@ -1982,6 +1982,25 @@ def watchdog_loop():
                     last_update_time = datetime.fromisoformat(monitor_health['last_update'])
                     if datetime.now() - last_update_time > timedelta(minutes=5):
                         logger.error("Monitor appears stalled (no updates for 5 minutes). Restarting...")
+                
+                # Also check for data staleness (EG4 data older than 10 minutes)
+                if monitor_data.get('eg4', {}).get('last_update'):
+                    try:
+                        eg4_last = datetime.fromisoformat(monitor_data['eg4']['last_update'])
+                        if datetime.now() - eg4_last > timedelta(minutes=10):
+                            logger.error(f"EG4 data is stale (last update: {eg4_last}). Forcing restart...")
+                            update_monitor_health('stalled', error='EG4 data stale for >10 minutes')
+                            
+                            # Kill zombie browsers before restart
+                            killed_count = kill_zombie_browsers()
+                            if killed_count > 0:
+                                logger.info(f"Cleaned up {killed_count} zombie browsers before restart")
+                            
+                            time.sleep(5)
+                            start_monitoring()
+                            continue
+                    except Exception as e:
+                        logger.error(f"Error checking EG4 data staleness: {e}")
                         
                         # Try to stop the existing thread gracefully
                         if monitor_thread and monitor_thread.is_alive():
