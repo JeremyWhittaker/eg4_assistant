@@ -1951,9 +1951,21 @@ def watchdog_loop():
     """Watchdog that monitors the health of the monitoring thread and restarts it if needed"""
     logger.info("Watchdog thread started")
     
+    last_cleanup_time = time.time()
+    
     while True:
         try:
             time.sleep(30)  # Check every 30 seconds
+            
+            # Periodic resource cleanup (every hour)
+            current_time = time.time()
+            if current_time - last_cleanup_time > 3600:  # 1 hour
+                logger.info("Performing periodic resource cleanup...")
+                if not check_system_resources():
+                    killed_count = kill_zombie_browsers()
+                    if killed_count > 0:
+                        logger.info(f"Periodic cleanup: removed {killed_count} zombie browser processes")
+                last_cleanup_time = current_time
             
             with monitoring_lock:
                 # Check if monitoring thread is alive
