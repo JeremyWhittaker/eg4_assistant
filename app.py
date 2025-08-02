@@ -1853,8 +1853,16 @@ async def monitor_loop():
             
             # Check if it's a critical error that requires browser restart
             error_msg = str(e).lower()
-            if 'browser' in error_msg or 'closed' in error_msg or 'crashed' in error_msg:
-                logger.info("Browser error detected, will restart browsers")
+            if 'browser' in error_msg or 'closed' in error_msg or 'crashed' in error_msg or 'pthread' in error_msg:
+                logger.info("Browser or resource error detected, will restart browsers")
+                
+                # Check system resources first
+                if not check_system_resources():
+                    logger.warning("System resource issues detected, performing zombie browser cleanup...")
+                    killed_count = kill_zombie_browsers()
+                    if killed_count > 0:
+                        logger.info(f"Cleaned up {killed_count} zombie browser processes")
+                        await asyncio.sleep(5)  # Give system time to recover
                 # Close browsers for restart
                 try:
                     await eg4.close()
