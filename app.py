@@ -442,10 +442,7 @@ class EG4Monitor:
             return None
     
     async def close(self):
-        if self.browser:
-            await self.browser.close()
-        if self.playwright:
-            await self.playwright.stop()
+        await self.cleanup_browser()
 
 class EnphaseMonitor:
     def __init__(self):
@@ -1076,10 +1073,7 @@ class SRPMonitor:
             return downloaded_files
     
     async def close(self):
-        if self.browser:
-            await self.browser.close()
-        if self.playwright:
-            await self.playwright.stop()
+        await self.cleanup_browser()
 
 def check_gmail_configured():
     """Check if gmail-send is configured"""
