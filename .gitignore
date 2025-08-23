@@ -27,6 +27,15 @@ gmail_integration_temp/
 
 # Browser Data
 .playwright/
+**/chrome_*/
+**/BrowserMetrics/
+**/Cache/
+**/Cache_Data/
+**/*.pma
+**/Code Cache/
+browser_data/
+data/chrome*/
+selenium_cache/
 
 # Credentials and Secrets
 .env
