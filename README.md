@@ -4,6 +4,16 @@ A comprehensive real-time energy monitoring system that integrates EG4 solar inv
 
 ![EG4-SRP Monitor Dashboard](https://img.shields.io/badge/Status-Production%20Ready-brightgreen) ![Python](https://img.shields.io/badge/Python-3.8+-blue) ![License](https://img.shields.io/badge/License-MIT-green)
 
+## 📦 Where this project went
+
+This is the original, monolithic Flask EG4-SRP monitor — the predecessor of a family of focused projects. It still runs, and the code below is accurate for it, but **active development has moved on** and split into three dedicated projects. If you are starting fresh, start there:
+
+- ⚡ **[srp-energy-monitor](https://github.com/JeremyWhittaker/srp-energy-monitor)** — the SRP utility side: peak demand, historical energy, and alerts, on its own.
+- 🔋 **[eg4_home_assistant](https://github.com/JeremyWhittaker/eg4_home_assistant)** — **the main project going forward.** A native Home Assistant EG4 dashboard *plus* a local-dongle integration (`custom_components/eg4_local`) that reads the EG4 WiFi dongle directly over TCP/8000 and surfaces the per-cell battery detail the EG4 cloud hides — max/min cell voltage, cell delta, pack capacity, module count — alongside the cloud data.
+- 🛰️ **[eg4-local-monitor](https://github.com/JeremyWhittaker/eg4-local-monitor)** — the raw, cloud-free local dongle API and the reverse-engineered LuxPower/EG4 wire protocol that the Home Assistant integration is built on.
+
+Nothing here has been deleted, and this monitor remains usable for existing installs. New work — especially the local-dongle, per-cell battery capability — happens in those projects.
+
 ## ✨ Features
 
 ### 🎨 Professional Web Interface
